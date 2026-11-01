@@ -1,0 +1,7 @@
+[extend]
+useDefault = true
+
+[[rules]]
+id = "fourx-essai-secret"
+description = "Valeur d'essai du projet (essai E6)"
+regex = '''FOURX_ESSAI_SECRET_[A-Z0-9]{32}'''

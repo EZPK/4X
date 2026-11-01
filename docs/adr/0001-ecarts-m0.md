@@ -1,0 +1,25 @@
+# ADR 0001 — Écarts du niveau 2 de M0 décidés le 2026-11-01
+
+- **Numéro :** 0001
+- **Titre :** Écarts du niveau 2 de M0 décidés le 2026-11-01
+- **Statut :** acceptée
+- **Date :** 2026-11-01
+- **Décideur :** le propriétaire
+- **Contexte :** le document de niveau 2 de M0 (`docs/designs/niveau-2-m0-garde-fous.md`, Overview, « Écarts au niveau 1 ») s'écarte du niveau 1 sur six points. E1 à E3 ont été décidés le 2026-10-31 et restent dans le niveau 1, sans ADR. E4 à E6 ont été décidés le 2026-11-01, pendant la rédaction et la revue EGM du document de M0. Ils changent la liste des chemins protégés et celle des contrôles obligatoires, décrites au §10 du niveau 1. Cette ADR les enregistre.
+- **Options :**
+  - **E4, rapports de revue :**
+    - laisser `docs/revues/` hors des chemins protégés, comme le prévoit le niveau 1 : l'agent de code peut alors modifier un rapport de revue ou le compte rendu de M0 sans que le contrôle de garde le signale ;
+    - protéger `docs/revues/` : chaque modification d'un rapport passe par une pull request protégée, que le propriétaire voit marquée.
+  - **E5, contrôles de M0 :**
+    - garder les cinq contrôles du niveau 1 (linter, typage, `gitleaks`, garde, termes interdits) : les tests du hook et des scripts, et le contrôle des ajouts à la liste des scénarios en attente, ne bloquent alors pas la fusion ;
+    - ajouter `tests-outillage` (tests du hook et des scripts de M0) et `en-attente` (un ajout à `tests/scenarios/en_attente.txt` exige une pull request qui modifie un `.feature`).
+  - **E6, liste des chemins protégés :**
+    - garder la liste dans le texte du §10 : le contrôle de garde devrait alors relire un document, et la liste du texte et celle du contrôle pourraient diverger ;
+    - faire de `.github/chemins-proteges.txt` la liste qui fait foi, lue par le contrôle de garde, et y ajouter `tests/outillage/`, les fichiers de configuration des outils, `.gitleaks.toml`, `.pre-commit-config.yaml` et `.python-version`. Le §10 et `CLAUDE.md` y renvoient.
+- **Décision :** la seconde option pour E4, E5 et E6, telle que décrite dans le document de niveau 2 de M0 (Technical Plan, points 5 et 8).
+- **Conséquences :**
+  - les rapports de revue et le compte rendu de M0 passent par une pull request protégée ;
+  - la protection de `main` exige sept contrôles : `lint`, `typage`, `gitleaks`, `termes-interdits`, `tests-outillage`, `garde` et `en-attente` ;
+  - une modification de la liste des chemins protégés est elle-même une modification d'un chemin protégé (`.github/**`).
+- **Condition de révision :** un contrôle de M0 qui bloque des pull requests légitimes de façon répétée, ou un chemin dont la protection n'apporte rien au propriétaire.
+- **Section du niveau 1 modifiée :** §10 (chemins protégés et contrôles obligatoires, ligne M0), par le plan détaillé du document de niveau 2 de M0, point 32.

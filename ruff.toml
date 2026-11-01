@@ -1,0 +1,7 @@
+target-version = "py315"
+line-length = 100
+# Le Markdown n'est ni analysé ni reformaté : ses blocs de code citent des textes tels quels.
+extend-exclude = ["*.md"]
+
+[lint]
+select = ["E", "F", "W", "I", "B", "UP"]

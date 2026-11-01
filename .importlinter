@@ -1,0 +1,74 @@
+[importlinter]
+root_package = fourx
+
+[importlinter:contract:schema]
+name = schema n'importe que ce que permet le niveau 1, §1
+type = forbidden
+source_modules = fourx.schema
+forbidden_modules =
+    fourx.core
+    fourx.policies
+    fourx.server
+    fourx.clients
+    fourx.training
+    fourx.tools
+
+[importlinter:contract:core]
+name = core n'importe que ce que permet le niveau 1, §1
+type = forbidden
+source_modules = fourx.core
+forbidden_modules =
+    fourx.policies
+    fourx.server
+    fourx.clients
+    fourx.training
+    fourx.tools
+
+[importlinter:contract:policies]
+name = policies n'importe que ce que permet le niveau 1, §1
+type = forbidden
+source_modules = fourx.policies
+forbidden_modules =
+    fourx.core
+    fourx.server
+    fourx.clients
+    fourx.training
+    fourx.tools
+
+[importlinter:contract:server]
+name = server n'importe que ce que permet le niveau 1, §1
+type = forbidden
+source_modules = fourx.server
+forbidden_modules =
+    fourx.policies
+    fourx.clients
+    fourx.training
+    fourx.tools
+
+[importlinter:contract:clients]
+name = clients n'importe que ce que permet le niveau 1, §1
+type = forbidden
+source_modules = fourx.clients
+forbidden_modules =
+    fourx.core
+    fourx.server
+    fourx.training
+    fourx.tools
+
+[importlinter:contract:training]
+name = training n'importe que ce que permet le niveau 1, §1
+type = forbidden
+source_modules = fourx.training
+forbidden_modules =
+    fourx.server
+    fourx.clients
+    fourx.tools
+
+[importlinter:contract:tools]
+name = tools n'importe que ce que permet le niveau 1, §1
+type = forbidden
+source_modules = fourx.tools
+forbidden_modules =
+    fourx.policies
+    fourx.clients
+    fourx.training
