@@ -790,13 +790,12 @@ Ce document est de niveau 1. Son implémentation ne produit **que de la document
     > - Affirmer qu'une chose fonctionne sans citer le lien vers le contrôle CI correspondant. Hors pull request, citer la sortie de la commande exécutée, en sachant qu'elle ne vaut pas preuve ([§10](docs/designs/architecture-niveau-1.md#10-les-garde-fous-sur-le-code-écrit-par-lia)).
     >
     > **Ce qui est vérifié techniquement, et ce qui ne l'est pas** ([§10](docs/designs/architecture-niveau-1.md#10-les-garde-fous-sur-le-code-écrit-par-lia))
-    > - Aujourd'hui, aucun mécanisme n'est en place. Tous arrivent avec la livraison de M0 : avant cela, toutes les règles de ce fichier reposent sur l'agent de code seul.
-    > - Une fois M0 livré :
+    > - Depuis la livraison de M0 :
     >   - le hook Claude Code et les règles `deny` de `.claude/settings.json` filtrent la fusion, le push vers `main`, le push forcé, `--no-verify` et la modification des réglages. Ils n'attrapent que les commandes directes ;
     >   - les règles `deny` interdisent aussi à l'agent de code d'éditer `.claude/` et `.git/hooks/`. Pour modifier `.claude/`, le propriétaire lève la règle dans sa copie locale, fait ou demande la modification, remet la règle, puis la modification passe par une pull request protégée ;
     >   - `gitleaks` bloque les secrets avant chaque commit et en CI ;
     >   - la protection de `main`, appliquée aussi aux administrateurs, refuse la fusion d'une pull request aux contrôles rouges ;
-    >   - les contrôles obligatoires de chaque jalon vérifient une partie des règles « Code » (termes interdits à M0, contrats d'imports et invariants à M1).
+    >   - les contrôles obligatoires de chaque jalon vérifient une partie des règles « Code » (termes interdits depuis M0 ; contrats d'imports et invariants prévus à M1).
     > - Les autres points de la liste « Ne jamais » ne sont vérifiés par aucun mécanisme. Aucun mécanisme technique n'empêche un script de fusionner une pull request aux contrôles verts : seule la règle « Seul le propriétaire fusionne » l'interdit.
     >
     > **Circuit des pull requests** ([§10](docs/designs/architecture-niveau-1.md#10-les-garde-fous-sur-le-code-écrit-par-lia))
