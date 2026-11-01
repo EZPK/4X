@@ -63,3 +63,5 @@
 - Employer le vocabulaire de `docs/glossaire.md`. Si un identifiant nécessaire n'est pas encore fixé, s'arrêter et demander au propriétaire.
 - N'inventer aucun nom propre (nom de lieu, d'objet, de vaisseau ou de personnage du jeu) absent de `docs/noms-valides.md`. Dans les tests, employer des noms neutres (`station_a`, `ore_1`).
 - Ne jamais employer un terme de `docs/termes-interdits.md` dans le dépôt, ni dans un message de commit, un nom de branche ou une pull request. Seuls les termes de cette liste sont interdits : en cas de doute sur un autre terme, demander.
+
+<!-- Essai E7 de M0 : ligne ajoutée pour tester le contrôle de garde. Cette pull request n'est pas fusionnée. -->
