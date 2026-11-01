@@ -1,10 +1,10 @@
 # Feuille de route
 
-Jalon en cours : M0
+Jalon en cours : M1
 
 | Jalon | Critère de sortie | Document de niveau 2 | Statut |
 | :-- | :-- | :-- | :-- |
-| M0 | [§11 du niveau 1](designs/architecture-niveau-1.md#11-le-découpage-en-documents-de-niveau-2), ligne M0 | `docs/designs/niveau-2-m0-garde-fous.md` | approuvé |
+| M0 | [§11 du niveau 1](designs/architecture-niveau-1.md#11-le-découpage-en-documents-de-niveau-2), ligne M0 | `docs/designs/niveau-2-m0-garde-fous.md` | livré |
 | M1 | [§11 du niveau 1](designs/architecture-niveau-1.md#11-le-découpage-en-documents-de-niveau-2), ligne M1 | `docs/designs/niveau-2-m1-noyau.md` | à écrire |
 | M2 | [§11 du niveau 1](designs/architecture-niveau-1.md#11-le-découpage-en-documents-de-niveau-2), ligne M2 | `docs/designs/niveau-2-m2-observabilite.md` | à écrire |
 | M3 | [§11 du niveau 1](designs/architecture-niveau-1.md#11-le-découpage-en-documents-de-niveau-2), ligne M3 | `docs/designs/niveau-2-m3-websocket.md` | à écrire |
