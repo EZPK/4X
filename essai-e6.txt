@@ -1,0 +1,2 @@
+Essai E6 de M0 : valeur d essai du projet, sans aucun accès.
+valeur = FOURX_ESSAI_SECRET_IL2P7IXI2W3ZGOXESRMT0S6VHW2SL4N5
