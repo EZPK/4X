@@ -1,1 +1,2 @@
 # Une entrée par ligne : <fichier>.feature::<titre du scénario>. Voir docs/designs/niveau-2-m0-garde-fous.md, Technical Plan, point 10.
+essai.feature::Scénario d'essai E8
