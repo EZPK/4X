@@ -8,6 +8,7 @@ temporaire, avec un worktree lié, toujours sans réseau.
 import importlib.util
 import json
 import os
+import shlex
 import subprocess
 import sys
 from collections.abc import Callable
@@ -254,6 +255,129 @@ def test_push_permis(lancer: Callable[..., int], commande: str) -> None:
 )
 def test_contournement_refuse(lancer: Callable[..., int], commande: str) -> None:
     refuse(lancer, commande)
+
+
+# Le hook vérifie le pre-commit du dépôt du dossier courant : un commit qui peut viser un autre
+# dépôt (variable GIT_*, env avec option, changement de dossier, à n'importe quel niveau de la
+# commande) est refusé, comme un push sans refspec ou vers HEAD.
+@pytest.mark.parametrize(
+    "commande",
+    [
+        "GIT_DIR=/autre/.git git commit -m x",
+        "GIT_WORK_TREE=/autre git commit -m x",
+        "GIT_COMMON_DIR=/autre/.git git commit -m x",
+        "env GIT_DIR=/autre/.git git commit -m x",
+        "export GIT_DIR=/autre/.git && git commit -m x",
+        "env -C /autre git commit -m x",
+        "env --chdir=/autre git commit -m x",
+        "env --chdir /autre git commit -m x",
+        "env -iC /autre git commit -m x",
+        "bash -c 'cd /autre && git commit -m x'",
+        'sh -c "cd /autre; git commit -m x"',
+        "bash -c 'pushd /autre; git commit -m x'",
+        "popd; git commit -m x",
+        "GIT_DIR=/autre/.git git push",
+        "GIT_DIR=/autre/.git git push origin HEAD",
+        "GIT_DIR=/autre/.git git push origin @",
+        "bash -c 'cd /autre && git push'",
+        "GIT_DIR+=/autre/.git git commit -m x",
+        "GIT_AUTHOR_DATE=2026-01-01 git commit -m x",
+        "read GIT_DIR <<< /autre/.git; export GIT_DIR; git commit -m x",
+        "env -C/autre git commit -m x",
+        "env -iC/autre git commit -m x",
+        "env --chd=/autre git commit -m x",
+        "env -S '-C /autre git commit -m x'",
+        "/usr/bin/env -C /autre git commit -m x",
+        "env -u X -C /autre git commit -m x",
+        "eval 'cd /autre'; git commit -m x",
+        'eval "cd /autre && git status"; git commit -m x',
+        "uv run --directory /autre git commit -m x",
+        "uv run --directory=/autre git commit -m x",
+        "uv --project /autre run git commit -m x",
+        "find /autre -name .git -execdir git commit -m x ;",
+        "find /autre -name .git -okdir git commit -m x ;",
+        "git submodule foreach 'git commit -m x'",
+        "git submodule --quiet foreach 'git commit -m x'",
+        "git commit -m x && cd /autre",
+    ],
+)
+def test_depot_vise_ailleurs_refuse(
+    lancer: Callable[..., int], capsys: pytest.CaptureFixture[str], commande: str
+) -> None:
+    refuse(lancer, commande)
+    assert "dossier courant" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    ("commande", "motif"),
+    [
+        ("git -c alias.c='!git commit -m x' c", "alias git"),
+        ("git --config-env=alias.c=COMMANDE c", "alias git"),
+        ("git config alias.c '!git commit -m x'; git c", "alias git"),
+        ("git config Alias.c 'commit -m x'; git c", "alias git"),
+        ("GIT_CONFIG_COUNT=0 git status", "GIT_CONFIG"),
+        ("git --git-dir=/autre/.git commit -m x", "dossier courant"),
+        ("git --work-tree=/autre commit -m x", "dossier courant"),
+        ("git --namespace=x commit -m x", "dossier courant"),
+        ("git-push origin essai/x", "lancé directement"),
+        ("GIT_CONFIG_COUNT=1 git push origin essai/x", "GIT_CONFIG"),
+        ("GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.c GIT_CONFIG_VALUE_0=x git c", "GIT_CONFIG"),
+        ("GIT_CONFIG_PARAMETERS=x git c", "GIT_CONFIG"),
+        ("git -c core.worktree=/autre commit -m x", "git -c avec git commit"),
+        ("git --config-env=user.name=NOM commit -m x", "git -c avec git commit"),
+        ("git --exec-path=/usr/lib/git-core commit -m x", "option globale"),
+        ("git --exec-path=/usr/lib/git-core push origin essai/x", "option globale"),
+        ("git --exec-path=/usr/lib/git-core -c alias.c='!git commit -m x' c", "option globale"),
+        ("git-commit -m x", "lancé directement"),
+        ("git config --get alias.c", "alias git"),
+        ("git commit -m 'voir cd x'", "dossier courant"),
+        ("GIT_1=x git commit -m x", "dossier courant"),
+    ],
+)
+def test_alias_configuration_et_options_inconnues_refuses(
+    lancer: Callable[..., int], capsys: pytest.CaptureFixture[str], commande: str, motif: str
+) -> None:
+    refuse(lancer, commande)
+    assert motif in capsys.readouterr().err
+
+
+def test_commande_git_trop_imbriquee_refusee(
+    lancer: Callable[..., int], capsys: pytest.CaptureFixture[str]
+) -> None:
+    commande = "git status"
+    for _ in range(5):
+        commande = "bash -c " + shlex.quote(commande)
+    refuse(lancer, commande)
+    assert "trop imbriquée" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    "commande",
+    [
+        "git commit -m x",
+        "git commit -F message.txt",
+        "git add -A && git commit -F message.txt",
+        "env LANG=C git commit -m x",
+        "bash -c 'git commit -m x'",
+        "GIT_DIR=/autre/.git git push origin essai/x",
+        "git push origin essai/x",
+        "cd ailleurs && git push origin essai/x",
+        "git -C ailleurs status",
+        "git -c user.name=x log",
+        "git --version",
+        "git --help commit",
+        "git -h commit",
+        "git --help push",
+        "ssh hote \"bash -c 'echo a b'\"",
+        'gh pr create --title "deux mots `x`" --body-file b.md',
+        'gh pr create --title "corrige `git` x" --body-file b.md',
+        'uv run pytest -k "a and not b"',
+        "echo `date`",
+        "grep -n '`foo`' docs/x.md",
+    ],
+)
+def test_depot_du_dossier_courant_passe(lancer: Callable[..., int], commande: str) -> None:
+    passe(lancer, commande)
 
 
 def test_commit_sans_hook_pre_commit_refuse(lancer: Callable[..., int], hook: ModuleType) -> None:
