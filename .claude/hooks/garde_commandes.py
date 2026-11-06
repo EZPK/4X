@@ -7,6 +7,7 @@ Bibliothèque standard seulement. Le hook ne voit pas ce que fait un script lanc
 """
 
 import json
+import os
 import re
 import shlex
 import subprocess
@@ -235,11 +236,17 @@ class Etat:
     def hook_precommit_present(self) -> bool:
         if self.lancer("git", "config", "--get", "core.hooksPath").returncode == 0:
             return False
-        resultat = self.lancer("git", "rev-parse", "--absolute-git-dir")
+        # Dans un worktree lié, les hooks vivent dans le dossier git commun au dépôt.
+        resultat = self.lancer("git", "rev-parse", "--path-format=absolute", "--git-common-dir")
         if resultat.returncode != 0:
             raise ErreurLecture("dossier .git introuvable")
         hook = Path(resultat.stdout.strip()) / "hooks" / "pre-commit"
-        return hook.is_file() and "pre-commit" in hook.read_text(encoding="utf-8", errors="replace")
+        # Git ignore un hook sans bit d'exécution : il ne compte pas.
+        return (
+            hook.is_file()
+            and os.access(hook, os.X_OK)
+            and "pre-commit" in hook.read_text(encoding="utf-8", errors="replace")
+        )
 
     def branche_courante(self) -> str:
         resultat = self.lancer("git", "symbolic-ref", "--short", "HEAD")
@@ -504,7 +511,11 @@ class Analyse:
         if not avec_message:
             raise refuser("git commit sans -m ni -F", REGLE_DOUTE)
         if not self.etat.hook_precommit_present():
-            raise refuser("hook pre-commit absent de .git/hooks", REGLE_PRECOMMIT)
+            raise refuser(
+                "hook pre-commit absent ou inactif (dossier hooks commun du dépôt, "
+                "ou core.hooksPath défini)",
+                REGLE_PRECOMMIT,
+            )
 
     def push(self, arguments: list[str], surcharge: bool, ailleurs: bool) -> None:
         positionnels: list[str] = []
