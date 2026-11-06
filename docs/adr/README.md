@@ -21,4 +21,4 @@ Fichier `docs/adr/NNNN-titre-court.md` :
 ## Index
 
 0001 — Écarts du niveau 2 de M0 décidés le 2026-11-01 — acceptée
-0002 — Règles `deny` et worktrees liés — proposée
+0002 — Règles `deny` et worktrees liés — acceptée

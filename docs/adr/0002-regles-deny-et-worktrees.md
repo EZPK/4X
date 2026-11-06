@@ -2,7 +2,7 @@
 
 - **Numéro :** 0002
 - **Titre :** Règles `deny` et worktrees liés
-- **Statut :** proposée
+- **Statut :** acceptée
 - **Date :** 2026-11-06
 - **Décideur :** le propriétaire
 - **Contexte :** le §10 du niveau 1 interdit à l'agent de code d'éditer `.claude/` et `.git/hooks/`, par des règles `deny` placées dans `.claude/settings.json` (`Edit(/.claude/**)`, `Edit(/.git/hooks/**)`). Le `/` initial désigne la racine du projet de la session. Le propriétaire travaille aussi dans des worktrees liés (`git worktree add`). Dans un worktree lié :
