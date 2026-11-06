@@ -1,10 +1,13 @@
 """Tests du hook `.claude/hooks/garde_commandes.py` (plan détaillé, points 26 et 34).
 
 L'état de GitHub et du dépôt local est simulé par une fausse `Etat` : aucun appel réseau.
+Seule exception : la recherche du hook pre-commit est testée sur un vrai dépôt git
+temporaire, avec un worktree lié, toujours sans réseau.
 """
 
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 from collections.abc import Callable
@@ -256,6 +259,81 @@ def test_contournement_refuse(lancer: Callable[..., int], commande: str) -> None
 def test_commit_sans_hook_pre_commit_refuse(lancer: Callable[..., int], hook: ModuleType) -> None:
     refuse(lancer, "git commit -m x", hook_present=False)
     refuse(lancer, "git commit -F message.txt", hook_present=hook.ErreurLecture("pas de .git"))
+
+
+def creer_depot_et_worktree(racine: Path) -> tuple[Path, Path]:
+    """Crée un dépôt git avec un commit vide, et un worktree lié à ce dépôt."""
+    depot = racine / "depot"
+    worktree = racine / "worktree"
+    identite = ["-c", "user.name=essai", "-c", "user.email=essai@exemple.invalid"]
+    subprocess.run(["git", "init", "-q", str(depot)], check=True)
+    subprocess.run(
+        ["git", "-C", str(depot), *identite, "commit", "-q", "--allow-empty", "-m", "init"],
+        check=True,
+    )
+    subprocess.run(["git", "-C", str(depot), "worktree", "add", "-q", str(worktree)], check=True)
+    return depot, worktree
+
+
+def isoler_git(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Retire toute variable GIT_* et toute configuration globale ou système."""
+    for variable in [nom for nom in os.environ if nom.startswith("GIT_")]:
+        monkeypatch.delenv(variable)
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", os.devnull)
+    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
+
+
+def installer_hook(dossier_hooks: Path, executable: bool = True) -> None:
+    dossier_hooks.mkdir(parents=True, exist_ok=True)
+    fichier = dossier_hooks / "pre-commit"
+    fichier.write_text("#!/bin/sh\n# installé par pre-commit\n", encoding="utf-8")
+    fichier.chmod(0o755 if executable else 0o644)
+
+
+@pytest.mark.parametrize("dossier", ["dépôt", "worktree", "sous-dossier du worktree"])
+def test_hook_pre_commit_cherche_dans_le_dossier_git_commun(
+    hook: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, dossier: str
+) -> None:
+    # Les hooks d'un worktree lié vivent dans le dossier git commun du dépôt.
+    isoler_git(monkeypatch)
+    depot, worktree = creer_depot_et_worktree(tmp_path)
+    sous_dossier = worktree / "a" / "b"
+    sous_dossier.mkdir(parents=True)
+    lieux = {"dépôt": depot, "worktree": worktree, "sous-dossier du worktree": sous_dossier}
+    etat = hook.Etat(lieux[dossier])
+    assert not etat.hook_precommit_present()
+    installer_hook(depot / ".git" / "hooks")
+    assert etat.hook_precommit_present()
+
+
+def test_hook_pre_commit_dans_le_dossier_du_worktree_ne_compte_pas(
+    hook: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Git n'exécute pas un hook placé dans .git/worktrees/<nom>/hooks.
+    isoler_git(monkeypatch)
+    depot, worktree = creer_depot_et_worktree(tmp_path)
+    installer_hook(depot / ".git" / "worktrees" / worktree.name / "hooks")
+    assert not hook.Etat(worktree).hook_precommit_present()
+
+
+def test_hook_pre_commit_non_executable_ne_compte_pas(
+    hook: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Git ignore un hook sans bit d'exécution : gitleaks ne tournerait pas.
+    isoler_git(monkeypatch)
+    depot, worktree = creer_depot_et_worktree(tmp_path)
+    installer_hook(depot / ".git" / "hooks", executable=False)
+    assert not hook.Etat(worktree).hook_precommit_present()
+
+
+def test_hook_pre_commit_contourne_par_hookspath(
+    hook: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    isoler_git(monkeypatch)
+    depot, worktree = creer_depot_et_worktree(tmp_path)
+    installer_hook(depot / ".git" / "hooks")
+    subprocess.run(["git", "-C", str(depot), "config", "core.hooksPath", "ailleurs"], check=True)
+    assert not hook.Etat(worktree).hook_precommit_present()
 
 
 @pytest.mark.parametrize(
