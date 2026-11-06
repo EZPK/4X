@@ -277,13 +277,14 @@ MOTIFS_BRUTS: list[tuple[str, str, str]] = [
     (r"core\.hookspath", "réglage core.hooksPath", REGLE_PRECOMMIT),
     (r"(?:^|[^\w])SKIP=", "variable SKIP de pre-commit", REGLE_PRECOMMIT),
     (r"\bpre-commit\s+uninstall\b", "désinstallation du hook pre-commit", REGLE_PRECOMMIT),
+    (r"\bconfig\b[^;&|\n]*\balias\.", "définition d'un alias git", REGLE_DOUTE),
     (r"\bgh\s+repo\s+(?:edit|delete|archive|rename)\b", "modification du dépôt", REGLE_REGLAGES),
 ]
 
 
 def chercher_motifs_bruts(commande: str) -> None:
     for motif, raison, regle in MOTIFS_BRUTS:
-        drapeaux = re.IGNORECASE if motif.startswith("core") else 0
+        drapeaux = re.IGNORECASE if motif.startswith(("core", r"\bconfig")) else 0
         if re.search(motif, commande, drapeaux):
             raise refuser(raison, regle)
 
@@ -311,10 +312,59 @@ def nom_de_programme(jeton: str) -> str:
     return jeton.lstrip("`$({").rstrip("`)}").rsplit("/", 1)[-1]
 
 
+PROGRAMMES_CHANGEANT_DE_DOSSIER = {"cd", "pushd", "popd"}
+OPTIONS_CHANGEANT_DE_DOSSIER = {"--directory", "--project", "-execdir", "-okdir"}
+
+
+def options_de_env(segment: list[str]) -> list[str]:
+    """Options passées à `env` dans ce segment, avant la commande qu'il lance."""
+    options: list[str] = []
+    for rang, jeton in enumerate(segment):
+        if nom_de_programme(jeton) != "env":
+            continue
+        for suivant in segment[rang + 1 :]:
+            if suivant.startswith("-"):
+                options.append(suivant)
+            elif re.match(r"\w+=", suivant) is None:
+                break
+    return options
+
+
+def contexte(texte: str, profondeur: int) -> tuple[bool, bool]:
+    """Sur toute la commande, sous-chaînes comprises et avant toute autre analyse :
+    (git peut viser un autre dépôt que celui du dossier courant, configuration git par variable).
+    """
+    if profondeur > 3:
+        raise refuser("commande trop imbriquée", REGLE_DOUTE)
+    ailleurs = False
+    configuration = False
+    segment: list[str] = []
+    for jeton in [*decouper(texte), ";"]:
+        if est_operateur(jeton):
+            ailleurs = ailleurs or bool(options_de_env(segment))
+            segment = []
+            continue
+        segment.append(jeton)
+        if (
+            nom_de_programme(jeton) in PROGRAMMES_CHANGEANT_DE_DOSSIER
+            or jeton.split("=", 1)[0] in OPTIONS_CHANGEANT_DE_DOSSIER
+            or (jeton == "foreach" and "submodule" in segment)
+            or re.search(r"GIT_\w", jeton)
+        ):
+            ailleurs = True
+        configuration = configuration or "GIT_CONFIG" in jeton
+        if re.search(r"\s|[;&|`]|\$\(", jeton) and decouper(jeton) != [jeton]:
+            ailleurs_dedans, configuration_dedans = contexte(jeton, profondeur + 1)
+            ailleurs = ailleurs or ailleurs_dedans
+            configuration = configuration or configuration_dedans
+    return ailleurs, configuration
+
+
 class Analyse:
-    def __init__(self, etat: Etat, change_de_dossier: bool) -> None:
+    def __init__(self, etat: Etat, depot_ailleurs: bool, configuration: bool) -> None:
         self.etat = etat
-        self.change_de_dossier = change_de_dossier
+        self.depot_ailleurs = depot_ailleurs
+        self.configuration_par_variable = configuration
 
     def texte(self, texte: str, profondeur: int) -> None:
         if profondeur > 3:
@@ -328,7 +378,11 @@ class Analyse:
             else:
                 segment.append(jeton)
         for jeton in jetons:
-            if re.search(r"\s|[;&|`]|\$\(", jeton) and re.search(r"\b(?:git|gh)\b", jeton):
+            if (
+                re.search(r"\s|[;&|`]|\$\(", jeton)
+                and re.search(r"\b(?:git|gh)\b", jeton)
+                and decouper(jeton) != [jeton]
+            ):
                 self.texte(jeton, profondeur + 1)
 
     def segment(self, jetons: list[str]) -> None:
@@ -338,6 +392,8 @@ class Analyse:
                 self.gh(jetons[rang + 1 :])
             elif nom == "git":
                 self.git(jetons[rang + 1 :])
+            elif nom in {"git-commit", "git-push"}:
+                raise refuser(f"programme « {nom} » lancé directement", REGLE_DOUTE)
 
     # --- gh ---
 
@@ -455,18 +511,30 @@ class Analyse:
     # --- git ---
 
     def git(self, arguments: list[str]) -> None:
+        if self.configuration_par_variable:
+            raise refuser("git dans une commande qui contient GIT_CONFIG", REGLE_DOUTE)
         rang = 0
         surcharge = False
         ailleurs = False
         while rang < len(arguments) and arguments[rang].startswith("-"):
             argument = arguments[rang]
             nom = argument.split("=", 1)[0]
+            if nom in {"--help", "-h", "--version"}:
+                return
             if nom in OPTIONS_GIT_AVEC_VALEUR:
+                reglage = argument.split("=", 1)[1] if "=" in argument else valeur(arguments, rang)
+                if nom in {"-c", "--config-env"} and reglage.lower().startswith("alias."):
+                    raise refuser("alias git défini en ligne de commande", REGLE_DOUTE)
                 surcharge = surcharge or nom in {"-c", "--config-env"}
                 ailleurs = ailleurs or nom not in {"-c", "--config-env"}
                 rang += 1 if "=" in argument else 2
             elif argument in OPTIONS_GIT_SANS_VALEUR:
                 rang += 1
+            elif any(
+                suivant in {"commit", "push"} or "alias." in suivant.lower()
+                for suivant in arguments[rang + 1 :]
+            ):
+                raise refuser(f"option globale « {nom} » de git inconnue", REGLE_DOUTE)
             else:
                 return
         if rang >= len(arguments):
@@ -476,8 +544,14 @@ class Analyse:
         if sous == "push":
             self.push(reste, surcharge, ailleurs)
         elif sous == "commit":
-            if ailleurs or self.change_de_dossier:
-                raise refuser("git commit hors du dossier courant", REGLE_DOUTE)
+            if surcharge:
+                raise refuser("git -c avec git commit", REGLE_DOUTE)
+            if ailleurs or self.depot_ailleurs:
+                raise refuser(
+                    "git commit : la commande peut viser un autre dépôt que celui du dossier "
+                    "courant",
+                    REGLE_DOUTE,
+                )
             self.commit(reste)
 
     def commit(self, arguments: list[str]) -> None:
@@ -548,7 +622,7 @@ class Analyse:
             rang += 1
         if surcharge:
             raise refuser("git -c avec git push", REGLE_DOUTE)
-        etat_local = not (ailleurs or self.change_de_dossier)
+        etat_local = not (ailleurs or self.depot_ailleurs)
         refspecs = positionnels[1:]
         if not refspecs:
             if not etat_local:
@@ -657,9 +731,10 @@ def analyser(commande: str, dossier: Path | None, etat: Etat) -> None:
         amorcage(commande, dossier, etat)
         return
     chercher_motifs_bruts(commande)
-    jetons = decouper(commande)
-    change_de_dossier = any(nom_de_programme(j) in {"cd", "pushd", "popd"} for j in jetons)
-    Analyse(etat, change_de_dossier).texte(commande, 0)
+    ailleurs, configuration = False, False
+    if re.search(r"\b(?:git|gh)\b|git-", commande):
+        ailleurs, configuration = contexte(commande, 0)
+    Analyse(etat, ailleurs, configuration).texte(commande, 0)
 
 
 def principal(texte: str, fabrique: Callable[[Path], Etat]) -> int:
