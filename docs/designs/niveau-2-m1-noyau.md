@@ -169,6 +169,7 @@ Aucune question ouverte. Les lignes du Technical Plan, point 1, marquées « pro
 
 **Le tick.** `step` suit la chronologie du niveau 1, §2 :
 1. il examine chaque ordre soumis, par `actor_id` croissant puis par numéro croissant :
+   - un ordre sans acteur émetteur qui n'est pas d'administration est refusé (`FORBIDDEN_CATEGORY`) ;
    - un ordre qui porte un code de refus de la réception (validation sans état, Technical Plan, point 5) est refusé avec ce code ;
    - puis un ordre par vaisseau, puis les contrôles du tableau, puis le budget.
 
@@ -219,7 +220,7 @@ Aucune question ouverte. Les lignes du Technical Plan, point 1, marquées « pro
 ### 5. Les formats (`schema`)
 
 - **Ordre :** `actor_id`, numéro choisi par l'acteur, catégorie, `policy_id` et `policy_version` (`None` pour un humain), et la commande, union typée des quatre ordres. L'identité d'un ordre est (`actor_id`, tick, numéro). Le journal et `step` reçoivent des **ordres soumis** : l'ordre, le tick auquel il entre, l'acteur du point de connexion qui l'a soumis (`None` pour un ordre d'administration écrit par le serveur), et le code de refus de la réception, s'il y en a un (Technical Plan, point 13).
-- **Résultat d'ordre :** acteur destinataire (celui du point de connexion), identité de l'ordre, accepté ou code de refus, texte, budget restant (niveau 1, §5). Chaque ordre examiné par `step` reçoit un résultat.
+- **Résultat d'ordre :** acteur destinataire (celui du point de connexion ; `None` pour un ordre du serveur, dont le résultat n'est observé par personne), identité de l'ordre, accepté ou code de refus, texte, budget restant (niveau 1, §5). Chaque ordre examiné par `step` reçoit un résultat.
 - **Observation :** le tick, l'état visible pour l'acteur, les événements du dernier tick qui lui sont visibles, et ses résultats d'ordre. `observe` lit tout cela dans l'état (table « dernier tick »).
 - **Visibilité.** Chaque champ de données des entités de l'état déclare sa classe de visibilité par `Annotated[T, msgspec.Meta(extra={"visibility": ...})]` ; `observe` relit ces métadonnées par `msgspec.inspect.type_info` (mécanisme essayé sur `msgspec` 0.22.0 le 2026-11-06 : la métadonnée revient comme `Metadata` avec son `extra`). Chaque type d'événement a une seule classe. « Privé » veut dire visible par le seul acteur qui détient l'entité. Les vues de l'observation reprennent les noms des champs de données de l'état. À M1 :
   - publics : les systèmes et leurs voisins, les sites, le minerai et le stock des gisements, les prix de rachat de la station, l'identifiant, le détenteur, le système et la capacité des vaisseaux, le `kind` de chaque acteur (`actor_kind`, niveau 1, §5) ;
@@ -243,7 +244,7 @@ Aucune question ouverte. Les lignes du Technical Plan, point 1, marquées « pro
 
   Le montant d'une vente n'est jamais public ; l'événement de vente suffit au client (niveau 1, CUJ 1). Il n'y a jamais un événement par entité et par tick (niveau 1, §6).
 - **Protocole** (`protocol_version` = 1) : deux messages. Le client envoie « soumettre des ordres » ; le serveur envoie, après chaque tick, une « mise à jour du tick » qui porte l'observation.
-- **Validation sans état** (`validate_orders`, fonction pure) : format (numéro positif ou nul, `policy_id` d'au plus 64 caractères), numéro répété dans un tick (le second et les suivants sont refusés), quota d'ordres par acteur et par tick (`ORDER_QUOTA_PER_TICK`, valeur au plan détaillé, point 16 ; au-delà, les plus petits numéros sont gardés), ordre au nom d'un autre acteur que celui du point de connexion, catégorie autre que « joueur ». Les contrôles sont faits dans cet ordre, et le premier qui s'applique donne le code. Elle vit dans `schema` : la réception l'applique (niveau 1, §2), et, plus tard, l'entraînement l'appliquera de la même façon. Les ordres d'administration du serveur ne passent pas par elle.
+- **Validation sans état** (`validate_orders`, fonction pure) : format (numéro positif ou nul, `policy_id` d'au plus 64 caractères), numéro répété dans un tick (le second et les suivants sont refusés), quota d'ordres par tick (`ORDER_QUOTA_PER_TICK`, valeur au plan détaillé, point 16 ; au-delà, les plus petits numéros sont gardés), ordre au nom d'un autre acteur que celui du point de connexion, catégorie autre que « joueur ». Les contrôles sont faits dans cet ordre, et le premier qui s'applique donne le code. La fonction reçoit, en une fois, tous les ordres d'un même point de connexion pour un tick : les numéros répétés et le quota se comptent par acteur du point de connexion (`sender_actor_id`), jamais par l'`actor_id` écrit dans l'ordre. Elle vit dans `schema` : la réception l'applique (niveau 1, §2), et, plus tard, l'entraînement l'appliquera de la même façon. Les ordres d'administration du serveur ne passent pas par elle.
 
 ### 6. Le serveur en mémoire
 
@@ -263,10 +264,10 @@ Aucune question ouverte. Les lignes du Technical Plan, point 1, marquées « pro
            observe (core) --> mise à jour du tick --> chaque client
 ```
 
-- **La concurrence :** une seule boucle `asyncio`. L'horloge est une tâche de cette boucle. Chaque point de connexion est une paire de `asyncio.Queue` (ordres, mises à jour), derrière le protocole `Connection` de `schema`. Au début de chaque tick, l'horloge vide les files d'ordres : un ordre reçu avant ce moment entre dans ce tick (niveau 1, §2).
+- **La concurrence :** une seule boucle `asyncio`. L'horloge est une tâche de cette boucle. Chaque point de connexion est une paire de `asyncio.Queue` (ordres, mises à jour), derrière le protocole `Connection` de `schema`. Au début de chaque tick, l'horloge vide les files d'ordres : un ordre reçu avant ce moment entre dans ce tick (niveau 1, §2). Tous les messages vidés d'un même point de connexion sont remis ensemble à la réception, en un seul appel par point de connexion et par tick.
 - **Le mode sans horloge** sert aux tests, aux outils et à la partie de référence. `Game.advance(n)` joue `n` ticks, de façon synchrone. À chaque tick : il prend les ordres soumis, appelle `step`, envoie la mise à jour à chaque client, puis appelle, pour chaque client synchrone attaché (`SyncClient`, Technical Plan, point 13), `on_update(mise à jour)` ; les ordres que cette méthode renvoie entrent au tick suivant. Une décision prend donc exactement un tick (plan détaillé, point 27, calcul des bornes).
 - **L'horloge** déclenche un tick à chaque période. La période est un paramètre du serveur (1 seconde par défaut à M1), hors de `tunables.toml` et hors de `rules_version`.
-- **La réception** lie chaque ordre reçu à l'acteur de son point de connexion et au tick où il entre, lui applique la validation sans état, puis le journalise avec son code de refus éventuel. `step` refuse un ordre qui porte un code, avec ce code, et adresse le résultat à l'acteur du point de connexion, par son observation.
+- **La réception** lie chaque ordre reçu à l'acteur de son point de connexion et au tick où il entre, applique la validation sans état à l'ensemble des ordres de ce point de connexion pour ce tick, puis le journalise avec son code de refus éventuel. `step` refuse un ordre qui porte un code, avec ce code, et adresse le résultat à l'acteur du point de connexion, par son observation.
 - **Le journal des ordres soumis** est une base SQLite en mode WAL (`synchronous=NORMAL` avant M5), `orders.sqlite`, avec deux tables (schéma au plan détaillé, point 21). Il contient sa version (`order_log_schema_version` = 1), `rules_version`, la graine du monde, l'identifiant (SHA) du commit et un indicateur « dossier de travail modifié », les ordres soumis par tick et les empreintes de chaque tick. Il s'exporte et s'importe en JSONL versionné (plan détaillé, point 21).
 - **Les fichiers d'une partie** sont rangés dans `runs/<AAAAMMJJ-HHMMSS-micro>/`, ignoré par git : `orders.sqlite`, `snapshot.msgpack` (instantané initial, tick 0, `snapshot_schema_version` = 1, avec `rules_version`, la graine, l'identifiant du commit et l'indicateur « dossier de travail modifié », fournis par le serveur) et `events.jsonl`.
 - **Les personnages** sont créés par des ordres d'administration journalisés pour le tick 1, l'un pour le propriétaire, l'autre pour le PNJ ; l'instantané initial est l'état du tick 0, avant ces ordres, et le premier `step` les applique.
@@ -388,7 +389,7 @@ results.py      RefusalCode(enum.Enum) : UNKNOWN_SHIP, NOT_OWNER, SHIP_EN_ROUTE,
                       ALREADY_THERE, NO_DEPOSIT_FOR_ORE, DEPOSIT_EMPTY, CARGO_FULL, NOT_AT_STATION,
                       QUANTITY_NOT_POSITIVE, QUANTITY_EXCEEDS_CARGO, NO_ACTION_LEFT, SUPERSEDED,
                       INVALID_FORMAT, DUPLICATE_NUMBER, QUOTA_EXCEEDED, ACTOR_MISMATCH, FORBIDDEN_CATEGORY
-                OrderResult(recipient_actor_id: Id, order_id: OrderId, accepted: bool,
+                OrderResult(recipient_actor_id: Id | None, order_id: OrderId, accepted: bool,
                             refusal: RefusalCode | None, text: str, budget_left: Int64)
 ledger.py       AccountKind(enum.Enum) ; Reason(enum.Enum)
                 LedgerEntry(debit_account_id, credit_account_id, amount, reason: Reason,
@@ -463,8 +464,9 @@ version.py      RULES_REVISION: int ; tunables_fingerprint(t: Tunables) -> str ;
 
 ```text
 server/tunables_loader.py  load_tunables() -> Tunables   (msgspec.toml.decode(..., type=Tunables))
-server/reception.py        Reception.receive(sender_actor_id: int, message: SubmitOrders, tick: int)
-                               (applique validate_orders et remplit reception_refusal)
+server/reception.py        Reception.receive(sender_actor_id: int, messages: tuple[SubmitOrders, ...], tick: int)
+                               (tous les messages du point de connexion pour ce tick ; applique validate_orders
+                                une seule fois et remplit reception_refusal)
                                -> tuple[SubmittedOrder, ...]
 server/order_log.py        OrderLog.create(path, rules_version, world_seed, commit, worktree_dirty) ;
                            append(orders: tuple[SubmittedOrder, ...], fingerprints: Fingerprints) ;
@@ -570,7 +572,7 @@ Ces alternatives ont été pesées pendant la rédaction et la revue de ce docum
 | Le code instrumenté par `mutmut` fausse un test | Tous les mutants passent pour tués, ou aucun | Lancement de contrôle de `mutmut` en échec | Le test de déterminisme statique et `tests/outillage` sont exclus de la mutation (plan détaillé, point 5) : `mutmut` 3.8.0 réécrit chaque fonction avec des imports ajoutés et des mutants qui emploient `/` (constaté le 2026-11-06) |
 | La configuration de `mutmut` est contournée par une table `[tool.mutmut]` de `pyproject.toml` | Le contrôle de mutation est affaibli | `mutation.py` ; étiquette « fichiers protégés modifiés » | `pyproject.toml` est protégé, et `mutation.py` échoue si cette table existe (plan détaillé, point 9) |
 | L'épuisement et le départage ne sont jamais exécutés par la partie de référence | Un défaut de départage échappe au contrôle `rejeu` | — | Scénarios et tests de propriétés à stock bas ; le bug volontaire de la suite canari vise le placement des sites, toujours exécuté |
-| Une pull request de fonctionnalité casse un bug volontaire de la suite canari | Le contrôle de nuit `canari` échoue sans qu'un contrôle ne le signale avant la fusion | Tâche `canari` en échec | Les bugs volontaires sont ancrés sur des symboles (nom de fonction), pas sur des lignes ; la nuit suivante, l'agent de code corrige l'ancre par une pull request protégée |
+| Une pull request de fonctionnalité casse un bug volontaire de la suite canari | Le contrôle de nuit `canari` échoue sans qu'un contrôle ne le signale avant la fusion | Tâche `canari` en échec | Les bugs volontaires sont ancrés sur des symboles (fonction nommée, fin du module, expression nommée), pas sur des lignes ; la nuit suivante, l'agent de code corrige l'ancre par une pull request protégée |
 | Les tâches de CI dépassent 30 minutes | Pull requests lentes, contrôle trop coûteux à garder | Mesure du plan détaillé, point 28 bis | Arrêt et signalement au propriétaire avant de continuer |
 | Entre les paliers 2 et 4, une pull request en échec est fusionnée | Une régression entre dans `main` | Tâches en échec sur la pull request | Le propriétaire ne fusionne pas une pull request en échec ; l'intervalle se ferme au palier 4 |
 | Entre les paliers 2 et 4, l'étiquette « références régénérées » est retirée | Une régénération des références passe sans attention particulière | Historique des étiquettes | Le contrôle de garde exige quand même la montée de révision ; le hook est mis à jour au palier 4 (plan détaillé, point 31 ter) ; risque accepté pendant cet intervalle |
@@ -813,7 +815,7 @@ Chaque volet a sa pull request de scénarios (fichiers `.feature` en français e
 #### 23. `tests/server/`, `tests/policies/`, `tests/clients/` (Create)
 
 *   **Type / Scope :** tests unitaires.
-*   **Proposed Changes :** réception ; journal (enregistrement, relecture, export et import JSONL) ; `tests/server/test_versions_journal.py` (`order_log_schema_version`, `rules_version`, commit et indicateur dans le journal ; objectif 7) ; sortie JSONL des événements ; boucle des ticks en mode sans horloge ; politique `scripted_miner` sur des observations construites à la main (dont : aucun ordre pendant 10 ticks de minage) ; hôte des PNJ. Le client Textual est testé par le pilote de test de Textual (`async with app.run_test() as pilot`, dans une fonction appelée par `asyncio.run`) : envoi d'un ordre au clavier et affichage d'une mise à jour.
+*   **Proposed Changes :** réception (dont deux messages d'un même point de connexion dans le même tick : quota et numéros répétés comptés sur les deux) ; journal (enregistrement, relecture, export et import JSONL) ; `tests/server/test_versions_journal.py` (`order_log_schema_version`, `rules_version`, commit et indicateur dans le journal ; objectif 7) ; sortie JSONL des événements ; boucle des ticks en mode sans horloge ; politique `scripted_miner` sur des observations construites à la main (dont : aucun ordre pendant 10 ticks de minage) ; hôte des PNJ. Le client Textual est testé par le pilote de test de Textual (`async with app.run_test() as pilot`, dans une fonction appelée par `asyncio.run`) : envoi d'un ordre au clavier et affichage d'une mise à jour.
 
 **Volet C : le rejeu, la divergence et l'économie**
 
@@ -877,7 +879,7 @@ Chaque volet a sa pull request de scénarios (fichiers `.feature` en français e
     - une vente sans écriture de taxe, mais avec le compteur cumulé de destruction augmenté → `tests` (invariants) ;
     - le portefeuille d'un autre acteur laissé dans une observation (`observe`) → `proprietes` ;
     - le placement des sites tiré par `hash()` d'une chaîne au lieu de `keyed_below` (`world.generate`) → `rejeu` (ce tirage a lieu dans chaque partie, et `hash()` d'une chaîne change avec `PYTHONHASHSEED`) ;
-    - une fonction insérée à la fin de `core/arith.py` (ancre : le nom de module), et un appel inséré au début de `step` dont aucun test ne vérifie le résultat → `mutation` (`mutation.py --base main --tete <commit de la copie>` : le score de `arith.py` baisse par rapport à `main`).
+    - une fonction insérée à la fin de `core/arith.py` (ancre : fin du module), et un appel inséré au début de `step` dont aucun test ne vérifie le résultat → `mutation` (`mutation.py --base main --tete <commit de la copie>` : le score de `arith.py` baisse par rapport à `main`).
 
 #### 30. `tests/outillage/test_canaris.py` (Create)
 

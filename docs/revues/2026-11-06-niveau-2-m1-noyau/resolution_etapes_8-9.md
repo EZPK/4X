@@ -103,3 +103,17 @@ Relecteur `egm-design`, sans contexte : les dix corrections sont présentes, hui
 | Nit 7 | vérification de `pytest.ini` dans `mutants/` écrite au point 5 ; ligne R-B1 de ce bilan corrigée |
 | Nit 8 | règle des chemins protégés nouveaux écrite en tête du document |
 | Nit 9 | `Int64` et `Id` dans `schema/types.py` |
+
+## Vérification ciblée du commit f1ba13a (2026-11-08)
+
+Relecteur `egm-design`, sans contexte : 11 corrections sur 11 présentes, dont 10 justes et complètes ; rôle de la réception et de `step` uniforme et conforme au niveau 1, §2 ; 0 bloquant, 1 majeur, 3 mineurs. Corrections (11 remplacements exacts, hors du dépôt) :
+
+| Constat | Correction |
+| :-- | :-- |
+| Major A : portée du quota et des numéros répétés | la réception reçoit en un appel tous les messages d'un point de connexion pour un tick et applique `validate_orders` une fois ; test « deux messages dans le même tick » au point 23 |
+| Nit B : refus des ordres sans émetteur absent de l'ordre des contrôles de `step` | ajouté en tête de la liste |
+| Nit C : clé du quota | quota et numéros répétés comptés par `sender_actor_id` |
+| Nit D : ancres des bugs volontaires | « fin du module » partout ; ligne de risque alignée |
+| Remarque : destinataire d'un résultat d'ordre du serveur | `recipient_actor_id: Id \| None` |
+
+Ces dernières corrections n'ont pas été relues sans contexte : elles sont vérifiées par le script de contrôle du document (sortie citée dans la pull request).
