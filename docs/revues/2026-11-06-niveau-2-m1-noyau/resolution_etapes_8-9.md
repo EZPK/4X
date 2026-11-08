@@ -26,7 +26,7 @@ Script de contrôle du document révisé : bornes recalculées identiques (84 00
 | Constat | Issue |
 | :-- | :-- |
 | T-B1 (copie de référence de la protection dans le hook) | Point 31 ter : le propriétaire met à jour `REFERENCE_PROTECTION` au palier 4, selon la procédure de `CLAUDE.md` ; ligne au Technical Plan, point 1 |
-| R-B1, T-M8 (scénarios qui cassent `mypy` et la collecte) | Règles pour les définitions d'étapes (palier 3) : import de `fourx` dans les fonctions d'étape par `importlib.import_module` ; `test_scenarios.py` fixé ; `pythonpath = tests` (point 7) |
+| R-B1, T-M8 (scénarios qui cassent `mypy` et la collecte) | Règles pour les définitions d'étapes (palier 3) : import de `fourx` dans les fonctions d'étape par `importlib.import_module` ; `test_scenarios.py` fixé ; `pythonpath = .` (point 7, corrigé après la relecture finale) |
 | R-B2 (interfaces non définies) | Nouveau Technical Plan, point 13 : types, champs, signatures, libellés, codes de refus, types d'événements, composants des empreintes, commandes |
 | R-B3 (fichiers non protégés dans une pull request protégée) | `pyproject.toml`, `uv.lock` et `.gitignore` protégés au palier 1 (point 3 bis) ; ligne au Technical Plan, point 1, avec la conséquence (une dépendance passe par une pull request protégée) |
 | R-B4, É8 B1, T-M2, T-M12 (profil `hypothesis`) | `tests/conftest.py` racine au palier 2, protégé, `derandomize=True, database=None, deadline=None` (point 7) |
@@ -83,5 +83,23 @@ Relecteur `egm-design`, sans contexte, sur le commit b712f97 : 2 bloquants, 7 ma
 | M4 : mutation de nuit sans plancher | option `--plancher-partout`, utilisée par `nuit.yml`, testée au point 10 |
 | M5 : lecture de la tête par le contrôle de garde | `garde.yml` lit la tête par `gh api .../contents/...?ref=$HEAD_SHA`, sans nouveau `checkout`, et passe deux fichiers à `garde.py` |
 | M6 : imports des modules d'aide sous `mypy` | `pythonpath = .` et imports `tests.scenarios.steps...`, `tests.rejeu...` ; essayé le 2026-11-08 sur un petit projet avec la configuration du dépôt : `mypy` strict sans erreur, pytest collecte, le scénario échoue dans son étape comme attendu |
-| M7 : rôle de la réception | écart au niveau 1, §2, déclaré au Technical Plan, point 1 (à confirmer par le propriétaire) ; définitions du glossaire mises à jour au point 3 |
+| M7 : rôle de la réception | d'abord déclaré comme écart au niveau 1, §2 ; remplacé après la relecture ciblée par une solution conforme au niveau 1 (voir ci-dessous) |
 | N1 à N14 | appliqués : noms (`kind`, `balance`), indexation des tuples, `replay_mode` et `reference_fingerprints` situés, dernier tick dans l'export, `tick` hors des composants, import JSONL de `server`, dossier de partie à la microseconde, appels de fonctions intégrées seulement, ancre du bug volontaire `mutation`, alternative K de M0 signalée, durée de `tests-outillage` relevée, `GITHUB_TOKEN` en lecture seule pour la tâche `protection`, `economy.py`. N13 (`also_copy = pytest.ini`) : non appliqué, à confirmer par le premier lancement de `mutmut` au palier 2 |
+
+## Relecture ciblée du commit 36e0249 (2026-11-08)
+
+Relecteur `egm-design`, sans contexte : les dix corrections sont présentes, huit justes, deux incomplètes (M3, M7) ; 0 bloquant, 2 majeurs, 9 mineurs. Corrections appliquées par 25 remplacements exacts (hors du dépôt) :
+
+| Constat | Correction |
+| :-- | :-- |
+| Major 1 : l'écart au niveau 1, §2, exigerait une ADR | écart retiré : la réception applique la validation sans état, comme le niveau 1, §2 ; un ordre qu'elle refuse est journalisé avec son code (`SubmittedOrder.reception_refusal`), et `step` le refuse avec ce code. Règle de rédaction du propriétaire rétablie ; glossaire inchangé sur ce point |
+| Major 2 : ordres du serveur refusés par `ACTOR_MISMATCH` | les ordres du serveur ne passent plus par la validation sans état ; `step` refuse seulement un ordre sans émetteur qui n'est pas d'administration ; scénarios précisés (`actor_id` d'un autre acteur ; propre `actor_id` pour l'ordre d'administration) ; ordre des contrôles sans état écrit |
+| Nit 1 | en-tête de l'export : valeurs de `meta` et dernier tick, aux deux endroits |
+| Nit 2 | `id` et `kind` dans le tableau des entités ; appariement de `wallet_balance` et `action_budget` dans le test de visibilité |
+| Nit 3 | `--plancher-partout` ajoute `src/fourx/schema/` |
+| Nit 4 | format des bugs volontaires : liste de modifications, ancre « fin du module » |
+| Nit 5 | `gh api` en `raw+json`, à chaque exécution, réponse 404 traitée |
+| Nit 6 | `# noqa: F403` sur les `import *` des modules d'étapes |
+| Nit 7 | vérification de `pytest.ini` dans `mutants/` écrite au point 5 ; ligne R-B1 de ce bilan corrigée |
+| Nit 8 | règle des chemins protégés nouveaux écrite en tête du document |
+| Nit 9 | `Int64` et `Id` dans `schema/types.py` |

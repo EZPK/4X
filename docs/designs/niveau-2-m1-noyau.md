@@ -8,6 +8,8 @@
 
 Les titres de section (`##`), le statut et les intitulés du gabarit du plan (sous-titres, Type / Scope, Proposed Changes, Create / Modify / Delete) suivent le gabarit de conception d'EGM, en anglais, pour que les outils de revue s'y retrouvent. Tout le reste est en français.
 
+**Chemins protégés nouveaux.** Un fichier nouveau ajouté à `.github/chemins-proteges.txt` dans la pull request protégée qui le crée compte comme protégé dans cette pull request. Un fichier qui existe déjà sans être protégé doit être protégé par une pull request antérieure avant d'être modifié dans une pull request protégée (d'où le plan détaillé, point 3 bis).
+
 **Conventions de renvoi.** « Technical Plan, point N » désigne une section du Technical Plan de ce document. « Plan détaillé, point N » désigne un point du Detailed Implementation Plan de ce document. Un « point N » sans préfixe renvoie à la même partie du document que le passage qui le cite. Un renvoi au niveau 1 le dit toujours (« niveau 1, §2 »).
 
 **Autres conventions.**
@@ -101,7 +103,7 @@ Aucune question ouverte. Les lignes du Technical Plan, point 1, marquées « pro
 
 ### 1. Décisions prises pour M1
 
-**Règle de rédaction (propriétaire, 2026-11-02).** M1 fait le minimum possible **dans le cadre déjà fixé** par le niveau 1. Ce document ne réduit aucune exigence du niveau 1, n'en ajoute aucune sauf le seuil de mutation ci-dessous, et ne redéfinit rien, sauf le partage des contrôles sans état entre la réception et `step` (ligne « Résultats d'ordre » ci-dessous), signalé comme tel : chaque contrôle obligatoire de M1 est livré. Quand une question de contenu du jeu a plusieurs réponses, la plus petite qui respecte le niveau 1 est retenue.
+**Règle de rédaction (propriétaire, 2026-11-02).** M1 fait le minimum possible **dans le cadre déjà fixé** par le niveau 1. Ce document ne réduit aucune exigence du niveau 1, n'en ajoute aucune sauf le seuil de mutation ci-dessous, et ne redéfinit rien : chaque contrôle obligatoire de M1 est livré. Quand une question de contenu du jeu a plusieurs réponses, la plus petite qui respecte le niveau 1 est retenue.
 
 **Décisions sur le contenu du jeu (propriétaire, 2026-11-06).** Après la rédaction, pendant la revue de l'univers et de la conception du jeu (documents hors de `main`), le propriétaire a tranché quatre points du contenu de la tranche 0. Ils priment sur la règle du minimum et figurent dans le tableau ci-dessous (lignes datées du 2026-11-06, sans autre mention). Aucun ne change le niveau 1.
 
@@ -124,7 +126,7 @@ Aucune question ouverte. Les lignes du Technical Plan, point 1, marquées « pro
 | Argent de départ (2026-11-06) | aucun : tout portefeuille commence à zéro ; le vaisseau de départ est une dotation, sans écriture | décision du propriétaire |
 | Arrondi de la taxe | vers le haut, au profit du compte de destruction | proposition de l'agent de code : arrondie vers zéro, une taxe s'annulerait sur des ventes découpées en petits lots |
 | Seuil de mutation | le contrôle `mutation` échoue si un fichier nouveau de `core` ou de `schema` a moins de 80 % de mutants tués ; la mutation complète du noyau, de nuit, aussi ; le seuil est revu au plan détaillé, point 28 bis | proposition de l'agent de code, seule exigence ajoutée au niveau 1 : à M1, tous les fichiers sont nouveaux, donc la règle du niveau 1 (« jamais inférieur au score de `main` ») ne vérifie rien sans plancher ; il est limité à `core` et `schema`, où les mutants équivalents sont rares, et non au code d'entrées et de sorties |
-| Résultats d'ordre | `State` garde les événements et les résultats d'ordre du dernier tick ; `step` refait lui-même la validation sans état ; la réception ne fait que lier l'ordre à l'acteur du point de connexion et le journaliser | proposition de l'agent de code, **écart au niveau 1, §2** (étapes 2 et 4), qui confie les contrôles sans état à la réception : `observe` ne lit que l'état (niveau 1, §2) et le joueur n'a pas d'autre canal que l'observation (niveau 1, §5) ; si la réception refusait elle-même, ses refus ne passeraient ni par le journal ni par l'observation. Le rejeu reproduit ainsi tous les refus, sans champ de plus dans le journal. Les définitions « réception » et « code de refus » du glossaire sont mises à jour (plan détaillé, point 3) |
+| Résultats d'ordre | `State` garde les événements et les résultats d'ordre du dernier tick ; la réception applique la validation sans état (niveau 1, §2) ; un ordre qu'elle refuse est quand même journalisé, avec son code de refus, et `step` le refuse avec ce code, sans autre contrôle | proposition de l'agent de code, dans le cadre du niveau 1, §2 (la réception fait les contrôles sans état, `step` ceux qui dépendent de l'état) : `observe` ne lit que l'état et le joueur n'a pas d'autre canal que l'observation (niveau 1, §5) ; le refus de la réception doit donc passer par le journal, puis par `step`, pour arriver dans l'observation et être reproduit au rejeu |
 | Ordres d'un même tick | un seul ordre examiné par vaisseau et par tick, celui de plus petit numéro, comme pour le quota ; les autres sont refusés (« ordre remplacé ») ; tout ordre sur un vaisseau en route est refusé | proposition de l'agent de code : sinon deux ventes validées contre le même état pourraient vendre plus que la cargaison (invariant 3) |
 | Partie de référence | jouée une fois par deux PNJ à la régénération des références ; son journal des ordres soumis est exporté en JSONL versionné, avec ses empreintes, dans `tests/references/` ; le contrôle `rejeu` l'importe et le rejoue par `step` seul, avec l'outil de rejeu de `tools` | proposition de l'agent de code : sinon un changement du PNJ ou du serveur, sans changement de règle, changerait les empreintes et ferait monter `rules_version`, que M4 enregistre et que M5 compare au déploiement |
 | Concurrence | une seule boucle `asyncio` : l'horloge est une tâche de cette boucle, à côté de Textual ; un mode sans horloge, synchrone, sert aux tests, aux outils et à la partie de référence | proposition de l'agent de code : Textual tourne déjà sur `asyncio`, et le transport WebSocket de M3 aussi |
@@ -146,7 +148,7 @@ Aucune question ouverte. Les lignes du Technical Plan, point 1, marquées « pro
 | système | identifiant, voisins |
 | gisement | identifiant, système, minerai, stock |
 | station | identifiant, système, prix de rachat de chaque minerai (copiés de `ore_prices` à la génération du monde ; une structure du jeu : ni acteur ni portefeuille) |
-| acteur | identifiant (`actor_id`), type d'acteur (`actor_kind`), budget d'actions |
+| acteur | identifiant (`id`, l'`actor_id` des formats), type d'acteur (`kind`, l'`actor_kind` des formats), budget d'actions |
 | vaisseau | identifiant, acteur détenteur, système, activité (à l'arrêt, en route, en minage), route restante et ticks avant le prochain saut, cargaison par minerai, capacité |
 | registre | comptes et leurs soldes, écritures du tick, compteurs cumulés d'émission et de destruction par motif (Technical Plan, point 3) |
 | dernier tick | événements et résultats d'ordre produits par le dernier `step` |
@@ -162,12 +164,12 @@ Aucune question ouverte. Les lignes du Technical Plan, point 1, marquées « pro
 
 - **Budget d'actions.** Un acteur commence avec `budget_max` actions. Chaque ordre de joueur accepté coûte une action ; un ordre refusé ne coûte rien. Un ordre qui passe tous les contrôles mais trouve le budget à zéro est refusé (« budget épuisé »).
 - **Un ordre par vaisseau et par tick.** Si un acteur soumet plusieurs ordres sur le même vaisseau pour un tick, seul celui de plus petit numéro est examiné ; les autres sont refusés (« ordre remplacé »). Un ordre accepté remplace l'activité en cours du vaisseau dès l'examen, avant les phases du tick.
-- **Ordres d'administration.** Le serveur les écrit directement dans le journal, sans passer par la réception, avec un acteur émetteur absent (`sender_actor_id` = `None`) : ni quota, ni budget. Un ordre sans acteur émetteur doit être de la catégorie « administration », et un ordre de cette catégorie doit être sans acteur émetteur ; sinon il est refusé (« catégorie interdite »). L'acteur créé reçoit le prochain identifiant libre de la table des acteurs (le plus grand identifiant plus un) ; son vaisseau et son portefeuille font de même dans leur table. L'ordre porte comme `actor_id` l'identifiant que recevra l'acteur. Un client qui soumet un ordre d'une autre catégorie que « joueur » voit son ordre refusé (« catégorie interdite »).
+- **Ordres d'administration.** Le serveur les écrit directement dans le journal, sans passer par la réception, avec un acteur émetteur absent (`sender_actor_id` = `None`) et sans code de refus : ni validation sans état, ni quota, ni budget. `step` refuse (« catégorie interdite ») un ordre sans acteur émetteur qui n'est pas de la catégorie « administration ». L'acteur créé reçoit le prochain identifiant libre de la table des acteurs (le plus grand identifiant plus un) ; son vaisseau et son portefeuille font de même dans leur table. L'ordre porte comme `actor_id` l'identifiant que recevra l'acteur. Un client qui soumet, sous son propre `actor_id`, un ordre d'une autre catégorie que « joueur » voit son ordre refusé par la réception (« catégorie interdite »).
 - La catégorie « système » existe dans les formats, mais aucun ordre système n'est émis à M1 : la déconnexion et le départ hors ligne arrivent avec les comptes, à M3.
 
 **Le tick.** `step` suit la chronologie du niveau 1, §2 :
 1. il examine chaque ordre soumis, par `actor_id` croissant puis par numéro croissant :
-   - d'abord la validation sans état, refaite par `step` (Technical Plan, point 5) : format invalide, numéro répété, quota dépassé, ordre au nom d'un autre acteur, catégorie interdite ;
+   - un ordre qui porte un code de refus de la réception (validation sans état, Technical Plan, point 5) est refusé avec ce code ;
    - puis un ordre par vaisseau, puis les contrôles du tableau, puis le budget.
 
    Chaque ordre reçoit un résultat ; un refus produit aussi un événement ;
@@ -216,7 +218,7 @@ Aucune question ouverte. Les lignes du Technical Plan, point 1, marquées « pro
 
 ### 5. Les formats (`schema`)
 
-- **Ordre :** `actor_id`, numéro choisi par l'acteur, catégorie, `policy_id` et `policy_version` (`None` pour un humain), et la commande, union typée des quatre ordres. L'identité d'un ordre est (`actor_id`, tick, numéro). Le journal et `step` reçoivent des **ordres soumis** : l'ordre, le tick auquel il entre, et l'acteur du point de connexion qui l'a soumis, ou `None` pour un ordre d'administration écrit par le serveur (Technical Plan, point 13).
+- **Ordre :** `actor_id`, numéro choisi par l'acteur, catégorie, `policy_id` et `policy_version` (`None` pour un humain), et la commande, union typée des quatre ordres. L'identité d'un ordre est (`actor_id`, tick, numéro). Le journal et `step` reçoivent des **ordres soumis** : l'ordre, le tick auquel il entre, l'acteur du point de connexion qui l'a soumis (`None` pour un ordre d'administration écrit par le serveur), et le code de refus de la réception, s'il y en a un (Technical Plan, point 13).
 - **Résultat d'ordre :** acteur destinataire (celui du point de connexion), identité de l'ordre, accepté ou code de refus, texte, budget restant (niveau 1, §5). Chaque ordre examiné par `step` reçoit un résultat.
 - **Observation :** le tick, l'état visible pour l'acteur, les événements du dernier tick qui lui sont visibles, et ses résultats d'ordre. `observe` lit tout cela dans l'état (table « dernier tick »).
 - **Visibilité.** Chaque champ de données des entités de l'état déclare sa classe de visibilité par `Annotated[T, msgspec.Meta(extra={"visibility": ...})]` ; `observe` relit ces métadonnées par `msgspec.inspect.type_info` (mécanisme essayé sur `msgspec` 0.22.0 le 2026-11-06 : la métadonnée revient comme `Metadata` avec son `extra`). Chaque type d'événement a une seule classe. « Privé » veut dire visible par le seul acteur qui détient l'entité. Les vues de l'observation reprennent les noms des champs de données de l'état. À M1 :
@@ -241,7 +243,7 @@ Aucune question ouverte. Les lignes du Technical Plan, point 1, marquées « pro
 
   Le montant d'une vente n'est jamais public ; l'événement de vente suffit au client (niveau 1, CUJ 1). Il n'y a jamais un événement par entité et par tick (niveau 1, §6).
 - **Protocole** (`protocol_version` = 1) : deux messages. Le client envoie « soumettre des ordres » ; le serveur envoie, après chaque tick, une « mise à jour du tick » qui porte l'observation.
-- **Validation sans état** (`validate_orders`, fonction pure) : format (numéro positif ou nul, `policy_id` d'au plus 64 caractères), numéro répété dans un tick (le second et les suivants sont refusés), quota d'ordres par acteur et par tick (`ORDER_QUOTA_PER_TICK`, valeur au plan détaillé, point 16 ; au-delà, les plus petits numéros sont gardés), ordre au nom d'un autre acteur que celui du point de connexion, catégorie autre que « joueur » venant d'un client, ordre d'administration qui ne vient pas du serveur ; les ordres du serveur échappent au quota. Elle vit dans `schema` : `step` l'applique (la réception n'en fait rien, Technical Plan, point 1), et, plus tard, l'entraînement l'appliquera de la même façon.
+- **Validation sans état** (`validate_orders`, fonction pure) : format (numéro positif ou nul, `policy_id` d'au plus 64 caractères), numéro répété dans un tick (le second et les suivants sont refusés), quota d'ordres par acteur et par tick (`ORDER_QUOTA_PER_TICK`, valeur au plan détaillé, point 16 ; au-delà, les plus petits numéros sont gardés), ordre au nom d'un autre acteur que celui du point de connexion, catégorie autre que « joueur ». Les contrôles sont faits dans cet ordre, et le premier qui s'applique donne le code. Elle vit dans `schema` : la réception l'applique (niveau 1, §2), et, plus tard, l'entraînement l'appliquera de la même façon. Les ordres d'administration du serveur ne passent pas par elle.
 
 ### 6. Le serveur en mémoire
 
@@ -252,7 +254,7 @@ Aucune question ouverte. Les lignes du Technical Plan, point 1, marquées « pro
   clients : client Textual ----+          +---- hôte des PNJ (politique scripted_miner)
                                | ordres   |
                                v          v
-  server : réception (lie l'ordre à son point de connexion) --> journal des ordres soumis (SQLite)
+  server : réception (validation sans état, point de connexion) --> journal des ordres soumis (SQLite)
                                |
                                v
            horloge --> step (core) --> événements v0 (JSONL), empreintes (journal)
@@ -264,7 +266,7 @@ Aucune question ouverte. Les lignes du Technical Plan, point 1, marquées « pro
 - **La concurrence :** une seule boucle `asyncio`. L'horloge est une tâche de cette boucle. Chaque point de connexion est une paire de `asyncio.Queue` (ordres, mises à jour), derrière le protocole `Connection` de `schema`. Au début de chaque tick, l'horloge vide les files d'ordres : un ordre reçu avant ce moment entre dans ce tick (niveau 1, §2).
 - **Le mode sans horloge** sert aux tests, aux outils et à la partie de référence. `Game.advance(n)` joue `n` ticks, de façon synchrone. À chaque tick : il prend les ordres soumis, appelle `step`, envoie la mise à jour à chaque client, puis appelle, pour chaque client synchrone attaché (`SyncClient`, Technical Plan, point 13), `on_update(mise à jour)` ; les ordres que cette méthode renvoie entrent au tick suivant. Une décision prend donc exactement un tick (plan détaillé, point 27, calcul des bornes).
 - **L'horloge** déclenche un tick à chaque période. La période est un paramètre du serveur (1 seconde par défaut à M1), hors de `tunables.toml` et hors de `rules_version`.
-- **La réception** lie chaque ordre reçu à l'acteur de son point de connexion et au tick où il entre, puis le journalise tel quel. Elle ne refuse rien elle-même : `step` refait la validation sans état et adresse le refus à l'acteur du point de connexion, par son observation.
+- **La réception** lie chaque ordre reçu à l'acteur de son point de connexion et au tick où il entre, lui applique la validation sans état, puis le journalise avec son code de refus éventuel. `step` refuse un ordre qui porte un code, avec ce code, et adresse le résultat à l'acteur du point de connexion, par son observation.
 - **Le journal des ordres soumis** est une base SQLite en mode WAL (`synchronous=NORMAL` avant M5), `orders.sqlite`, avec deux tables (schéma au plan détaillé, point 21). Il contient sa version (`order_log_schema_version` = 1), `rules_version`, la graine du monde, l'identifiant (SHA) du commit et un indicateur « dossier de travail modifié », les ordres soumis par tick et les empreintes de chaque tick. Il s'exporte et s'importe en JSONL versionné (plan détaillé, point 21).
 - **Les fichiers d'une partie** sont rangés dans `runs/<AAAAMMJJ-HHMMSS-micro>/`, ignoré par git : `orders.sqlite`, `snapshot.msgpack` (instantané initial, tick 0, `snapshot_schema_version` = 1, avec `rules_version`, la graine, l'identifiant du commit et l'indicateur « dossier de travail modifié », fournis par le serveur) et `events.jsonl`.
 - **Les personnages** sont créés par des ordres d'administration journalisés pour le tick 1, l'un pour le propriétaire, l'autre pour le PNJ ; l'instantané initial est l'état du tick 0, avant ces ordres, et le premier `step` les applique.
@@ -284,7 +286,7 @@ Aucune question ouverte. Les lignes du Technical Plan, point 1, marquées « pro
 - **Le rejeu** part d'un état initial et d'une suite d'ordres soumis par tick, applique `step` tick par tick, et produit les empreintes et les événements de chaque tick. Une seule fonction de `tools` le fait (`replay_orders`, Technical Plan, point 13) ; elle sert à l'outil de rejeu d'un dossier de partie (état initial lu dans l'instantané), au contrôle `rejeu` et au test des fourchettes.
 - **L'outil de divergence** (`tools`, niveau 1, CUJ 4) compare deux suites d'empreintes (deux dossiers de partie, ou deux fichiers d'empreintes), et indique le premier tick qui diffère et les composants concernés.
 - **La partie de référence** est générée par la graine 1 et jouée par deux PNJ, à travers le serveur en mode sans horloge. Elle n'est jouée qu'à la régénération des références. On enregistre alors, dans `tests/references/rules-<révision>/` :
-  - `orders.jsonl`, l'export versionné de son journal des ordres soumis (en-tête : `order_log_schema_version`, `rules_version`, graine du monde, dernier tick ; puis un ordre soumis par ligne) ;
+  - `orders.jsonl`, l'export versionné de son journal des ordres soumis (en-tête : les valeurs de la table `meta` du journal et le dernier tick ; puis un ordre soumis par ligne) ;
   - `reference.json`, son `rules_version` et les empreintes de chaque composant tous les 1 000 ticks et au dernier tick.
 
   L'état initial n'est pas enregistré : il est régénéré par `world.generate` à partir de la graine, ce qui vérifie aussi la génération du monde. Le contrôle `rejeu` n'a besoin que de `core`, de `schema`, de `tools` et de l'import JSONL de `server`. Un changement du PNJ, de l'hôte des PNJ ou du serveur ne touche donc pas les références ; un changement des règles ou des réglages les fait diverger, et oblige à les régénérer. Une régénération des références remplace le dossier de la révision précédente ; l'historique git le garde (environ 4 Mo par révision, à mesurer au plan détaillé, point 28 bis).
@@ -360,7 +362,7 @@ M1 ajoute aussi au glossaire le terme **gisement** (`Deposit`), et le terme **or
 
 ### 13. Les interfaces
 
-Les définitions d'étapes des scénarios sont écrites avant le code et figent ces noms. Les types sont des `msgspec.Struct` figés (`frozen=True`) ; les champs sont donnés dans l'ordre d'encodage. Tout type dont `schema` a besoin (`Activity`, `LedgerEntry`) est défini dans `schema` et réutilisé par `core`, car `schema` n'importe pas `core` (contrat d'imports, niveau 1, §1). `Int64` est `Annotated[int, msgspec.Meta(ge=-2**63, le=2**63 - 1)]` ; `Id` est `Annotated[int, msgspec.Meta(ge=1, le=2**63 - 1)]`. La classe de visibilité de chaque champ d'entité suit le Technical Plan, point 5 ; elle est déclarée par une fonction `visible(classe)` de `schema/visibility.py`, qui renvoie la métadonnée.
+Les définitions d'étapes des scénarios sont écrites avant le code et figent ces noms. Les types sont des `msgspec.Struct` figés (`frozen=True`) ; les champs sont donnés dans l'ordre d'encodage. Tout type dont `schema` a besoin (`Activity`, `LedgerEntry`) est défini dans `schema` et réutilisé par `core`, car `schema` n'importe pas `core` (contrat d'imports, niveau 1, §1). `Int64` est `Annotated[int, msgspec.Meta(ge=-2**63, le=2**63 - 1)]` ; `Id` est `Annotated[int, msgspec.Meta(ge=1, le=2**63 - 1)]` ; les deux sont définis dans `schema/types.py`. La classe de visibilité de chaque champ d'entité suit le Technical Plan, point 5 ; elle est déclarée par une fonction `visible(classe)` de `schema/visibility.py`, qui renvoie la métadonnée.
 
 **Libellés neutres** (`core/world.py`, `label(table, id)`) : `system_<id>`, `deposit_<id>`, `station_<id>`, `actor_<id>`, `ship_<id>` ; minerai : `ore_` suivi de la lettre de rang `id` (1 → `ore_a`, 2 → `ore_b`).
 
@@ -378,7 +380,8 @@ orders.py       OrderCategory(enum.Enum)
                 Order(actor_id: Id, number: Int64, category: OrderCategory,
                       policy_id: str | None, policy_version: Int64 | None, command: Command)
                 OrderId(actor_id: Id, tick: Int64, number: Int64)
-                SubmittedOrder(tick: Int64, sender_actor_id: Id | None, order: Order)   (None : le serveur)
+                SubmittedOrder(tick: Int64, sender_actor_id: Id | None, order: Order,
+                               reception_refusal: RefusalCode | None)   (sender_actor_id None : le serveur)
                 ORDER_QUOTA_PER_TICK: int = 5
                 validate_orders(orders: tuple[SubmittedOrder, ...]) -> tuple[RefusalCode | None, ...]
 results.py      RefusalCode(enum.Enum) : UNKNOWN_SHIP, NOT_OWNER, SHIP_EN_ROUTE, UNKNOWN_SYSTEM,
@@ -461,6 +464,7 @@ version.py      RULES_REVISION: int ; tunables_fingerprint(t: Tunables) -> str ;
 ```text
 server/tunables_loader.py  load_tunables() -> Tunables   (msgspec.toml.decode(..., type=Tunables))
 server/reception.py        Reception.receive(sender_actor_id: int, message: SubmitOrders, tick: int)
+                               (applique validate_orders et remplit reception_refusal)
                                -> tuple[SubmittedOrder, ...]
 server/order_log.py        OrderLog.create(path, rules_version, world_seed, commit, worktree_dirty) ;
                            append(orders: tuple[SubmittedOrder, ...], fingerprints: Fingerprints) ;
@@ -621,7 +625,7 @@ Entre les paliers 2 et 4, les nouvelles tâches ne bloquent pas la fusion : le p
 #### 3. `docs/glossaire.md` (Modify)
 
 *   **Type / Scope :** glossaire, chemin protégé. Dans la pull request protégée du point 1, une fois le document approuvé.
-*   **Proposed Changes :** chaque « à fixer au niveau 2 de M1 » est remplacé par l'identifiant du Technical Plan, point 12 ; `K_ordres` devient `ORDER_QUOTA_PER_TICK`, et la mention « nom provisoire » disparaît ; les entrées « gisement » (`Deposit`) et « ordre soumis » (`SubmittedOrder`) sont ajoutées ; les définitions « réception » et « code de refus » disent que `step` applique aussi la validation sans état (Technical Plan, point 1). La colonne « Lien » renvoie à ce document pour les identifiants qu'il fixe.
+*   **Proposed Changes :** chaque « à fixer au niveau 2 de M1 » est remplacé par l'identifiant du Technical Plan, point 12 ; `K_ordres` devient `ORDER_QUOTA_PER_TICK`, et la mention « nom provisoire » disparaît ; les entrées « gisement » (`Deposit`) et « ordre soumis » (`SubmittedOrder`) sont ajoutées . La colonne « Lien » renvoie à ce document pour les identifiants qu'il fixe.
 
 #### 3 bis. `.github/chemins-proteges.txt` et `tests/outillage/test_garde.py` (Modify)
 
@@ -642,7 +646,8 @@ Entre les paliers 2 et 4, les nouvelles tâches ne bloquent pas la fusion : le p
     - `source_paths` = `src/fourx` ;
     - `pytest_add_cli_args_test_selection` = `tests` ;
     - `pytest_add_cli_args` = `-m`, `not rejeu and not lent and not mesure`, `--ignore=tests/outillage`, `--ignore=tests/core/test_determinisme_statique.py` (le code instrumenté par `mutmut` contient des imports ajoutés et des `/` ; `tests/outillage` lit `.github/` et `.claude/`, absents de la copie de travail de `mutmut`) ;
-    - `do_not_mutate` = `src/fourx/__main__.py`, `src/fourx/clients/textual_app.py` (interface, couverte par les scénarios à travers le protocole, pas par des assertions sur l'écran).
+    - `do_not_mutate` = `src/fourx/__main__.py`, `src/fourx/clients/textual_app.py` (interface, couverte par les scénarios à travers le protocole, pas par des assertions sur l'écran) ;
+    - au premier lancement de `mutmut`, vérifier que `pytest.ini` (et donc `pythonpath = .`) est présent dans `mutants/` ; sinon ajouter `also_copy` = `pytest.ini`.
 
 #### 6. `.gitignore` (Modify)
 
@@ -683,7 +688,7 @@ Entre les paliers 2 et 4, les nouvelles tâches ne bloquent pas la fusion : le p
     - liste les fichiers `.py` de `src/fourx/` modifiés entre la base et la tête, hors de ceux que `do_not_mutate` exclut (motifs lus par `.github/scripts/motifs.py`) ; si des fichiers de `tests/scenarios/steps/` sont modifiés, ou avec `--tout-core`, ajoute tous les fichiers de `src/fourx/core/` (Technical Plan, point 10) ; s'il n'y a aucun fichier, la tâche réussit et le dit ;
     - lance `mutmut run` avec, comme arguments, les motifs des noms de mutants de ces fichiers (`fourx.core.arith.*`, par exemple), puis lit `mutmut results --all true` et calcule le score de chaque fichier (Technical Plan, point 10) ;
     - fait de même sur le commit de base, dans un `git worktree` temporaire synchronisé par `uv sync --locked`, pour les mêmes fichiers qui y existent ; un fichier nouveau n'a pas de score de base ;
-    - échoue si le score d'un fichier est inférieur à celui de la base, ou si un fichier nouveau de `core` ou de `schema` a un score inférieur à 80 % ; avec `--plancher-partout`, ne calcule rien sur une base et applique les 80 % à chaque fichier de `core` et de `schema` ; écrit le tableau des scores dans le résumé de la tâche ;
+    - échoue si le score d'un fichier est inférieur à celui de la base, ou si un fichier nouveau de `core` ou de `schema` a un score inférieur à 80 % ; avec `--plancher-partout`, ajoute aussi tous les fichiers de `src/fourx/schema/`, ne calcule rien sur une base et applique les 80 % à chaque fichier de `core` et de `schema` ; écrit le tableau des scores dans le résumé de la tâche ;
     - la tête est un commit : pour un bug volontaire de la suite canari, `canaris.py` committe la copie de travail dans un dépôt temporaire avant d'appeler `mutation.py`.
 
 #### 10. `tests/outillage/test_mutation.py` (Create)
@@ -697,7 +702,7 @@ Entre les paliers 2 et 4, les nouvelles tâches ne bloquent pas la fusion : le p
 *   **Proposed Changes :**
     - la sortie de `garde.py` devient une liste d'étiquettes à poser ou retirer (aujourd'hui une seule décision `etiquette`) ; `garde.yml` les applique une à une ;
     - une pull request qui modifie un fichier de `tests/references/` reçoit en plus l'étiquette « références régénérées » (créée comme celle de M0, par `gh label create`, au premier besoin) ;
-    - dans ce cas, `garde.yml` lit, dans la tête, `src/fourx/core/version.py` et la liste de `tests/references/` par `gh api repos/EZPK/4X/contents/<chemin>?ref=$HEAD_SHA` (`HEAD_SHA` pris dans le JSON de l'événement, comme la tâche `en-attente`, sans `${{ github.event.* }}` dans un `run:` ni nouveau `checkout`), et les passe à `garde.py` dans deux fichiers ; la base est lue dans la copie déjà récupérée. `garde.py` lit `RULES_REVISION` comme texte (expression régulière, sans importer le code de la branche) : la tâche `garde` échoue si la révision de la tête n'est pas celle de la base plus un, ou si le dossier `tests/references/rules-<révision de la tête>/` n'existe pas, ou si un autre dossier `rules-*` reste.
+    - dans ce cas, `garde.yml` lit, dans la tête, `src/fourx/core/version.py` et la liste de `tests/references/` par `gh api -H "Accept: application/vnd.github.raw+json" repos/EZPK/4X/contents/<chemin>?ref=$HEAD_SHA` (`HEAD_SHA` pris dans le JSON de l'événement, comme la tâche `en-attente`, sans `${{ github.event.* }}` dans un `run:` ni nouveau `checkout`), à chaque exécution, avant que `garde.py` décide ; une réponse 404 (fichier ou dossier absent de la tête) donne un fichier vide ; les deux résultats sont passés à `garde.py` dans deux fichiers ; la base est lue dans la copie déjà récupérée. `garde.py` lit `RULES_REVISION` comme texte (expression régulière, sans importer le code de la branche) : la tâche `garde` échoue si la révision de la tête n'est pas celle de la base plus un, ou si le dossier `tests/references/rules-<révision de la tête>/` n'existe pas, ou si un autre dossier `rules-*` reste.
 
 #### 12. `tests/outillage/test_garde.py` (Modify)
 
@@ -721,7 +726,7 @@ Chaque volet a sa pull request de scénarios (fichiers `.feature` en français e
 **Règles pour les définitions d'étapes**, écrites avant le code :
 - elles n'importent le code de `fourx` qu'à l'intérieur des fonctions d'étape, par `importlib.import_module(...)` (dont le résultat est typé `ModuleType`, ce que `mypy` accepte) : un module absent fait échouer le scénario, comme le mécanisme « en attente » l'attend, sans casser `mypy` ni la collecte ;
 - elles emploient les noms du Technical Plan, point 13, et les libellés neutres (`system_1`, `ore_a`, `station_1`, `deposit_1`) ;
-- `tests/scenarios/test_scenarios.py` (créé au point 15) contient `scenarios(".")` et importe chaque module d'étapes par `from tests.scenarios.steps.steps_<volet> import *` (`pythonpath = .`, point 7).
+- `tests/scenarios/test_scenarios.py` (créé au point 15) contient `scenarios(".")` et importe chaque module d'étapes par `from tests.scenarios.steps.steps_<volet> import *  # noqa: F403` (`pythonpath = .`, point 7 ; `ruff` refuse sinon un `import *`).
 
 **Volet A : le noyau, les règles et le registre**
 
@@ -745,7 +750,7 @@ Chaque volet a sa pull request de scénarios (fichiers `.feature` en français e
 #### 16. `src/fourx/schema/` (Create)
 
 *   **Type / Scope :** paquet `schema` (le fichier `__init__.py` existe déjà, vide, et ne change pas).
-*   **Proposed Changes :** les modules du Technical Plan, point 13 : `visibility.py`, `actors.py`, `orders.py` (`ORDER_QUOTA_PER_TICK` = 5), `results.py`, `ledger.py`, `events.py`, `observation.py`, `protocol.py`.
+*   **Proposed Changes :** les modules du Technical Plan, point 13 : `types.py`, `visibility.py`, `actors.py`, `orders.py` (`ORDER_QUOTA_PER_TICK` = 5), `results.py`, `ledger.py`, `events.py`, `observation.py`, `protocol.py`.
 
 #### 17. `src/fourx/core/` (Create)
 
@@ -772,7 +777,7 @@ Chaque volet a sa pull request de scénarios (fichiers `.feature` en français e
 *   **Type / Scope :** tests de propriétés (contrôle `proprietes`), marque `proprietes`.
 *   **Proposed Changes :**
     - sur des parties générées par `hypothesis` (graine, réglages dont un `deposit_stock` bas et plusieurs vaisseaux sur un même gisement, suite d'ordres valides et invalides) : les trois invariants après chaque tick ; les entiers sur 64 bits ; deux exécutions de la même partie donnent les mêmes empreintes ;
-    - visibilité : pour chaque champ de données de chaque vue d'une observation, le champ de même nom de l'entité d'état a une classe visible pour l'acteur ; aucun champ privé ou d'administration d'un autre acteur n'apparaît.
+    - visibilité : pour chaque champ de données de chaque vue d'une observation, le champ de même nom de l'entité d'état a une classe visible pour l'acteur (`wallet_balance` est apparié à `Account.balance` du portefeuille personnel, `action_budget` à `Actor.action_budget`) ; aucun champ privé ou d'administration d'un autre acteur n'apparaît.
 
 **Volet B : le serveur, le client et le PNJ**
 
@@ -781,8 +786,8 @@ Chaque volet a sa pull request de scénarios (fichiers `.feature` en français e
 *   **Type / Scope :** pull request de scénarios, chemins protégés.
 *   **Proposed Changes :** scénarios joués à travers le serveur en mémoire, en mode sans horloge, et le protocole, sans le client Textual :
     - **CUJ 1 :** le propriétaire choisit `ore_b`, envoie son vaisseau le miner, le ramène à la station et vend ; ses mises à jour du tick montrent le trajet, la cargaison, et le paiement et la taxe par l'événement de vente privé ; l'autre acteur ne voit ni le paiement ni la taxe ; le registre contient l'écriture de vente et celle de la taxe ;
-    - un ordre au nom d'un autre acteur est refusé (`ACTOR_MISMATCH`), et le refus arrive dans l'observation de l'acteur qui l'a soumis ;
-    - un ordre d'administration soumis par un client est refusé (`FORBIDDEN_CATEGORY`) ;
+    - un ordre soumis sous l'`actor_id` d'un autre acteur est refusé par la réception (`ACTOR_MISMATCH`), et le refus arrive dans l'observation de l'acteur qui l'a soumis ;
+    - un ordre d'administration soumis par un client sous son propre `actor_id` est refusé par la réception (`FORBIDDEN_CATEGORY`) ;
     - au-delà de `ORDER_QUOTA_PER_TICK` ordres dans un tick, les plus petits numéros sont gardés (`QUOTA_EXCEEDED` pour les autres) ;
     - le PNJ vend au moins une cargaison en 100 ticks.
 
@@ -792,7 +797,7 @@ Chaque volet a sa pull request de scénarios (fichiers `.feature` en français e
 *   **Proposed Changes :** les modules du Technical Plan, point 13 :
     - `tunables_loader.py` : lit `tunables.toml` (via `importlib.resources`) par `msgspec.toml.decode(..., type=Tunables)` ;
     - `reception.py` ;
-    - `order_log.py` : base SQLite `orders.sqlite` en mode WAL, deux tables : `meta` (clé, valeur : `order_log_schema_version` = 1, `rules_version`, `world_seed`, `commit`, `worktree_dirty`) et `ticks` (`tick` entier, clé primaire ; `orders` : encodage MessagePack du tuple des ordres soumis ; `fingerprints` : encodage MessagePack de `Fingerprints`) ; le commit est lu par `git rev-parse HEAD` (« inconnu » hors d'un dépôt git) et l'indicateur par `git status --porcelain` non vide. Export JSONL : une ligne d'en-tête (les valeurs de `meta`), puis un ordre soumis par ligne, en JSON `msgspec` ;
+    - `order_log.py` : base SQLite `orders.sqlite` en mode WAL, deux tables : `meta` (clé, valeur : `order_log_schema_version` = 1, `rules_version`, `world_seed`, `commit`, `worktree_dirty`) et `ticks` (`tick` entier, clé primaire ; `orders` : encodage MessagePack du tuple des ordres soumis ; `fingerprints` : encodage MessagePack de `Fingerprints`) ; le commit est lu par `git rev-parse HEAD` (« inconnu » hors d'un dépôt git) et l'indicateur par `git status --porcelain` non vide. Export JSONL : une ligne d'en-tête (les valeurs de `meta`, plus le dernier tick, c'est-à-dire le plus grand `tick` de la table `ticks`), puis un ordre soumis par ligne, en JSON `msgspec` ;
     - `events_writer.py` : enregistre les événements v0 en JSONL (`events.jsonl`) ;
     - `game.py` : la partie : création du dossier `runs/<AAAAMMJJ-HHMMSS-micro>/` (microsecondes, pour que deux parties de la même seconde ne se mêlent pas), instantané initial, ordres de création des personnages, horloge (tâche `asyncio`), boucle des ticks, envoi des mises à jour, et le mode sans horloge (Technical Plan, point 6).
 
@@ -866,7 +871,7 @@ Chaque volet a sa pull request de scénarios (fichiers `.feature` en français e
 #### 29. `.github/canaris/` et `.github/scripts/canaris.py` (Create)
 
 *   **Type / Scope :** suite canari, chemins protégés.
-*   **Proposed Changes :** six bugs volontaires, chacun décrit par un fichier JSON (fichier visé, fonction visée par son nom, texte inséré au début du corps de la fonction, ou remplacement d'une expression nommée, contrôle visé). `canaris.py` applique chaque bug par l'analyse de la syntaxe (module `ast`), pas par un patch de lignes, puis lance la commande du contrôle visé, et échoue si cette commande réussit. Table contrôle → commande : celles du point 8.
+*   **Proposed Changes :** six bugs volontaires, chacun décrit par un fichier JSON : le contrôle visé, et une liste de modifications (fichier visé ; ancre : début du corps d'une fonction nommée, fin du module, ou expression nommée à remplacer ; texte inséré ou de remplacement). `canaris.py` applique chaque bug par l'analyse de la syntaxe (module `ast`), pas par un patch de lignes, puis lance la commande du contrôle visé, et échoue si cette commande réussit. Table contrôle → commande : celles du point 8.
     - un nombre flottant dans `step` (`core/step.py`) → `tests` ;
     - `core` qui importe `server` → `imports` ;
     - une vente sans écriture de taxe, mais avec le compteur cumulé de destruction augmenté → `tests` (invariants) ;
