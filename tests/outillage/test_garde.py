@@ -52,7 +52,9 @@ def test_lignes_vides_et_commentaires_ignores(motifs: ModuleType) -> None:
 
 def test_vraie_liste_des_chemins_proteges(motifs: ModuleType, racine: Path) -> None:
     liste = motifs.lire_fichier_motifs(racine / ".github/chemins-proteges.txt")
-    assert len(liste) == 22
+    assert len(liste) == 25
+    for chemin in ("pyproject.toml", "uv.lock", ".gitignore"):
+        assert motifs.est_couvert(chemin, liste)
     assert motifs.est_couvert(".github/workflows/garde.yml", liste)
     assert motifs.est_couvert("tests/scenarios/steps/etapes.py", liste)
     assert not motifs.est_couvert("tests/scenarios/en_attente.txt", liste)

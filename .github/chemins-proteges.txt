@@ -20,3 +20,6 @@ pytest.ini
 .pre-commit-config.yaml
 .gitleaks.toml
 .python-version
+pyproject.toml
+uv.lock
+.gitignore
