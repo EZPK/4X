@@ -1,11 +1,1 @@
 # Une entrée par ligne : <fichier>.feature::<titre du scénario>. Voir docs/designs/niveau-2-m0-garde-fous.md, Technical Plan, point 10.
-noyau.feature::Un vaisseau va de system_1 à system_3 en deux sauts
-noyau.feature::Un vaisseau mine jusqu'à remplir sa cargaison, puis s'arrête
-noyau.feature::Une vente produit l'écriture de vente et celle de la taxe
-noyau.feature::Une taxe qui tombe entre deux unités paie l'unité supérieure
-noyau.feature::Un gisement vidé s'arrête de rendre, puis se régénère
-noyau.feature::Deux vaisseaux sur un gisement trop petit sont départagés par tirage à clé
-noyau.feature::Deux ventes du même vaisseau dans un tick, seule la première est examinée
-noyau.feature::Un ordre sur le vaisseau d'un autre acteur est refusé
-noyau.feature::Une vente hors du système de la station est refusée
-noyau.feature::Un ordre au-delà du budget d'actions est refusé

@@ -1,0 +1,11 @@
+# Réglages de M1 (docs/designs/niveau-2-m1-noyau.md, plan détaillé, point 17).
+# Un changement de ce fichier change rules_version et oblige à régénérer les références.
+jump_ticks = 5
+mining_rate = 10
+cargo_capacity = 100
+ore_prices = [10, 15]
+tax_rate_bp = 1000
+deposit_stock = 20000
+regen_ticks = 1000
+budget_regen = 1
+budget_max = 10
