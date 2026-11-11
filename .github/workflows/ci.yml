@@ -1,4 +1,5 @@
-# CI de M0 (docs/designs/niveau-2-m0-garde-fous.md, plan détaillé, point 23).
+# CI de M0 (docs/designs/niveau-2-m0-garde-fous.md, plan détaillé, point 23)
+# et de M1 (docs/designs/niveau-2-m1-noyau.md, plan détaillé, point 8).
 # Les tâches obligatoires n'ont pas de clé de nom : le nom du contrôle est l'identifiant de la tâche.
 on:
   pull_request:
@@ -126,3 +127,110 @@ jobs:
       - run: uv python install
       - run: uv sync --locked
       - run: uv run lint-imports
+
+  tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: false
+      - run: uv python install
+      - run: uv sync --locked
+      - run: |
+          set +e
+          uv run pytest -m "not rejeu and not proprietes and not lent and not mesure" --ignore=tests/outillage
+          CODE=$?
+          if [ "$CODE" -eq 5 ]; then
+            echo "Aucun test trouvé (code 5 de pytest) : toléré jusqu'au palier 4 de M1." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          exit "$CODE"
+
+  rejeu:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: false
+      - run: uv python install
+      - run: uv sync --locked
+      - run: |
+          set +e
+          PYTHONHASHSEED=0 uv run pytest -m rejeu
+          CODE=$?
+          if [ "$CODE" -eq 5 ]; then
+            echo "Aucun test trouvé (code 5 de pytest) : toléré jusqu'au palier 4 de M1." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          exit "$CODE"
+      - run: |
+          set +e
+          PYTHONHASHSEED=1 uv run pytest -m rejeu
+          CODE=$?
+          if [ "$CODE" -eq 5 ]; then
+            echo "Aucun test trouvé (code 5 de pytest) : toléré jusqu'au palier 4 de M1." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          exit "$CODE"
+      - run: |
+          A=runs/rejeu-0/fingerprints.jsonl
+          B=runs/rejeu-1/fingerprints.jsonl
+          if [ -f "$A" ] && [ -f "$B" ]; then
+            uv run python -m fourx.tools.divergence "$A" "$B"
+          elif [ -f "$A" ] || [ -f "$B" ]; then
+            echo "Un seul des deux fichiers d'empreintes existe : le rejeu est incomplet."
+            exit 1
+          else
+            echo "Pas encore de fichiers d'empreintes : étape de divergence sautée jusqu'au volet C de M1." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - run: |
+          set +e
+          uv run pytest -m lent
+          CODE=$?
+          if [ "$CODE" -eq 5 ]; then
+            echo "Aucun test trouvé (code 5 de pytest) : toléré jusqu'au palier 4 de M1." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          exit "$CODE"
+
+  proprietes:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: false
+      - run: uv python install
+      - run: uv sync --locked
+      - run: |
+          set +e
+          uv run pytest -m proprietes
+          CODE=$?
+          if [ "$CODE" -eq 5 ]; then
+            echo "Aucun test trouvé (code 5 de pytest) : toléré jusqu'au palier 4 de M1." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          exit "$CODE"
+
+  mutation:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: false
+      - run: uv python install
+      - run: uv sync --locked
+      - run: uv run python .github/scripts/mutation.py --base "$BASE" --tete "$HEAD"
