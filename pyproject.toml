@@ -2,7 +2,10 @@
 name = "fourx"
 version = "0.0.0"
 requires-python = ">=3.15,<3.16"
-dependencies = []
+dependencies = [
+    "msgspec==0.22.0",
+    "textual==8.2.8",
+]
 
 [build-system]
 requires = ["uv_build>=0.9,<0.12"]
@@ -12,12 +15,18 @@ build-backend = "uv_build"
 dev = [
     "ruff>=0.17.1",
     "mypy>=2.4.0",
-    "pytest>=9.1.1",
+    "pytest>=9.1.1,<9.2",
     "pytest-bdd>=9.0.0",
     "import-linter>=2.15",
     "pre-commit>=4.7.0",
+    "hypothesis==6.170.13",
+    "mutmut==3.8.1",
+]
+notebooks = [
+    "marimo==0.25.2",
+    "duckdb==2.0.0",
 ]
 
 [tool.uv]
-exclude-newer = "2026-10-18"
+exclude-newer = "2026-10-28"
 required-version = ">=0.11.16"

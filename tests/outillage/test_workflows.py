@@ -1,4 +1,7 @@
-"""Vérifications des workflows par lecture du texte (plan détaillé, point 26)."""
+"""Vérifications des workflows par lecture du texte.
+
+Niveau 2 de M0, plan détaillé, point 26 ; niveau 2 de M1, plan détaillé, point 13.
+"""
 
 import re
 from pathlib import Path
@@ -14,6 +17,9 @@ OBLIGATOIRES = {
     "garde",
     "en-attente",
 }
+# Tâches de M1, obligatoires à partir du palier 4 (niveau 2 de M1, plan détaillé, point 31) :
+# elles suivent dès le palier 2 la règle « pas de clé name ni de strategy ».
+NOUVELLES_M1 = {"tests", "rejeu", "proprietes", "mutation"}
 
 
 def blocs_run(texte: str) -> list[str]:
@@ -101,3 +107,23 @@ def test_actions_epinglees_par_sha() -> None:
     for nom, texte in textes().items():
         for action in re.findall(r"uses:\s*(\S+)", texte):
             assert re.fullmatch(r"[\w.-]+/[\w.-]+@[0-9a-f]{40}", action), f"{nom} : {action}"
+
+
+def test_nouvelles_taches_de_m1_sans_nom_ni_strategie() -> None:
+    cles = taches(textes()["ci.yml"])
+    assert NOUVELLES_M1 <= set(cles)
+    for tache in NOUVELLES_M1:
+        assert "name" not in cles[tache], tache
+        assert "strategy" not in cles[tache], tache
+
+
+def test_rejeu_sous_deux_pythonhashseed_puis_divergence() -> None:
+    texte = textes()["ci.yml"]
+    assert "PYTHONHASHSEED=0 uv run pytest -m rejeu" in texte
+    assert "PYTHONHASHSEED=1 uv run pytest -m rejeu" in texte
+    assert "python -m fourx.tools.divergence" in texte
+
+
+def test_tests_outillage_lance_encore_toute_la_suite() -> None:
+    blocs = [b.strip() for b in blocs_run(textes()["ci.yml"])]
+    assert "uv run pytest" in blocs

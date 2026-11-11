@@ -1,4 +1,5 @@
-# Contrôle de garde (docs/designs/niveau-2-m0-garde-fous.md, Technical Plan, point 8 ; plan détaillé, point 24).
+# Contrôle de garde (docs/designs/niveau-2-m0-garde-fous.md, Technical Plan, point 8 ; plan détaillé, point 24 ;
+# docs/designs/niveau-2-m1-noyau.md, plan détaillé, point 11).
 # Ce workflow ne récupère que la branche de base : jamais le code de la pull request.
 on:
   pull_request_target:
@@ -22,9 +23,32 @@ jobs:
         with:
           enable-cache: false
       - run: uv python install
-      - name: Lire le numéro de la pull request
+      - name: Lire le numéro et le commit de tête de la pull request
         run: |
-          uv run --no-project python -c 'import json, os; e = json.load(open(os.environ["GITHUB_EVENT_PATH"], encoding="utf-8")); print("N=" + str(int(e["pull_request"]["number"])))' >> "$GITHUB_ENV"
+          uv run --no-project python -c 'import json, os, re; e = json.load(open(os.environ["GITHUB_EVENT_PATH"], encoding="utf-8")); p = e["pull_request"]; s = p["head"]["sha"]; assert re.fullmatch("[0-9a-f]{40}", s); print("N=" + str(int(p["number"]))); print("HEAD_SHA=" + s)' >> "$GITHUB_ENV"
+      - name: Lire la révision des règles dans la base et dans la tête
+        run: |
+          if [ -f src/fourx/core/version.py ]; then
+            cp src/fourx/core/version.py "$RUNNER_TEMP/version-base.py"
+          else
+            : > "$RUNNER_TEMP/version-base.py"
+          fi
+          if ! gh api -H "Accept: application/vnd.github.raw+json" "repos/EZPK/4X/contents/src/fourx/core/version.py?ref=$HEAD_SHA" > "$RUNNER_TEMP/version-tete.py" 2> "$RUNNER_TEMP/erreur.txt"; then
+            if grep -q "HTTP 404" "$RUNNER_TEMP/erreur.txt"; then
+              : > "$RUNNER_TEMP/version-tete.py"
+            else
+              cat "$RUNNER_TEMP/erreur.txt"
+              exit 1
+            fi
+          fi
+          if ! gh api "repos/EZPK/4X/contents/tests/references?ref=$HEAD_SHA" --jq '.[].name' > "$RUNNER_TEMP/references-tete.txt" 2> "$RUNNER_TEMP/erreur.txt"; then
+            if grep -q "HTTP 404" "$RUNNER_TEMP/erreur.txt"; then
+              : > "$RUNNER_TEMP/references-tete.txt"
+            else
+              cat "$RUNNER_TEMP/erreur.txt"
+              exit 1
+            fi
+          fi
       - name: Lire les fichiers modifiés
         run: |
           gh api --paginate "repos/EZPK/4X/pulls/$N/files" --jq '.[] | {filename, previous_filename}' > "$RUNNER_TEMP/fichiers.jsonl"
@@ -32,20 +56,26 @@ jobs:
         run: |
           uv run --no-project python .github/scripts/garde.py --chemins .github/chemins-proteges.txt \
             --fichiers "$RUNNER_TEMP/fichiers.jsonl" --evenement "$GITHUB_EVENT_PATH" \
-            --sortie "$RUNNER_TEMP/sortie.json"
-      - name: Appliquer l'étiquette, la description et le résumé
+            --sortie "$RUNNER_TEMP/sortie.json" --version-base "$RUNNER_TEMP/version-base.py" \
+            --version-tete "$RUNNER_TEMP/version-tete.py" --references-tete "$RUNNER_TEMP/references-tete.txt"
+      - name: Appliquer les étiquettes, la description et le résumé
         run: |
           S="$RUNNER_TEMP/sortie.json"
-          uv run --no-project python -c 'import json, sys; r = json.load(open(sys.argv[1], encoding="utf-8")); open(sys.argv[2], "w", encoding="utf-8").write(r["description"]); open(sys.argv[3], "w", encoding="utf-8").write(r["etiquette"])' "$S" "$RUNNER_TEMP/description.txt" "$RUNNER_TEMP/decision.txt"
-          DECISION="$(cat "$RUNNER_TEMP/decision.txt")"
-          if [ "$DECISION" = "poser" ]; then
-            gh api -X POST "repos/EZPK/4X/issues/$N/labels" -f "labels[]=fichiers protégés modifiés" > /dev/null
-          elif [ "$DECISION" = "retirer" ]; then
-            NOM="$(uv run --no-project python -c 'import urllib.parse; print(urllib.parse.quote("fichiers protégés modifiés", safe=""))')"
-            gh api -X DELETE "repos/EZPK/4X/issues/$N/labels/$NOM" > /dev/null
-          fi
+          uv run --no-project python -c 'import json, sys; r = json.load(open(sys.argv[1], encoding="utf-8")); open(sys.argv[2], "w", encoding="utf-8").write(r["description"]); open(sys.argv[3], "w", encoding="utf-8").write("".join(e["decision"] + "\t" + e["nom"] + "\n" for e in r["etiquettes"]))' "$S" "$RUNNER_TEMP/description.txt" "$RUNNER_TEMP/decisions.tsv"
+          while IFS="$(printf '\t')" read -r DECISION ETIQUETTE; do
+            if [ "$DECISION" = "poser" ]; then
+              gh label create "$ETIQUETTE" --repo EZPK/4X --color FBCA04 2> /dev/null || true
+              gh api -X POST "repos/EZPK/4X/issues/$N/labels" -f "labels[]=$ETIQUETTE" > /dev/null
+            elif [ "$DECISION" = "retirer" ]; then
+              NOM="$(uv run --no-project python -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$ETIQUETTE")"
+              gh api -X DELETE "repos/EZPK/4X/issues/$N/labels/$NOM" > /dev/null
+            fi
+          done < "$RUNNER_TEMP/decisions.tsv"
           gh api -X PATCH "repos/EZPK/4X/pulls/$N" -F "body=@$RUNNER_TEMP/description.txt" > /dev/null
           uv run --no-project python -c 'import json, sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["resume"])' "$S" >> "$GITHUB_STEP_SUMMARY"
+      - name: Exiger la montée de révision quand les références changent
+        run: |
+          uv run --no-project python -c 'import json, sys; e = json.load(open(sys.argv[1], encoding="utf-8"))["erreur"]; print(e); sys.exit(1 if e else 0)' "$RUNNER_TEMP/sortie.json"
 
   en-attente:
     runs-on: ubuntu-24.04

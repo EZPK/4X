@@ -241,3 +241,7 @@ __marimo__/
 /snapshots/
 /logs/
 /config/monde-en-ligne/
+
+# M1 : dossiers de parties et copie de travail de mutmut (docs/designs/niveau-2-m1-noyau.md, point 6)
+/runs/
+/mutants/

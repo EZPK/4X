@@ -52,9 +52,18 @@ def test_lignes_vides_et_commentaires_ignores(motifs: ModuleType) -> None:
 
 def test_vraie_liste_des_chemins_proteges(motifs: ModuleType, racine: Path) -> None:
     liste = motifs.lire_fichier_motifs(racine / ".github/chemins-proteges.txt")
-    assert len(liste) == 25
-    for chemin in ("pyproject.toml", "uv.lock", ".gitignore"):
+    assert len(liste) == 29
+    for chemin in (
+        "pyproject.toml",
+        "uv.lock",
+        ".gitignore",
+        "setup.cfg",
+        "tests/conftest.py",
+        "tests/references/rules-1/reference.json",
+        "tests/core/test_determinisme_statique.py",
+    ):
         assert motifs.est_couvert(chemin, liste)
+    assert not motifs.est_couvert("tests/core/test_step.py", liste)
     assert motifs.est_couvert(".github/workflows/garde.yml", liste)
     assert motifs.est_couvert("tests/scenarios/steps/etapes.py", liste)
     assert not motifs.est_couvert("tests/scenarios/en_attente.txt", liste)
@@ -96,11 +105,11 @@ def test_etiquette_deja_presente_rien(garde: ModuleType) -> None:
 
 def test_fichier_ordinaire_etiquette_absente_rien(garde: ModuleType) -> None:
     resultat = garde.analyser(["CLAUDE.md"], [("src/a.py", None)], evenement("texte", ["autre"]))
-    assert resultat == {
-        "etiquette": "rien",
-        "description": "texte",
-        "resume": "Aucun chemin protégé modifié.",
-    }
+    assert resultat["etiquette"] == "rien"
+    assert resultat["description"] == "texte"
+    assert resultat["resume"] == "Aucun chemin protégé modifié."
+    assert resultat["erreur"] == ""
+    assert [e["decision"] for e in resultat["etiquettes"]] == ["rien", "rien"]
 
 
 def test_fichier_ordinaire_etiquette_presente_retirer(garde: ModuleType) -> None:
@@ -164,3 +173,89 @@ def test_principal_codes_de_sortie(garde: ModuleType, tmp_path: Path) -> None:
     assert garde.principal([*arguments, "--sortie", str(sortie)]) == 2
     fichiers.write_text("cassé\n", encoding="utf-8")
     assert garde.principal([*arguments, "--sortie", str(sortie)]) == 2
+
+
+REFERENCE = [("tests/references/rules-1/reference.json", None)]
+VERSION_0 = "RULES_REVISION = 0\n"
+VERSION_1 = "RULES_REVISION: int = 1\n"
+
+
+def decisions(resultat: dict[str, Any]) -> dict[str, str]:
+    return {e["nom"]: e["decision"] for e in resultat["etiquettes"]}
+
+
+def test_references_modifiees_posent_l_etiquette(garde: ModuleType) -> None:
+    resultat = garde.analyser(
+        ["tests/references/**"], REFERENCE, evenement(), VERSION_0, VERSION_1, ["rules-1"]
+    )
+    assert decisions(resultat) == {ETIQUETTE: "poser", garde.ETIQUETTE_REFERENCES: "poser"}
+    assert resultat["erreur"] == ""
+
+
+def test_etiquette_references_retiree_sans_references(garde: ModuleType) -> None:
+    resultat = garde.analyser([], [("src/a.py", None)], evenement("", [garde.ETIQUETTE_REFERENCES]))
+    assert decisions(resultat)[garde.ETIQUETTE_REFERENCES] == "retirer"
+    assert resultat["erreur"] == ""
+
+
+@pytest.mark.parametrize(
+    ("base", "tete", "dossiers", "message"),
+    [
+        (VERSION_0, VERSION_0, ["rules-0"], "doit passer de 0 à 1"),
+        (VERSION_0, "RULES_REVISION = 2\n", ["rules-2"], "doit passer de 0 à 1"),
+        (VERSION_0, VERSION_1, [], "seul dossier rules-1"),
+        (VERSION_0, VERSION_1, ["rules-0", "rules-1"], "seul dossier rules-1"),
+        ("", VERSION_1, ["rules-1"], "illisible"),
+        (VERSION_0, "RULES_REVISION = 1\nRULES_REVISION = 2\n", ["rules-1"], "illisible"),
+    ],
+)
+def test_regle_plus_un_refusee(
+    garde: ModuleType, base: str, tete: str, dossiers: list[str], message: str
+) -> None:
+    resultat = garde.analyser(["tests/references/**"], REFERENCE, evenement(), base, tete, dossiers)
+    assert message in resultat["erreur"]
+    assert message in resultat["resume"]
+
+
+def test_lecture_de_la_revision_sans_executer(garde: ModuleType) -> None:
+    assert garde.lire_revision("x = 1\nRULES_REVISION = 3\n") == 3
+    assert garde.lire_revision("RULES_REVISION: int = 4\n") == 4
+    assert garde.lire_revision("RULES_REVISION = compute()\n") is None
+    assert garde.lire_revision("") is None
+
+
+def test_principal_avec_les_fichiers_de_la_tete(garde: ModuleType, tmp_path: Path) -> None:
+    chemins = tmp_path / "chemins.txt"
+    chemins.write_text("tests/references/**\n", encoding="utf-8")
+    fichiers = tmp_path / "fichiers.jsonl"
+    fichiers.write_text(
+        '{"filename": "tests/references/rules-1/reference.json", "previous_filename": null}\n',
+        encoding="utf-8",
+    )
+    evt = tmp_path / "evenement.json"
+    evt.write_text(json.dumps(evenement()), encoding="utf-8")
+    base = tmp_path / "base.py"
+    base.write_text(VERSION_0, encoding="utf-8")
+    tete = tmp_path / "tete.py"
+    tete.write_text(VERSION_0, encoding="utf-8")
+    refs = tmp_path / "refs.txt"
+    refs.write_text("rules-0\n", encoding="utf-8")
+    sortie = tmp_path / "sortie.json"
+    arguments = [
+        "--chemins",
+        str(chemins),
+        "--fichiers",
+        str(fichiers),
+        "--evenement",
+        str(evt),
+        "--sortie",
+        str(sortie),
+        "--version-base",
+        str(base),
+        "--version-tete",
+        str(tete),
+        "--references-tete",
+        str(refs),
+    ]
+    assert garde.principal(arguments) == 0
+    assert "doit passer de 0 à 1" in json.loads(sortie.read_text(encoding="utf-8"))["erreur"]

@@ -23,3 +23,7 @@ pytest.ini
 pyproject.toml
 uv.lock
 .gitignore
+setup.cfg
+tests/conftest.py
+tests/references/**
+tests/core/test_determinisme_statique.py
