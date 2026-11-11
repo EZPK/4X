@@ -7,5 +7,6 @@ Chemin protégé. Chaque volet ajoute ici l'import de son module d'étapes.
 from pytest_bdd import scenarios
 
 from tests.scenarios.steps.steps_noyau import *  # noqa: F403
+from tests.scenarios.steps.steps_partie import *  # noqa: F403
 
 scenarios(".")

@@ -1,1 +1,6 @@
 # Une entrée par ligne : <fichier>.feature::<titre du scénario>. Voir docs/designs/niveau-2-m0-garde-fous.md, Technical Plan, point 10.
+partie.feature::Le propriétaire extrait ore_b, le ramène à la station et le vend
+partie.feature::Un ordre au nom d'un autre acteur est refusé par la réception
+partie.feature::Un ordre d'administration soumis par un client est refusé par la réception
+partie.feature::Au-delà du quota d'ordres d'un tick, les plus petits numéros sont gardés
+partie.feature::Le PNJ vend au moins une cargaison en 100 ticks
