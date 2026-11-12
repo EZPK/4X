@@ -12,10 +12,11 @@ from fourx.schema.actors import Activity, ActorKind
 from fourx.schema.events import Event, MiningEnded, Sale
 from fourx.schema.ids import OrderId
 from fourx.schema.observation import Observation
-from fourx.schema.orders import Command, Mine, Move, OrderCategory, Sell
+from fourx.schema.orders import Command, Mine, Move, OrderCategory, Sell, SubmittedOrder
 from fourx.schema.protocol import PROTOCOL_VERSION, SubmitOrders, TickUpdate
 from fourx.schema.results import OrderResult, RefusalCode
 from fourx.schema.visibility import Visibility
+from tests.aide_monde import avancer, monde, vaisseau
 from tests.aide_observation import ACTEUR, navire, observation
 
 
@@ -117,13 +118,33 @@ def test_ordres_au_clavier() -> None:
     assert commandes(connexion) == [
         [Move(ship_id=1, target_system_id=3)],
         [Mine(ship_id=1, ore_id=2)],
-        [Sell(ship_id=1, ore_id=1, quantity=30), Sell(ship_id=1, ore_id=2, quantity=70)],
+        [Sell(ship_id=1, ore_id=2, quantity=70)],
     ]
     ordres = [o for m in connexion.soumis for o in m.orders]
-    assert [o.number for o in ordres] == [1, 2, 3, 4]
+    assert [o.number for o in ordres] == [1, 2, 3]
     assert all(o.actor_id == ACTEUR and o.category is OrderCategory.PLAYER for o in ordres)
     assert all(o.policy_id is None for o in ordres)
     assert all(m.protocol_version == PROTOCOL_VERSION for m in connexion.soumis)
+
+
+def test_la_vente_envoyee_est_acceptee_par_step() -> None:
+    """Le message de la touche `v` passe les règles : aucun ordre remplacé (SUPERSEDED)."""
+
+    async def scenario(app: FourxApp, pilot: Pilot[None]) -> None:
+        await pilot.press("v")
+        await pilot.pause()
+
+    for cargaison, restant in (((30, 70), (30, 0)), ((50, 50), (0, 50)), ((0, 20), (0, 0))):
+        obs = observation((navire(system=1, cargo=cargaison),))
+        (message,) = asyncio.run(demarrer(obs, scenario)).soumis
+        state = monde((vaisseau(1, ACTEUR, system=1, cargo=cargaison),))
+        soumis = tuple(
+            SubmittedOrder(tick=1, sender_actor_id=ACTEUR, order=o, reception_refusal=None)
+            for o in message.orders
+        )
+        state, _ = avancer(state, soumis)
+        assert [r.accepted for r in state.last_tick.results] == [True]
+        assert state.ships[0].cargo == restant
 
 
 def test_aucun_ordre_avant_le_premier_tick() -> None:

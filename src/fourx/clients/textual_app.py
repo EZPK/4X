@@ -5,8 +5,8 @@ Technical Plan, point 7 ; plan détaillé, point 22.
 
 Affiche la carte en ASCII, l'état du vaisseau, le solde du portefeuille et l'historique des
 résultats d'ordre et des ventes. Touches : `d` puis le numéro d'un système (déplacer), `m` puis
-la lettre d'un minerai (miner), `v` (vendre toute la cargaison : un ordre par minerai),
-`q` (quitter).
+la lettre d'un minerai (miner), `v` (vendre le minerai le plus abondant de la cargaison :
+`step` n'examine qu'un ordre par vaisseau et par tick), `q` (quitter).
 Le client ne connaît que `schema` (niveau 1, §1).
 """
 
@@ -121,24 +121,18 @@ class FourxApp(App[None]):
         for ligne in historique(observation):
             log.write(ligne)
 
-    def envoyer(self, *commandes: Command) -> None:
-        """Un message pour toutes les commandes, chacune avec le numéro d'ordre suivant."""
-        ordres = []
-        for commande in commandes:
-            self.numero += 1
-            ordres.append(
-                Order(
-                    actor_id=self.actor_id,
-                    number=self.numero,
-                    category=OrderCategory.PLAYER,
-                    policy_id=None,
-                    policy_version=None,
-                    command=commande,
-                )
-            )
-        self.connection.submit(
-            SubmitOrders(protocol_version=PROTOCOL_VERSION, orders=tuple(ordres))
+    def envoyer(self, commande: Command) -> None:
+        """Un message d'un seul ordre, avec le numéro d'ordre suivant."""
+        self.numero += 1
+        ordre = Order(
+            actor_id=self.actor_id,
+            number=self.numero,
+            category=OrderCategory.PLAYER,
+            policy_id=None,
+            policy_version=None,
+            command=commande,
         )
+        self.connection.submit(SubmitOrders(protocol_version=PROTOCOL_VERSION, orders=(ordre,)))
 
     def vaisseau(self) -> int | None:
         if self.observation is None or not self.observation.own_ships:
@@ -160,15 +154,11 @@ class FourxApp(App[None]):
         navire = self.vaisseau()
         if navire is None or self.observation is None:
             return
-        ventes = [
-            Sell(ship_id=navire, ore_id=rang + 1, quantity=quantite)
-            for rang, quantite in enumerate(self.observation.own_ships[0].cargo)
-            if quantite > 0
-        ]
-        if ventes:
-            self.envoyer(*ventes)
-            detail = ", ".join(f"{v.quantity} ore_{lettre(v.ore_id)}" for v in ventes)
-            self.aide(f"Vente envoyée : {detail}.")
+        # max garde le premier maximum : à quantités égales, le plus petit identifiant de minerai.
+        rang, quantite = max(enumerate(self.observation.own_ships[0].cargo), key=lambda e: e[1])
+        if quantite > 0:
+            self.envoyer(Sell(ship_id=navire, ore_id=rang + 1, quantity=quantite))
+            self.aide(f"Vente envoyée : {quantite} ore_{lettre(rang + 1)}.")
 
     def on_key(self, event: object) -> None:
         touche = getattr(event, "character", None)
