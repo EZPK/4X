@@ -22,3 +22,6 @@ Fichier `docs/adr/NNNN-titre-court.md` :
 
 0001 — Écarts du niveau 2 de M0 décidés le 2026-11-01 — acceptée
 0002 — Règles `deny` et worktrees liés — acceptée
+0003 — `observe` reçoit les réglages — proposée
+0004 — Fourchettes de la tranche 0 — proposée
+0005 — Visibilité par proximité — proposée

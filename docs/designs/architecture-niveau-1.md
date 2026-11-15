@@ -99,10 +99,10 @@ Chaque objectif est vérifiable par un contrôle automatique, ou validé explici
 La *tranche 0* est la première version jouable : un petit monde hors ligne avec juste assez de règles pour miner, transporter et vendre.
 
 *   **Given** :
-    - un monde hors ligne généré à partir d'une graine, avec 3 à 5 systèmes reliés en graphe ;
-    - deux minerais, et une station PNJ qui rachète chacun à son propre prix fixe ;
+    - un monde hors ligne généré à partir d'une graine, avec 8 à 12 systèmes reliés en graphe et 4 à 6 gisements ([ADR 0004](../adr/0004-fourchettes-de-la-tranche-0.md)) ;
+    - deux minerais, et 2 à 3 stations PNJ, chacune rachetant chaque minerai à son propre prix fixe ;
     - le client Textual relié au serveur par le protocole en mémoire.
-*   **When** : le propriétaire choisit quel minerai extraire, envoie un mineur le chercher, le ramène à la station et vend sa cargaison.
+*   **When** : le propriétaire choisit quel minerai extraire, envoie un mineur le chercher, le ramène à une station et vend sa cargaison.
 *   **Then** :
     - le client affiche le trajet, la cargaison et le paiement ;
     - le registre contient l'écriture de vente et celle de la taxe ;
@@ -305,7 +305,7 @@ Le registre fournit aussi le journal public de chaque corporation.
 - **Un opérateur,** la personne responsable de comptes, a un plafond de comptes. Il est réglable, et vaut 1 pour un humain.
 - **`actor_kind`** (humain, joueur IA, PNJ) est attribué par le serveur à la création du compte, jamais déclaré par le client. Il est visible en jeu, conformément à la décision de signaler les joueurs IA, et n'influe jamais sur les règles.
 - **Authentification minimale :** un jeton par compte, utilisé de la même façon par le client Textual et par l'hôte des joueurs IA.
-- **Chaque champ de l'état porte une classe de visibilité :** public, corporation, privé ou administration. `observe(état, acteur)` ne renvoie que les champs visibles pour cet acteur.
+- **Chaque champ de l'état porte une classe de visibilité :** public, corporation, privé, proximité ou administration. Un champ de classe proximité n'est visible que des acteurs dont un vaisseau est dans le système concerné ou dans un système voisin ([ADR 0005](../adr/0005-visibilite-par-proximite.md)). `observe(état, acteur, réglages)` ne renvoie que les champs visibles pour cet acteur, et les réglages publics, une liste fermée de réglages que tout acteur voit ([ADR 0003](../adr/0003-observe-recoit-les-reglages.md)).
 - **Chaque événement porte une seule classe de visibilité.** Un fait en partie public et en partie privé est découpé en deux événements.
 - **Un acteur reçoit les événements visibles du dernier tick par `observe`,** avec l'état visible. Il n'y a pas d'autre canal vers le joueur.
 - **Ce que l'entraînement peut lire :** les récompenses peuvent lire les événements de classe administration, les observations jamais. On n'entraîne jamais sur des instantanés bruts du monde réel.

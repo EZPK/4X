@@ -21,7 +21,11 @@ def mutation(charger_script: Callable[[str], ModuleType]) -> ModuleType:
 
 NOYAU = ["src/fourx/core/__init__.py", "src/fourx/core/arith.py", "src/fourx/core/step.py"]
 FORMATS = ["src/fourx/schema/__init__.py", "src/fourx/schema/orders.py"]
-EXCLUS = ["src/fourx/__main__.py", "src/fourx/clients/textual_app.py"]
+EXCLUS = [
+    "src/fourx/__main__.py",
+    "src/fourx/clients/textual_app.py",
+    "src/fourx/clients/frames.py",
+]
 
 RESULTATS = """\
     fourx.core.arith.x_div_trunc__mutmut_1: killed
