@@ -101,18 +101,15 @@ class Game:
         self._administration: list[Order] = []
         self._renvoyes: dict[int, list[SubmitOrders]] = {}
         self._vitesses = self.run_dir / "speed.jsonl"
-        self._vitesses.write_text(
-            msgspec.json.encode({"speed_log_schema_version": SPEED_LOG_SCHEMA_VERSION}).decode()
-            + "\n",
-            encoding="utf-8",
-        )
+        en_tete = {"speed_log_schema_version": SPEED_LOG_SCHEMA_VERSION}
+        self._vitesses.write_bytes(msgspec.json.encode(en_tete) + b"\n")
         self._noter_la_periode()
 
     def _noter_la_periode(self) -> None:
         """Une ligne de speed.jsonl : le dernier tick joué et la période, None en pause."""
         ligne = {"tick": self.state.tick, "period_s": self.period_s}
-        with self._vitesses.open("a", encoding="utf-8") as fichier:
-            fichier.write(msgspec.json.encode(ligne).decode() + "\n")
+        with self._vitesses.open("ab") as fichier:
+            fichier.write(msgspec.json.encode(ligne) + b"\n")
 
     def set_period(self, period_s: float | None) -> None:
         """Change la période de l'horloge ; None met en pause. Réveille la boucle de `run`, qui

@@ -18,9 +18,9 @@ from fourx.core.step import step
 from fourx.policies.scripted_miner import POLICY_ID, decide
 from fourx.schema.actors import ActorKind
 from fourx.schema.events import CharacterCreated, Event
-from fourx.schema.orders import CreateCharacter, Move, Order, OrderCategory
+from fourx.schema.orders import CreateCharacter, Mine, Move, Order, OrderCategory
 from fourx.schema.protocol import NOMINAL_TICK_PERIOD_S, PROTOCOL_VERSION, SubmitOrders, TickUpdate
-from fourx.server.game import Game
+from fourx.server.game import RACINE_DEPOT, Game
 from fourx.server.order_log import OrderLog
 from fourx.server.tunables_loader import load_tunables
 
@@ -370,3 +370,62 @@ def test_rejeu_exact_d_une_partie_jouee_en_accelere(tmp_path: Path) -> None:
         0.002,
         0.0002,
     ]
+
+
+def test_commit_et_indicateur_du_depot_lus_dans_le_depot(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    lus: list[Path] = []
+
+    def faux_commit(dossier: Path) -> tuple[str, bool]:
+        lus.append(dossier)
+        return "abc123", True
+
+    monkeypatch.setattr("fourx.server.game.lire_commit", faux_commit)
+    partie = Game(tmp_path, world_seed=3, tunables=load_tunables())
+    partie.close()
+    assert lus == [RACINE_DEPOT]
+    log = OrderLog(partie.run_dir / "orders.sqlite")
+    meta = log.meta()
+    log.close()
+    assert (meta["commit"], meta["worktree_dirty"]) == ("abc123", "1")
+    instantane = snapshot.decode((partie.run_dir / "snapshot.msgpack").read_bytes())
+    assert (instantane.commit, instantane.worktree_dirty) == ("abc123", True)
+
+
+def test_la_partie_joue_step_avec_sa_graine(tmp_path: Path) -> None:
+    """Graine 1 : les personnages 2 et 4 partent de S2, dans system_4, où est un gisement de
+    ore_b. Ils le minent ensemble alors qu'il ne reste que 15 unités : le départage tire au sort
+    avec la graine, et le rejeu par step avec cette graine redonne les empreintes du journal."""
+    reglages = msgspec.structs.replace(load_tunables(), deposit_stock=15, mining_rate=10)
+    partie = Game(tmp_path, world_seed=1, tunables=reglages)
+    acteurs = [partie.create_character(ActorKind.HUMAN) for _ in range(4)]
+    partie.advance(1)
+    vaisseaux = {v.owner_id: v for v in partie.state.ships}
+    assert vaisseaux[2].system_id == vaisseaux[4].system_id == 4
+    for acteur in (2, 4):
+        ordre = Order(
+            actor_id=acteur,
+            number=1,
+            category=OrderCategory.PLAYER,
+            policy_id=None,
+            policy_version=None,
+            command=Mine(ship_id=vaisseaux[acteur].id, ore_id=2),
+        )
+        partie.connect(acteur).submit(
+            SubmitOrders(protocol_version=PROTOCOL_VERSION, orders=(ordre,))
+        )
+    partie.advance(2)
+    partie.close()
+    assert acteurs == [1, 2, 3, 4]
+    assert sum(sum(v.cargo) for v in partie.state.ships) == 15
+    initial = snapshot.decode((partie.run_dir / "snapshot.msgpack").read_bytes())
+    log = OrderLog(partie.run_dir / "orders.sqlite")
+    ordres, empreintes = log.orders_by_tick(), log.fingerprints_by_tick()
+    log.close()
+    etat = initial.state
+    rejouees = []
+    for du_tick in ordres:
+        etat, _ = step(etat, du_tick, 1, reglages)
+        rejouees.append(fingerprints(etat))
+    assert tuple(rejouees) == empreintes
