@@ -1,15 +1,17 @@
-"""Point de départ du jeu : `python -m fourx [--graine N] [--periode S] [--runs DOSSIER]`.
+"""Point de départ du jeu : `python -m fourx [--graine N] [--periode S] [--runs DOSSIER] [--dev]`.
 
 Document : docs/designs/niveau-2-m1-noyau.md, Technical Plan, points 1 et 6 ; plan détaillé,
-points 22 et 23 quater. Ce module, à la racine du paquet, est le seul qui relie le serveur en
-mémoire et le client. La graine et le dossier de la partie s'affichent au lancement, et de
-nouveau à la fermeture du client, puisque Textual efface l'affichage du lancement.
+points 22, 23 quater et 23 quinquies. Ce module, à la racine du paquet, est le seul qui relie
+le serveur en mémoire et le client. La graine et le dossier de la partie s'affichent au
+lancement, et de nouveau à la fermeture du client, puisque Textual efface l'affichage du
+lancement. Seule l'option `--dev` donne au client la fonction de rappel de vitesse.
 """
 
 import argparse
 import asyncio
 import contextlib
 import secrets
+from collections.abc import Callable
 from pathlib import Path
 
 from fourx.clients.npc_host import NpcHost
@@ -36,12 +38,22 @@ def creer_pnj(game: Game, graine: int, tunables: Tunables) -> tuple[int, ...]:
     return tuple(game.create_character(ActorKind.NPC) for _ in range(npc_count(graine, tunables)))
 
 
+def fonction_de_vitesse(game: Game, periode: float) -> Callable[[int | None], None]:
+    """La fonction de rappel du mode développement : un facteur (1, 10 ou 100) donne la période
+    de lancement divisée par ce facteur ; None met en pause (Technical Plan, point 6)."""
+
+    def set_speed(facteur: int | None) -> None:
+        game.set_period(None if facteur is None else periode / facteur)
+
+    return set_speed
+
+
 def annoncer(graine: int, dossier: Path) -> None:
     print(f"Graine du monde : {graine}")
     print(f"Dossier de la partie : {dossier}")
 
 
-async def jouer(graine: int, periode: float, runs_dir: Path) -> None:
+async def jouer(graine: int, periode: float, runs_dir: Path, dev: bool) -> None:
     tunables = load_tunables()
     game = Game(runs_dir, graine, tunables, period_s=periode)
     annoncer(graine, game.run_dir)
@@ -52,7 +64,8 @@ async def jouer(graine: int, periode: float, runs_dir: Path) -> None:
         asyncio.create_task(relayer(game.connect(ident), NpcHost(ident, decide))) for ident in pnj
     ]
     try:
-        await FourxApp(game.connect(humain), humain).run_async()
+        set_speed = fonction_de_vitesse(game, periode) if dev else None
+        await FourxApp(game.connect(humain), humain, set_speed).run_async()
     finally:
         for tache in taches:
             tache.cancel()
@@ -63,19 +76,28 @@ async def jouer(graine: int, periode: float, runs_dir: Path) -> None:
         annoncer(graine, game.run_dir)
 
 
-def principal() -> None:
+def analyser(arguments: list[str] | None = None) -> argparse.Namespace:
     analyseur = argparse.ArgumentParser(prog="python -m fourx", description="4X — tranche 0")
     analyseur.add_argument("--graine", type=int, default=None, help="graine du monde")
     analyseur.add_argument(
         "--periode",
         type=float,
         default=NOMINAL_TICK_PERIOD_S,
-        help="durée d'un tick, en secondes, fixée pour toute la partie",
+        help="durée d'un tick, en secondes, au lancement",
     )
     analyseur.add_argument("--runs", type=Path, default=Path("runs"), help="dossier des parties")
-    options = analyseur.parse_args()
+    analyseur.add_argument(
+        "--dev",
+        action="store_true",
+        help="mode développement : pause, accélération, avance jusqu'à la prochaine alerte",
+    )
+    return analyseur.parse_args(arguments)
+
+
+def principal() -> None:
+    options = analyser()
     graine = options.graine if options.graine is not None else secrets.randbelow(2**31)
-    asyncio.run(jouer(graine, options.periode, options.runs))
+    asyncio.run(jouer(graine, options.periode, options.runs, options.dev))
 
 
 if __name__ == "__main__":

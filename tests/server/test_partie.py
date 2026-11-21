@@ -3,15 +3,18 @@
 
 import asyncio
 import re
-from collections.abc import Iterator
+from collections.abc import Coroutine, Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 
 import msgspec.json
 import pytest
 
+from fourx.__main__ import creer_pnj, relayer
 from fourx.clients.npc_host import NpcHost
+from fourx.core import snapshot
 from fourx.core.fingerprints import fingerprints
+from fourx.core.step import step
 from fourx.policies.scripted_miner import POLICY_ID, decide
 from fourx.schema.actors import ActorKind
 from fourx.schema.events import CharacterCreated, Event
@@ -205,3 +208,165 @@ def test_premier_tick_immediat(tmp_path: Path) -> None:
             partie.close()
 
     assert asyncio.run(jouer()) == 1
+
+
+# --- Vitesse de l'univers (amendement 1 ; Technical Plan, point 6)
+
+
+def lignes_de_vitesse(dossier: Path) -> list[dict[str, object]]:
+    return [
+        msgspec.json.decode(ligne)
+        for ligne in (dossier / "speed.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+
+
+def test_speed_jsonl_en_tete_periode_initiale_et_changements(jeu: Game) -> None:
+    assert lignes_de_vitesse(jeu.run_dir) == [
+        {"speed_log_schema_version": 1},
+        {"tick": 0, "period_s": NOMINAL_TICK_PERIOD_S},
+    ]
+    jeu.advance(2)
+    jeu.set_period(0.3)
+    jeu.advance(1)
+    jeu.set_period(None)
+    assert jeu.period_s is None
+    assert lignes_de_vitesse(jeu.run_dir)[2:] == [
+        {"tick": 2, "period_s": 0.3},
+        {"tick": 3, "period_s": None},
+    ]
+
+
+async def avec_horloge(partie: Game, test: Coroutine[None, None, None]) -> None:
+    """Lance l'horloge, attend la coroutine de test, puis arrête l'horloge et ferme la partie."""
+    horloge = asyncio.create_task(partie.run())
+    try:
+        await test
+    finally:
+        horloge.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await horloge
+        partie.close()
+
+
+def test_pause_puis_reprise(tmp_path: Path) -> None:
+    releves: list[int] = []
+
+    async def jouer() -> None:
+        partie = Game(tmp_path, world_seed=3, tunables=load_tunables(), period_s=0.001)
+        connexion = partie.connect(partie.create_character(ActorKind.HUMAN))
+
+        async def test() -> None:
+            while (await connexion.next_update()).observation.tick < 3:
+                pass
+            partie.set_period(None)
+            await asyncio.sleep(0.05)
+            releves.append(partie.state.tick)
+            await asyncio.sleep(0.1)
+            releves.append(partie.state.tick)
+            partie.set_period(0.001)
+            while partie.state.tick < releves[-1] + 3:
+                await asyncio.sleep(0.005)
+            releves.append(partie.state.tick)
+
+        await avec_horloge(partie, test())
+
+    asyncio.run(jouer())
+    en_pause, toujours, repris = releves
+    assert en_pause == toujours
+    assert repris >= toujours + 3
+
+
+def test_une_periode_plus_courte_reveille_l_horloge(tmp_path: Path) -> None:
+    """À 60 s par tick, le passage à 1 ms joue le tick suivant sans attendre la minute."""
+    ticks: list[int] = []
+
+    async def jouer() -> None:
+        partie = Game(tmp_path, world_seed=3, tunables=load_tunables(), period_s=60.0)
+        connexion = partie.connect(partie.create_character(ActorKind.HUMAN))
+
+        async def test() -> None:
+            await asyncio.wait_for(connexion.next_update(), timeout=5)
+            partie.set_period(0.001)
+            mise_a_jour = await asyncio.wait_for(connexion.next_update(), timeout=5)
+            ticks.append(mise_a_jour.observation.tick)
+
+        await avec_horloge(partie, test())
+
+    asyncio.run(jouer())
+    assert ticks == [2]
+
+
+def test_une_periode_plus_longue_attend_le_reste(tmp_path: Path) -> None:
+    """Juste après un tick, passer à 60 s ne joue aucun tick tout de suite."""
+    releves: list[int] = []
+
+    async def jouer() -> None:
+        partie = Game(tmp_path, world_seed=3, tunables=load_tunables(), period_s=0.001)
+        connexion = partie.connect(partie.create_character(ActorKind.HUMAN))
+
+        async def test() -> None:
+            await connexion.next_update()
+            partie.set_period(60.0)
+            releves.append(partie.state.tick)
+            await asyncio.sleep(0.1)
+            releves.append(partie.state.tick)
+
+        await avec_horloge(partie, test())
+
+    asyncio.run(jouer())
+    avant, apres = releves
+    assert apres == avant
+
+
+def test_rejeu_exact_d_une_partie_jouee_en_accelere(tmp_path: Path) -> None:
+    """Une partie avec PNJ jouée à plusieurs vitesses, avec une pause : les ordres du journal,
+    rejoués par step depuis l'instantané initial, redonnent les empreintes du journal
+    (l'outil de rejeu n'existe qu'au volet C)."""
+    reglages = load_tunables()
+    dossiers: list[Path] = []
+
+    async def jouer() -> None:
+        partie = Game(tmp_path, world_seed=3, tunables=reglages, period_s=0.002)
+        dossiers.append(partie.run_dir)
+        humain = partie.create_character(ActorKind.HUMAN)
+        pnj = creer_pnj(partie, 3, reglages)
+        relais = [asyncio.create_task(relayer(partie.connect(i), NpcHost(i, decide))) for i in pnj]
+        temoin = partie.connect(humain)
+
+        async def test() -> None:
+            for periode in (0.0002, None, 0.002, 0.0002):
+                partie.set_period(periode)
+                if periode is None:
+                    await asyncio.sleep(0.02)
+                    continue
+                cible = partie.state.tick + 40
+                while (await temoin.next_update()).observation.tick < cible:
+                    pass
+
+        try:
+            await avec_horloge(partie, test())
+        finally:
+            for tache in relais:
+                tache.cancel()
+
+    asyncio.run(jouer())
+    dossier = dossiers[0]
+    initial = snapshot.decode((dossier / "snapshot.msgpack").read_bytes())
+    log = OrderLog(dossier / "orders.sqlite")
+    ordres, empreintes = log.orders_by_tick(), log.fingerprints_by_tick()
+    log.close()
+    assert len(ordres) >= 120
+    assert any(s.order.policy_id == POLICY_ID for du_tick in ordres for s in du_tick)
+    etat = initial.state
+    rejouees = []
+    for du_tick in ordres:
+        etat, _ = step(etat, du_tick, 3, reglages)
+        rejouees.append(fingerprints(etat))
+    assert tuple(rejouees) == empreintes
+    assert [ligne["period_s"] for ligne in lignes_de_vitesse(dossier)[1:]] == [
+        0.002,
+        0.0002,
+        None,
+        0.002,
+        0.0002,
+    ]

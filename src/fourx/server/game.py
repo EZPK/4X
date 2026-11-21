@@ -13,8 +13,11 @@ Une seule boucle asyncio : l'horloge (`run`) joue un tick à chaque période. Le
 """
 
 import asyncio
+import contextlib
 from datetime import UTC, datetime
 from pathlib import Path
+
+import msgspec.json
 
 from fourx.core import snapshot
 from fourx.core.fingerprints import fingerprints
@@ -38,6 +41,7 @@ from fourx.server.order_log import OrderLog, lire_commit
 from fourx.server.reception import Reception
 
 RACINE_DEPOT = Path(__file__).resolve().parents[3]
+SPEED_LOG_SCHEMA_VERSION = 1
 
 
 class Connexion:
@@ -70,7 +74,8 @@ class Game:
     ) -> None:
         self.world_seed = world_seed
         self.tunables = tunables
-        self.period_s = period_s
+        self.period_s: float | None = period_s
+        self._reveil = asyncio.Event()
         horodatage = datetime.now(UTC).strftime("%Y%m%d-%H%M%S-%f")
         self.run_dir = runs_dir / horodatage
         self.run_dir.mkdir(parents=True)  # refuse un dossier existant (exist_ok vaut False)
@@ -95,6 +100,26 @@ class Game:
         self.clients: list[tuple[int, SyncClient]] = []
         self._administration: list[Order] = []
         self._renvoyes: dict[int, list[SubmitOrders]] = {}
+        self._vitesses = self.run_dir / "speed.jsonl"
+        self._vitesses.write_text(
+            msgspec.json.encode({"speed_log_schema_version": SPEED_LOG_SCHEMA_VERSION}).decode()
+            + "\n",
+            encoding="utf-8",
+        )
+        self._noter_la_periode()
+
+    def _noter_la_periode(self) -> None:
+        """Une ligne de speed.jsonl : le dernier tick joué et la période, None en pause."""
+        ligne = {"tick": self.state.tick, "period_s": self.period_s}
+        with self._vitesses.open("a", encoding="utf-8") as fichier:
+            fichier.write(msgspec.json.encode(ligne).decode() + "\n")
+
+    def set_period(self, period_s: float | None) -> None:
+        """Change la période de l'horloge ; None met en pause. Réveille la boucle de `run`, qui
+        recalcule l'attente restante avec la nouvelle période (Technical Plan, point 6)."""
+        self.period_s = period_s
+        self._noter_la_periode()
+        self._reveil.set()
 
     def create_character(self, kind: ActorKind) -> int:
         """Journalise la création d'un personnage pour le prochain tick.
@@ -167,10 +192,27 @@ class Game:
 
     async def run(self) -> None:
         """Mode avec horloge : un premier tick tout de suite, pour que le joueur voie le monde,
-        puis un tick à chaque période, jusqu'à l'annulation de la tâche."""
+        puis un tick à chaque période, jusqu'à l'annulation de la tâche.
+
+        La période se compte depuis la fin du tick précédent : en surcharge, un tick dure ce
+        qu'il dure, puis l'horloge attend la période. Un changement de période réveille la
+        boucle ; un tick n'est joué tout de suite que si le temps écoulé depuis le dernier tick
+        dépasse la nouvelle période. En pause, aucun tick n'est joué."""
+        boucle = asyncio.get_running_loop()
+        self._un_tick()
+        dernier = boucle.time()
         while True:
-            self._un_tick()
-            await asyncio.sleep(self.period_s)
+            self._reveil.clear()
+            if self.period_s is None:
+                await self._reveil.wait()
+                continue
+            reste = dernier + self.period_s - boucle.time()
+            if reste <= 0:
+                self._un_tick()
+                dernier = boucle.time()
+                continue
+            with contextlib.suppress(TimeoutError):
+                await asyncio.wait_for(self._reveil.wait(), reste)
 
     def close(self) -> None:
         self.journal.close()
