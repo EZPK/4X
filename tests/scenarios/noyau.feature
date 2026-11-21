@@ -6,7 +6,7 @@
 Fonctionnalité: Les règles de la tranche 0 appliquées par le noyau
 
   Contexte:
-    Étant donné les réglages de M1
+    Étant donné des réglages de test
     Et une carte de trois systèmes en chaîne, la station dans system_1, le gisement de ore_a dans system_2 et celui de ore_b dans system_3
 
   Scénario: Un vaisseau va de system_1 à system_3 en deux sauts
