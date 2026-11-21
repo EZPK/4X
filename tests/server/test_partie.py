@@ -4,6 +4,7 @@
 import asyncio
 import re
 from collections.abc import Iterator
+from datetime import UTC, datetime
 from pathlib import Path
 
 import msgspec.json
@@ -142,6 +143,31 @@ def test_cree_les_dossiers_parents(tmp_path: Path) -> None:
     partie = Game(tmp_path / "a" / "b", world_seed=3, tunables=load_tunables())
     partie.close()
     assert partie.run_dir.parent == tmp_path / "a" / "b"
+
+
+class HorlogeFixe:
+    """Remplace `datetime` dans fourx.server.game : une seule heure, demandée en UTC."""
+
+    @staticmethod
+    def now(tz: object) -> datetime:
+        assert tz is UTC
+        return datetime(2026, 11, 21, 8, 30, 5, 123456, tzinfo=UTC)
+
+
+def test_dossier_de_partie_horodate_en_utc(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("fourx.server.game.datetime", HorlogeFixe)
+    partie = Game(tmp_path, world_seed=3, tunables=load_tunables())
+    partie.close()
+    assert partie.run_dir == tmp_path / "20261121-083005-123456"
+
+
+def test_un_dossier_de_partie_existant_n_est_pas_reutilise(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("fourx.server.game.datetime", HorlogeFixe)
+    (tmp_path / "20261121-083005-123456").mkdir()
+    with pytest.raises(FileExistsError):
+        Game(tmp_path, world_seed=3, tunables=load_tunables())
 
 
 def test_boucle_avec_horloge(tmp_path: Path) -> None:

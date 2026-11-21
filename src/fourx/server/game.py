@@ -73,7 +73,7 @@ class Game:
         self.period_s = period_s
         horodatage = datetime.now(UTC).strftime("%Y%m%d-%H%M%S-%f")
         self.run_dir = runs_dir / horodatage
-        self.run_dir.mkdir(parents=True, exist_ok=False)
+        self.run_dir.mkdir(parents=True)  # refuse un dossier existant (exist_ok vaut False)
         self.state: State = generate(world_seed, tunables)
         version = rules_version(tunables)
         commit, modifie = lire_commit(RACINE_DEPOT)
