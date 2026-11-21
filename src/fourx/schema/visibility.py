@@ -10,6 +10,7 @@ class Visibility(enum.Enum):
     CORPORATION = "corporation"
     PRIVATE = "private"
     ADMIN = "admin"
+    NEARBY = "nearby"  # proximité (ADR 0005, Technical Plan, point 5)
 
 
 def visible(classe: Visibility) -> msgspec.Meta:

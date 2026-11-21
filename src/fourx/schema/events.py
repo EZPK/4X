@@ -84,12 +84,12 @@ Payload = (
 CLASSES: dict[type[Any], Visibility] = {
     CharacterCreated: Visibility.PUBLIC,
     OrderRefused: Visibility.PRIVATE,
-    Departed: Visibility.PUBLIC,
-    Arrived: Visibility.PUBLIC,
+    Departed: Visibility.NEARBY,
+    Arrived: Visibility.NEARBY,
     MiningStarted: Visibility.PRIVATE,
     MiningEnded: Visibility.PRIVATE,
     Sale: Visibility.PRIVATE,
-    DepositRegenerated: Visibility.PUBLIC,
+    DepositRegenerated: Visibility.NEARBY,
     LedgerEntryRecorded: Visibility.ADMIN,
 }
 

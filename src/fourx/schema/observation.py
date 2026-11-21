@@ -21,7 +21,7 @@ class DepositView(msgspec.Struct, frozen=True):
     id: Id
     system_id: Id
     ore_id: Id
-    stock: Int64
+    stock: Int64 | None  # None hors de portée (ADR 0005)
 
 
 class StationView(msgspec.Struct, frozen=True):
@@ -55,6 +55,13 @@ class OtherShipView(msgspec.Struct, frozen=True):
     capacity: Int64
 
 
+class PublicTunablesView(msgspec.Struct, frozen=True):
+    """Les réglages publics (ADR 0003) : la capacité est dans OwnShipView, la taxe dans Sale."""
+
+    jump_ticks: Int64
+    mining_rate: Int64
+
+
 class Observation(msgspec.Struct, frozen=True):
     tick: Int64
     actor_id: Id
@@ -68,3 +75,4 @@ class Observation(msgspec.Struct, frozen=True):
     action_budget: Int64
     events: tuple[Event, ...]
     results: tuple[OrderResult, ...]
+    public_tunables: PublicTunablesView  # dernier champ, pour l'ordre d'encodage (ADR 0003)

@@ -26,7 +26,13 @@ from fourx.core.version import rules_version
 from fourx.core.world import generate
 from fourx.schema.actors import ActorKind
 from fourx.schema.orders import CreateCharacter, Order, OrderCategory, SubmittedOrder
-from fourx.schema.protocol import PROTOCOL_VERSION, SubmitOrders, SyncClient, TickUpdate
+from fourx.schema.protocol import (
+    NOMINAL_TICK_PERIOD_S,
+    PROTOCOL_VERSION,
+    SubmitOrders,
+    SyncClient,
+    TickUpdate,
+)
 from fourx.server.events_writer import EventsWriter
 from fourx.server.order_log import OrderLog, lire_commit
 from fourx.server.reception import Reception
@@ -57,7 +63,11 @@ class Connexion:
 
 class Game:
     def __init__(
-        self, runs_dir: Path, world_seed: int, tunables: Tunables, period_s: float = 1.0
+        self,
+        runs_dir: Path,
+        world_seed: int,
+        tunables: Tunables,
+        period_s: float = NOMINAL_TICK_PERIOD_S,
     ) -> None:
         self.world_seed = world_seed
         self.tunables = tunables
@@ -147,7 +157,8 @@ class Game:
 
     def _mise_a_jour(self, actor_id: int) -> TickUpdate:
         return TickUpdate(
-            protocol_version=PROTOCOL_VERSION, observation=observe(self.state, actor_id)
+            protocol_version=PROTOCOL_VERSION,
+            observation=observe(self.state, actor_id, self.tunables),
         )
 
     def advance(self, n: int) -> None:
@@ -156,10 +167,11 @@ class Game:
             self._un_tick()
 
     async def run(self) -> None:
-        """Mode avec horloge : un tick à chaque période, jusqu'à l'annulation de la tâche."""
+        """Mode avec horloge : un premier tick tout de suite, pour que le joueur voie le monde,
+        puis un tick à chaque période, jusqu'à l'annulation de la tâche."""
         while True:
-            await asyncio.sleep(self.period_s)
             self._un_tick()
+            await asyncio.sleep(self.period_s)
 
     def close(self) -> None:
         self.journal.close()

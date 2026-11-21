@@ -11,6 +11,7 @@ from fourx.schema.observation import (
     DepositView,
     Observation,
     OwnShipView,
+    PublicTunablesView,
     StationView,
     SystemView,
 )
@@ -44,7 +45,7 @@ def navire(
 def observation(
     navires: tuple[OwnShipView, ...] = (),
     tick: int = 7,
-    stocks: tuple[int, int] = (20000, 20000),
+    stocks: tuple[int | None, int | None] = (20000, 20000),
     prix: tuple[int, int] = (10, 15),
     solde: int = 0,
     evenements: tuple[Event, ...] = (),
@@ -70,4 +71,5 @@ def observation(
         action_budget=10,
         events=evenements,
         results=resultats,
+        public_tunables=PublicTunablesView(jump_ticks=5, mining_rate=10),
     )

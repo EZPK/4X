@@ -15,7 +15,7 @@ from fourx.policies.scripted_miner import POLICY_ID, decide
 from fourx.schema.actors import ActorKind
 from fourx.schema.events import CharacterCreated, Event
 from fourx.schema.orders import CreateCharacter, Move, Order, OrderCategory
-from fourx.schema.protocol import PROTOCOL_VERSION, SubmitOrders, TickUpdate
+from fourx.schema.protocol import NOMINAL_TICK_PERIOD_S, PROTOCOL_VERSION, SubmitOrders, TickUpdate
 from fourx.server.game import Game
 from fourx.server.order_log import OrderLog
 from fourx.server.tunables_loader import load_tunables
@@ -43,7 +43,7 @@ def journal(jeu: Game) -> OrderLog:
 
 def test_dossier_de_la_partie(jeu: Game, tmp_path: Path) -> None:
     assert jeu.run_dir.parent == tmp_path
-    assert (jeu.world_seed, jeu.period_s) == (3, 1.0)
+    assert (jeu.world_seed, jeu.period_s) == (3, NOMINAL_TICK_PERIOD_S)
     assert re.fullmatch(r"\d{8}-\d{6}-\d{6}", jeu.run_dir.name)
     fichiers = {f.name for f in jeu.run_dir.iterdir()}
     assert {"snapshot.msgpack", "orders.sqlite", "events.jsonl"} <= fichiers
@@ -159,3 +159,23 @@ def test_boucle_avec_horloge(tmp_path: Path) -> None:
             partie.close()
 
     assert asyncio.run(jouer()) == [1, 2, 3]
+
+
+def test_premier_tick_immediat(tmp_path: Path) -> None:
+    """Le mode avec horloge joue un tick dès son lancement, sans attendre la période."""
+
+    async def jouer() -> int:
+        partie = Game(tmp_path, world_seed=3, tunables=load_tunables(), period_s=60.0)
+        acteur = partie.create_character(ActorKind.HUMAN)
+        connexion = partie.connect(acteur)
+        horloge = asyncio.create_task(partie.run())
+        try:
+            mise_a_jour = await asyncio.wait_for(connexion.next_update(), timeout=5)
+            return int(mise_a_jour.observation.tick)
+        finally:
+            horloge.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await horloge
+            partie.close()
+
+    assert asyncio.run(jouer()) == 1

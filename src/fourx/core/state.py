@@ -17,6 +17,7 @@ from fourx.schema.visibility import Visibility, visible
 
 PUBLIC = visible(Visibility.PUBLIC)
 PRIVATE = visible(Visibility.PRIVATE)
+NEARBY = visible(Visibility.NEARBY)
 
 
 class System(msgspec.Struct, frozen=True):
@@ -28,7 +29,7 @@ class Deposit(msgspec.Struct, frozen=True):
     id: Annotated[Id, PUBLIC]
     system_id: Annotated[Id, PUBLIC]
     ore_id: Annotated[Id, PUBLIC]
-    stock: Annotated[Int64, PUBLIC]
+    stock: Annotated[Int64, NEARBY]
 
 
 class Station(msgspec.Struct, frozen=True):
@@ -44,10 +45,10 @@ class Actor(msgspec.Struct, frozen=True):
 
 
 class Ship(msgspec.Struct, frozen=True):
-    id: Annotated[Id, PUBLIC]
-    owner_id: Annotated[Id, PUBLIC]
-    system_id: Annotated[Id, PUBLIC]
-    capacity: Annotated[Int64, PUBLIC]
+    id: Annotated[Id, NEARBY]
+    owner_id: Annotated[Id, NEARBY]
+    system_id: Annotated[Id, NEARBY]
+    capacity: Annotated[Int64, NEARBY]
     activity: Annotated[Activity, PRIVATE]
     route: Annotated[tuple[Id, ...], PRIVATE]
     ticks_to_next_jump: Annotated[Int64, PRIVATE]

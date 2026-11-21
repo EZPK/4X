@@ -1,11 +1,23 @@
-# Réglages de M1 (docs/designs/niveau-2-m1-noyau.md, plan détaillé, point 17).
+# Réglages de M1 (docs/designs/niveau-2-m1-noyau.md, Technical Plan, point 2, amendement 1).
 # Un changement de ce fichier change rules_version et oblige à régénérer les références.
-jump_ticks = 5
-mining_rate = 10
+# Les fourchettes de la génération du monde viennent du CUJ 1 du niveau 1, élargi par l'ADR 0004 :
+# les changer demande une nouvelle ADR et un amendement.
+jump_ticks = 400
+mining_rate = 1
 cargo_capacity = 100
-ore_prices = [10, 15]
+station_ore_prices = [[10, 15], [12, 12], [8, 18]]
 tax_rate_bp = 1000
 deposit_stock = 20000
-regen_ticks = 1000
+regen_ticks = 10000
 budget_regen = 1
 budget_max = 10
+systems_min = 8
+systems_max = 12
+deposits_min = 4
+deposits_max = 6
+stations_min = 2
+stations_max = 3
+npc_min = 3
+npc_max = 5
+extra_links_max = 3
+max_neighbors = 4

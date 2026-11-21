@@ -7,7 +7,7 @@ import msgspec.structs
 import pytest
 
 from fourx.core.keyed_random import keyed_draw
-from fourx.core.state import Ship, State
+from fourx.core.state import Ship, State, Station
 from fourx.core.step import Phase, plus_court_chemin, step
 from fourx.core.version import rules_version
 from fourx.schema.actors import Activity, ActorKind
@@ -83,7 +83,7 @@ def test_deplacement_en_deux_sauts() -> None:
     assert [type(e.payload) for e in suite] == [Departed, Arrived]
     assert suite[0].payload == Departed(ship_id=1, system_id=1)
     assert suite[1].payload == Arrived(ship_id=1, system_id=2)
-    assert all(e.visibility is Visibility.PUBLIC and e.actor_id == 1 for e in suite)
+    assert all(e.visibility is Visibility.NEARBY and e.actor_id == 1 for e in suite)
     etat, _ = avancer(etat, (), 5)
     assert (etat.ships[0].system_id, etat.ships[0].activity, etat.ships[0].ticks_to_next_jump) == (
         3,
@@ -601,3 +601,58 @@ def test_regain_de_budget_plafonne() -> None:
     etat = monde((vaisseau(1, 1, 2),), budgets={1: 9})
     apres, _ = avancer(etat, (), 3)
     assert apres.actors[0].action_budget == 10
+
+
+# --- Amendement 1 : plusieurs stations, système de départ, colocalisation
+
+
+def deux_stations(etat: State) -> State:
+    """La station 1 dans system_1 ; la station 2 dans system_3, avec le gisement de ore_b."""
+    return msgspec.structs.replace(
+        etat,
+        stations=(
+            Station(id=1, system_id=1, ore_prices=REGLAGES.station_ore_prices[0]),
+            Station(id=2, system_id=3, ore_prices=REGLAGES.station_ore_prices[1]),
+        ),
+    )
+
+
+def test_vente_a_la_station_du_systeme_au_prix_de_cette_station() -> None:
+    etat = deux_stations(monde((vaisseau(1, 1, 3, cargo=(0, 10)),)))
+    apres, evenements = avancer(etat, (ordre(etat, 1, 1, Sell(ship_id=1, ore_id=2, quantity=10)),))
+    ventes = [e.payload for e in evenements if isinstance(e.payload, Sale)]
+    assert [(v.price, v.payment, v.tax) for v in ventes] == [(12, 120, 12)]
+
+
+def test_vente_refusee_hors_du_systeme_d_une_station() -> None:
+    etat = deux_stations(monde((vaisseau(1, 1, 2, cargo=(0, 10)),)))
+    apres, _ = avancer(etat, (ordre(etat, 1, 1, Sell(ship_id=1, ore_id=2, quantity=10)),))
+    assert refus(apres, 1) is RefusalCode.NOT_AT_STATION
+
+
+def test_systeme_de_depart_par_rang_de_station() -> None:
+    """Le personnage d'identifiant n part de la station de rang rem_trunc(n − 1, S)."""
+    etat = deux_stations(monde())
+    soumis = tuple(
+        ordre(
+            etat,
+            n,
+            0,
+            CreateCharacter(actor_kind=ActorKind.HUMAN),
+            sender=None,
+            category=OrderCategory.ADMIN,
+        )
+        for n in (1, 2, 3)
+    )
+    apres, _ = avancer(etat, soumis)
+    assert [(v.owner_id, v.system_id) for v in apres.ships] == [(1, 1), (2, 3), (3, 1)]
+    assert all(v.cargo == (0, 0) for v in apres.ships)
+
+
+def test_colocalisation_miner_puis_vendre_sans_saut() -> None:
+    etat = deux_stations(monde((vaisseau(1, 1, 3),)))
+    etat, _ = avancer(etat, (ordre(etat, 1, 1, Mine(ship_id=1, ore_id=2)),), 10)
+    assert etat.ships[0].cargo == (0, 100) and etat.ships[0].system_id == 3
+    apres, evenements = avancer(etat, (ordre(etat, 1, 2, Sell(ship_id=1, ore_id=2, quantity=100)),))
+    assert [e.payload.price for e in evenements if isinstance(e.payload, Sale)] == [12]
+    assert apres.ships[0].system_id == 3

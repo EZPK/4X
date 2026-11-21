@@ -15,12 +15,22 @@ REGLAGES = Tunables(
     jump_ticks=5,
     mining_rate=10,
     cargo_capacity=100,
-    ore_prices=(10, 15),
+    station_ore_prices=((10, 15), (12, 12), (8, 18)),
     tax_rate_bp=1000,
     deposit_stock=20000,
     regen_ticks=1000,
     budget_regen=1,
     budget_max=10,
+    systems_min=8,
+    systems_max=12,
+    deposits_min=4,
+    deposits_max=6,
+    stations_min=2,
+    stations_max=3,
+    npc_min=3,
+    npc_max=5,
+    extra_links_max=3,
+    max_neighbors=4,
 )
 
 
@@ -70,7 +80,7 @@ def monde(
             Deposit(id=1, system_id=2, ore_id=1, stock=stocks[0]),
             Deposit(id=2, system_id=3, ore_id=2, stock=stocks[1]),
         ),
-        stations=(Station(id=1, system_id=1, ore_prices=reglages.ore_prices),),
+        stations=(Station(id=1, system_id=1, ore_prices=reglages.station_ore_prices[0]),),
         actors=tuple(
             Actor(id=a, kind=ActorKind.HUMAN, action_budget=budgets.get(a, reglages.budget_max))
             for a in proprietaires

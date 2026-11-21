@@ -176,7 +176,7 @@ def test_fonctions_d_affichage() -> None:
         resultats=(resultat(1, None, "accepté"),),
     )
     assert carte(obs).splitlines() == [
-        "[1] system_1        station",
+        "[1] system_1        station S1 (ore_a 10, ore_b 15)",
         "[2] system_2   @    gisement ore_a (20000)",
         "[3] system_3        gisement ore_b (20000)",
     ]

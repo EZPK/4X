@@ -11,7 +11,7 @@ from hypothesis import strategies as st
 
 from fourx.core.fingerprints import fingerprints
 from fourx.core.ledger import money_supply
-from fourx.core.observe import classes, observe
+from fourx.core.observe import classes, observe, portee, systeme_de_reference
 from fourx.core.state import Actor, Deposit, Ship, State, Station, System
 from fourx.core.step import step
 from fourx.core.tunables import Tunables
@@ -147,7 +147,8 @@ SOURCES = {
 def test_visibilite_des_observations(p: tuple[int, int, int, list[list[Any]]]) -> None:
     for _, apres, _ in jouer(*p):
         for acteur in (1, 2, 3):
-            obs = observe(apres, acteur)
+            obs = observe(apres, acteur, REGLAGES)
+            a_portee = portee(apres, acteur)
             for liste in (
                 obs.systems,
                 obs.deposits,
@@ -161,9 +162,18 @@ def test_visibilite_des_observations(p: tuple[int, int, int, list[list[Any]]]) -
                     detient = isinstance(v, OwnShipView)
                     for champ in v.__struct_fields__:
                         classe = source[champ]
+                        if classe is Visibility.NEARBY and not detient:
+                            proche = getattr(v, "system_id", None) in a_portee
+                            assert proche or getattr(v, champ) is None, (v, champ)
+                            continue
                         assert classe is Visibility.PUBLIC or (
-                            classe is Visibility.PRIVATE and detient
+                            classe in (Visibility.PRIVATE, Visibility.NEARBY) and detient
                         )
+            assert all(v.system_id in a_portee for v in obs.other_ships)
+            vaisseaux_proches = sorted(
+                v.id for v in apres.ships if v.owner_id != acteur and v.system_id in a_portee
+            )
+            assert sorted(v.id for v in obs.other_ships) == vaisseaux_proches
             assert all(v.owner_id == acteur for v in obs.own_ships)
             assert all(v.owner_id != acteur for v in obs.other_ships)
             portefeuille = next(
@@ -175,8 +185,18 @@ def test_visibilite_des_observations(p: tuple[int, int, int, list[list[Any]]]) -
             assert all(
                 e.visibility is Visibility.PUBLIC
                 or (e.visibility is Visibility.PRIVATE and e.actor_id == acteur)
+                or (
+                    e.visibility is Visibility.NEARBY and systeme_de_reference(apres, e) in a_portee
+                )
                 for e in obs.events
             )
+            caches = [
+                e
+                for e in apres.last_tick.events
+                if e.visibility is Visibility.NEARBY
+                and systeme_de_reference(apres, e) not in a_portee
+            ]
+            assert not any(e in obs.events for e in caches)
             assert all(r.recipient_actor_id == acteur for r in obs.results)
 
 

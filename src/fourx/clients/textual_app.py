@@ -38,9 +38,15 @@ def carte(observation: Observation) -> str:
     """Une ligne par système : sites, vaisseau du propriétaire (@) et autres vaisseaux (o)."""
     lignes = []
     for systeme in observation.systems:
-        sites = ["station" for s in observation.stations if s.system_id == systeme.id]
+        sites = [
+            "station S{} ({})".format(
+                s.id, ", ".join(f"ore_{lettre(o + 1)} {p}" for o, p in enumerate(s.ore_prices))
+            )
+            for s in observation.stations
+            if s.system_id == systeme.id
+        ]
         sites += [
-            f"gisement ore_{lettre(d.ore_id)} ({d.stock})"
+            f"gisement ore_{lettre(d.ore_id)} ({'?' if d.stock is None else d.stock})"
             for d in observation.deposits
             if d.system_id == systeme.id
         ]
