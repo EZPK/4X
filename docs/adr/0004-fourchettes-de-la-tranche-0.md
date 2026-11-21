@@ -16,15 +16,15 @@
   - 2 à 3 stations, chacune rachetant chaque minerai à son propre prix fixe, écrit dans les réglages ;
   - deux minerais, comme avant ;
   - 3 à 5 PNJ, chacun avec un vaisseau ;
-  - une station et un gisement peuvent partager un système (décision du propriétaire, 2026-11-12) : un tel gisement rapporte vite puis s'épuise, et oblige à aller miner ailleurs. C'est le cas dans 84 % des mondes générés (calcul du 2026-11-12).
+  - une station et un gisement peuvent partager un système (décision du propriétaire, 2026-11-12) : un tel gisement rapporte vite puis s'épuise, et oblige à aller miner ailleurs. Une station partage son système avec un gisement dans 84 % des mondes générés, et avec un gisement de `ore_b` dans 52 % (calculs du 2026-11-12 et du 2026-11-13).
 
   Les fourchettes sont des réglages : les changer change `rules_version`.
 - **Conséquences :**
-  - le CUJ 1 du niveau 1 reprend ces fourchettes ;
+  - le CUJ 1 du niveau 1 reprend les fourchettes de systèmes, de gisements et de stations (il ne donne pas de nombre de PNJ) ;
   - la décision « Taille de la tranche 0 » du niveau 2 de M1 est remplacée par l'amendement 1 ;
   - `world.generate` tire la taille, le graphe (un arbre puis quelques liens) et l'emplacement des sites ; les scénarios ne supposent plus une carte fixe ;
   - le client affiche une carte en graphe ;
-  - les bornes de l'économie du volet C se calculent sur le monde de la partie de référence, et tiennent compte de l'épuisement des gisements ;
+  - les bornes de l'économie du volet C se calculent sur le monde de la partie de référence, à partir du cycle de chaque PNJ ; un PNJ dont le gisement peut se vider passe à des bornes de repli ;
   - option écartée : interdire la colocalisation, qui aurait demandé au moins 9 systèmes (alternative AA du niveau 2 de M1).
 - **Condition de révision :** la carte devient illisible sur un terminal de 80 × 24 ; ou la durée du rejeu de la partie de référence dépasse la limite de la CI ; ou un jalon suivant fixe la taille du monde en ligne.
 - **Section du niveau 1 modifiée :** CUJ 1 (le propriétaire joue la tranche 0), les deux premières puces de « Given ».

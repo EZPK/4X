@@ -1,5 +1,7 @@
 # Goldfish Annotated Review Report — étape 7, tour 2
 
+**Status: resolved** (2026-11-15). Décision du propriétaire : E3 → (b), les bornes d'économie sont calculées à partir du cycle établi de chaque PNJ, à la régénération des références (plan détaillé, point 27, réécrit ; Technical Plan, point 9 ; objectif 5 ; alternative V). Mise en œuvre par l'agent : un PNJ dont le gisement peut se vider passe au repli, avec une borne basse nulle et une borne haute géométrique, sans durée maximale de cycle (ce qui règle aussi la limite de C_max relevée par G2) ; l'épuisement prévu tient compte de ce que les PNJ au repli peuvent miner ailleurs. Essai de la méthode, hors du dépôt, sur la génération écrite d'après le document : graine 1, deux PNJ sur cinq au repli, émission bornée entre 45 000 et 361 500 par fenêtre ; graines 1 à 10 000, au moins un PNJ au repli dans 47 % des mondes, tous dans 35 %. Les corrections G1 à G15 sont appliquées. Le tour 2 n'est pas propre au sens d'EGM : la convergence demande deux tours propres consécutifs.
+
 **Target :** `docs/designs/niveau-2-m1-noyau.md` (spécification, lignes 1 à 1070 ; plus le plan détaillé quand un constat le cite) ; ADR 0004 et 0005.
 
 **Source :** `critic_report_tour2.md`. Les doublons entre relecteurs sont fusionnés. Aucun constat ne rouvre un point réglé au tour 1 (contesté ou noté sans correction).

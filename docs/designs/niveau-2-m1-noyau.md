@@ -5,7 +5,7 @@
 *   **Date :** 2026-11-02 ; mis à jour le 2026-11-06 (décisions du propriétaire sur le contenu du jeu ; corrections de la revue EGM, étapes 5 à 9) ; approuvé par le propriétaire le 2026-11-08 ; amendement 1 rédigé le 2026-11-12, en revue
 *   **Niveau 1 :** [architecture-niveau-1.md](./architecture-niveau-1.md) (CUJ 1, CUJ 4, §1 à §7, §10, §11 ligne M1)
 *   **Intentions reprises :** [RFC du brainstorm](./mmo-gestion-spatiale-ia.md), jalon « M1 – Tranche 0 ». Le niveau 1 fait foi en cas d'écart.
-*   **Amendements :** amendement 1 du 2026-11-12 (un monde plus grand, un écran lisible, le temps comme ressource), voir le tableau ci-dessous. ADR liées : [0003](../adr/0003-observe-recoit-les-reglages.md), [0004](../adr/0004-fourchettes-de-la-tranche-0.md) et [0005](../adr/0005-visibilite-par-proximite.md).
+*   **Amendements :** amendement 1 du 2026-11-12 (un monde plus grand, un écran lisible, le temps comme ressource, la visibilité par proximité), voir le tableau ci-dessous. ADR liées : [0003](../adr/0003-observe-recoit-les-reglages.md), [0004](../adr/0004-fourchettes-de-la-tranche-0.md) et [0005](../adr/0005-visibilite-par-proximite.md).
 
 Les titres de section (`##`), le statut et les intitulés du gabarit du plan (sous-titres, Type / Scope, Proposed Changes, Create / Modify / Delete) suivent le gabarit de conception d'EGM, en anglais, pour que les outils de revue s'y retrouvent. Tout le reste est en français.
 
@@ -14,27 +14,36 @@ Les titres de section (`##`), le statut et les intitulés du gabarit du plan (so
 **Conventions de renvoi.** « Technical Plan, point N » désigne une section du Technical Plan de ce document. « Plan détaillé, point N » désigne un point du Detailed Implementation Plan de ce document. Un « point N » sans préfixe renvoie à la même partie du document que le passage qui le cite. Un renvoi au niveau 1 le dit toujours (« niveau 1, §2 »).
 
 **Autres conventions.**
-- Un *CUJ* (Critical User Journey) est un parcours utilisateur critique du niveau 1 ; M1 reprend le CUJ 1 et le CUJ 4 sans les adapter *(remplacé par l'amendement 1 : le CUJ 1 est élargi par l'ADR 0004, et le CUJ A s'ajoute)*, et les scénarios du plan détaillé, points 20 et 24, les traduisent.
+- Un *CUJ* (Critical User Journey) est un parcours utilisateur critique du niveau 1 *(remplacé par l'amendement 1 : un parcours utilisateur critique, défini par le niveau 1, CUJ 1 à 6, ou par ce document, CUJ A)* ; M1 reprend le CUJ 1 et le CUJ 4 sans les adapter *(remplacé par l'amendement 1 : le CUJ 1 est élargi par l'ADR 0004)*, et les scénarios du plan détaillé, points 20 et 24, les traduisent. **(amendement 1)** Le CUJ A est traduit par `tests/scenarios/ecrans.feature` (plan détaillé, point 23 ter).
 - « Par `!` » veut dire que le propriétaire tape la commande dans Claude Code en la préfixant de `!`, ce qui l'exécute dans la session sous son propre nom.
 - Un *site* est une station ou un gisement. Un *gisement* est l'entité du jeu où l'on mine ; « champ » ne désigne que les champs de données.
 - Les deux machines sont l'*ordinateur portable* du propriétaire et le *PC d'entraînement*.
 
-**Amendements.** Un amendement ajoute des passages sans jamais renuméroter les passages existants, qu'une trentaine de fichiers du dépôt citent. Un point nouveau prend le numéro du point qui le précède, suivi de « bis », « ter »…
+**Amendements.** Un amendement ajoute des passages sans jamais renuméroter les passages existants, qu'une trentaine de fichiers du dépôt citent. Un point inséré entre deux points existants prend le numéro du point qui le précède, suivi de « bis », « ter »… Un CUJ ou une alternative nouveaux prennent une lettre, à la suite des lettres existantes (CUJ A ; alternatives J à AA).
 
-- **Préséance.** En cas de conflit dans ce document, un passage marqué « (amendement N) » l'emporte sur le texte d'origine, que celui-ci soit marqué ou non, et un amendement plus récent l'emporte sur un plus ancien.
+- **Préséance.** En cas de conflit dans ce document, un passage marqué par l'amendement N, sous l'une des formes de la légende ci-dessous, l'emporte sur le texte d'origine, que celui-ci soit marqué ou non, et un amendement plus récent l'emporte sur un plus ancien.
 - **Légende des marques :**
   - « (amendement N) » : passage ajouté par l'amendement N ;
   - « (amendement N, réécrit) » : le passage d'origine est remplacé sur place, et sa version d'origine ne figure plus dans le document ;
   - « (amendement N, précisé) » : le passage d'origine reste vrai, et l'amendement le complète à la suite ;
   - « (amendement N, remplace / complète la ligne d'origine) » : dans un tableau, ligne nouvelle qui remplace ou complète une ligne gardée plus haut ;
   - « **Ajoutés par l'amendement N :** » : liste d'éléments ajoutés à la suite d'une liste d'origine ;
-  - « (amendement N : …) » : marque en ligne dans un bloc de code, qui donne la nouvelle valeur ;
-  - « *(remplacé par l'amendement N, voir …)* » : le passage d'origine est gardé mais ne vaut plus ; le renvoi donne le texte en vigueur. La marque ne couvre que la phrase ou le membre de phrase qui la précède.
+  - « **Risques ajoutés par l'amendement N :** » : tableau de risques ajouté à la suite du tableau d'origine ;
+  - « (amendement N : …) » : marque en ligne dans un bloc de code ou dans une cellule de tableau, qui donne la nouvelle valeur ;
+  - « **Proposed Changes (amendement N, ajout) :** » ou « **Proposed Changes (amendement N, remplacement) :** » : dans le plan détaillé, puce ajoutée à un point existant, qui complète ses puces d'origine, ou remplace celles qui portent une marque de remplacement ;
+  - « *(remplacé par l'amendement N, voir …)* » : le passage d'origine est gardé mais ne vaut plus ; le renvoi donne le texte en vigueur ;
+  - « *(remplacé par l'amendement N : …)* » : de même, mais le texte en vigueur suit les deux-points.
+- **Portée des marques :**
+  - une marque placée dans un titre couvre toute la section ;
+  - une marque placée après un titre, après l'intitulé en gras d'un paragraphe ou après une phrase d'introduction couvre tout le paragraphe ou toute la liste qui suit ;
+  - une marque seule sur sa ligne couvre tout ce qui suit, jusqu'au prochain titre ;
+  - une marque d'ajout (« (amendement N) » ou « (amendement N, précisé) ») placée en tête d'une phrase, au milieu d'un paragraphe ou d'une puce, couvre cette phrase et la fin du paragraphe ou de la puce ;
+  - placée ailleurs, une marque de remplacement ne couvre que la phrase ou le membre de phrase qui la précède.
 - **Code livré.** Les volets A et B (plan détaillé, points 15 à 23) sont livrés. Le texte d'origine non marqué de ces points décrit le code fusionné ; l'amendement l'appelle « code d'origine ». La « tâche de relais » est la tâche de `__main__.py` qui transmet les mises à jour à l'hôte des PNJ (Technical Plan, point 7).
 
 | N° | Date | Objet | Passages touchés | Dossier de revue |
 | :-- | :-- | :-- | :-- | :-- |
-| 1 | 2026-11-12 | un monde plus grand, un écran lisible, le temps comme ressource, la visibilité par proximité ; à la suite de la partie de test du 2026-11-11 | conventions ; Overview ; The Problem ; objectifs 5 et 11 à 16 ; Non-Goals ; Open Questions ; CUJ A ; Technical Plan, points 1, 2, 5, 6, 7, 7 bis, 8, 9, 11, 12, 13 ; introduction des alternatives, alternatives J à Z ; Risks & Mitigations ; Additional Resources ; Future Improvements ; plan détaillé, points 5, 17, 20, 22, 23, 23 bis à 23 sexies, 25, 26, 27, 28, 28 bis ; Verification Plan | `docs/revues/2026-11-12-niveau-2-m1-noyau-amendement-1/` |
+| 1 | 2026-11-12 | un monde plus grand, un écran lisible, le temps comme ressource, la visibilité par proximité ; à la suite de la partie de test du 2026-11-11 | conventions ; Overview ; The Problem ; objectifs 5, 6 et 11 à 16 ; Non-Goals ; Open Questions ; introduction des CUJ, CUJ A ; Technical Plan, points 1, 2, 5, 6, 7, 7 bis, 8, 9, 11, 12, 13 ; introduction des alternatives, alternatives J à AA ; Risks & Mitigations ; Additional Resources ; Future Improvements ; plan détaillé, points 5, 17, 20, 22, 23, 23 bis à 23 sexies, 25, 26, 27, 28, 28 bis, 29, 32 bis ; Verification Plan | `docs/revues/2026-11-12-niveau-2-m1-noyau-amendement-1/` |
 
 
 --------------------------------------------------------------------------------
@@ -61,7 +70,7 @@ M1 fixe aussi les identifiants que le glossaire marque « à fixer au niveau 2 d
    - 2 à 3 stations, chacune avec ses propres prix fixes, écrits dans les réglages ;
    - 3 à 5 PNJ, chacun avec un vaisseau.
 
-   Ces fourchettes dépassent celles du CUJ 1 du niveau 1 : l'ADR 0004 les élargit.
+   Ces fourchettes dépassent celles d'origine du CUJ 1 du niveau 1 : l'ADR 0004 les élargit.
 2. **Le client devient un écran unique et lisible.** Il est fait de cadres indépendants : carte, vaisseau, stations, historique, barre d'état et alertes. Le rendu est très simple : du texte, des tableaux, des cadres, peu ou pas de couleurs. L'écran montre :
    - la carte en graphe ;
    - où se trouve chaque minerai (le stock des seuls gisements proches), et à quel prix chaque station le rachète ;
@@ -70,10 +79,10 @@ M1 fixe aussi les identifiants que le glossaire marque « à fixer au niveau 2 d
    - pourquoi un ordre a été refusé, en français, et où aller.
 
    Une alerte signale la fin d'un minage et l'arrivée à destination. Les touches fonctionnent sur un clavier AZERTY, sans Majuscule.
-3. **Le temps devient une ressource.** Un saut entre deux systèmes voisins dure `jump_ticks` ticks (400 dans les valeurs initiales), soit 20 minutes à la période nominale de 3 s. Remplir une cargaison de 100 unités prend 100 ticks, soit 5 minutes. La vente reste instantanée. Pour donner ces durées au client, `observe` reçoit les réglages et en publie une partie dans l'observation : c'est un changement d'interface du niveau 1, qui passe par l'ADR 0003. En mode développement seulement (option `--dev`), on peut accélérer l'univers, le mettre en pause, ou avancer jusqu'à la prochaine alerte. Cette vitesse de l'univers est la durée réelle d'un tick ; elle ne change pas la durée d'un saut en ticks, qui est une règle (`jump_ticks`).
-4. **On ne voit que ce qui est proche.** Les vaisseaux d'autrui et le stock des gisements ne sont visibles que dans le système d'un de ses vaisseaux et les systèmes voisins (ADR 0005), en attendant des scanners qui porteront plus loin. La carte elle-même (systèmes, liens, emplacement des gisements et des stations, prix) reste visible partout.
+3. **Le temps devient une ressource.** Un saut entre deux systèmes voisins dure `jump_ticks` ticks (400 dans les valeurs initiales), soit 20 minutes à la période nominale de 3 s. Remplir une cargaison de 100 unités prend 100 ticks, soit 5 minutes. La vente reste instantanée. Pour donner ces durées au client, `observe` reçoit les réglages et en publie une partie dans l'observation : c'est un changement d'interface du niveau 1, qui passe par l'ADR 0003. En mode développement seulement (option `--dev`), on peut accélérer l'univers, le mettre en pause, ou avancer jusqu'à la prochaine alerte. Cette vitesse de l'univers se règle par la durée réelle d'un tick ; elle ne change pas la durée d'un saut en ticks, qui est une règle (`jump_ticks`).
+4. **On ne voit que ce qui est proche.** Les vaisseaux d'autrui et le stock des gisements ne sont visibles que dans le système d'un des vaisseaux de l'acteur et les systèmes voisins (ADR 0005), en attendant des scanners qui porteront plus loin. La carte elle-même (systèmes, liens, emplacement des gisements et des stations, prix) reste visible partout.
 
-L'amendement redimensionne aussi le test d'économie du volet C : les fenêtres passent de 1 000 à 10 000 ticks, et les bornes sont calculées pour le monde de la partie de référence (graine 1), à la régénération des références.
+L'amendement redimensionne aussi le test d'économie du volet C : les fenêtres passent de 1 000 à 10 000 ticks, et les bornes sont calculées à la régénération des références, à partir du cycle de chaque PNJ sur le monde de la partie de référence (graine 1).
 
 ## The Problem
 
@@ -93,12 +102,12 @@ Le jalon est large : six livrables, et cinq contrôles obligatoires de plus (don
 - **Les touches sont peu claires.** Le choix du système se fait par un chiffre, qui demande Majuscule sur un clavier AZERTY.
 - **Un refus est resté incompris.** Au tick 51, un ordre de minage a été refusé, parce que le minerai demandé n'avait pas de gisement dans ce système. Le client affichait le code anglais `no_deposit_for_ore`, sans dire où était ce minerai.
 
-Le propriétaire veut un jeu plus lent, stratégique et réfléchi, où le temps compte : tout prend du temps, et l'on passera plus tard à l'échelle par plus de vaisseaux ou de plus gros, pas par des actions plus rapides. Il veut aussi, « sans rentrer dans l'excessif », un monde un peu plus grand : plus de nœuds, plus d'endroits où miner, plus de vaisseaux qui bougent, et plus de points de vente. Avec trois systèmes en ligne, une station et un PNJ, il n'y a ni choix de route, ni choix du lieu de vente, et presque rien ne bouge à l'écran. Enfin, il ne veut pas qu'on voie tout : un autre vaisseau, ou le stock d'un gisement, n'est visible qu'à proximité, dans le système d'un de ses vaisseaux ou un système voisin, en attendant des scanners qui porteront plus loin. C'est une décision de jeu : la détection deviendra une mécanique des jalons suivants, et M1 en pose la règle de base (ADR 0005). Elle a un prix assumé : on voit moins de PNJ bouger à l'écran.
+Le propriétaire veut un jeu plus lent, stratégique et réfléchi, où le temps compte : tout prend du temps, et l'on passera plus tard à l'échelle par plus de vaisseaux ou de plus gros, pas par des actions plus rapides. Il veut aussi, « sans rentrer dans l'excessif », un monde un peu plus grand : plus de nœuds, plus d'endroits où miner, plus de vaisseaux qui bougent, et plus de points de vente. Avec trois systèmes en ligne, une station et un PNJ, il n'y a ni choix de route, ni choix du lieu de vente, et presque rien ne bouge à l'écran. Enfin, il ne veut pas qu'on voie tout : un autre vaisseau, ou le stock d'un gisement, n'est visible qu'à proximité, dans le système d'un des vaisseaux de l'acteur ou un système voisin, en attendant des scanners qui porteront plus loin. C'est une décision de jeu : la détection deviendra une mécanique des jalons suivants, et M1 en pose la règle de base (ADR 0005). Elle a un prix assumé : on voit moins de PNJ bouger à l'écran.
 
 Ralentir seulement la période de l'horloge ne suffit pas. Le jeu attendrait plus longtemps entre des décisions qui restent les mêmes, et le PNJ resterait aussi rapide en ticks. Les durées doivent donc être des règles : elles changent `rules_version`. La taille du monde est aussi une règle, puisque `world.generate` la tire de la graine. C'est le moment le moins coûteux de M1 pour ce changement : les références du volet C n'existent pas encore, et `RULES_REVISION` vaut 0.
 
 Ces changements ont des conséquences, que l'amendement traite :
-- **Le test d'économie ne vérifierait plus rien.** Sur la carte d'origine et avec les nouvelles durées, un cycle du PNJ (aller vers le gisement le plus lointain, minage, retour, vente) dure 1 701 ticks : chiffre obtenu par simulation, graine 1, deux PNJ. Une fenêtre de 1 000 ticks contiendrait donc zéro ou une vente. Sur la carte agrandie, les cycles varient avec la graine : les bornes sont calculées à la régénération des références (plan détaillé, point 27).
+- **Le test d'économie ne vérifierait plus rien.** Sur la carte d'origine et avec les nouvelles durées, un cycle du PNJ (aller vers le gisement le plus lointain, minage, retour, vente) dure 1 701 ticks : chiffre obtenu par simulation, graine 1, deux PNJ. Une fenêtre de 1 000 ticks contiendrait donc zéro ou une vente par PNJ. Sur la carte agrandie, les cycles varient avec la graine : les bornes sont calculées à la régénération des références (plan détaillé, point 27).
 - **Les scénarios protégés de `partie.feature` cassent.** Ils lisent les vrais réglages, et supposent la carte de la graine 1 (station dans `system_1`, `ore_a` dans `system_2`, `ore_b` dans `system_3`).
 - **Le client ne connaît pas les durées.** Il ne voit que l'observation, et le niveau 1 interdit tout autre canal vers le joueur (niveau 1, §5).
 - **Le PNJ doit savoir choisir parmi plusieurs gisements et plusieurs stations.** Sa politique change de version, en restant simple.
@@ -119,10 +128,10 @@ Chaque objectif est vérifiable par un contrôle automatique, ou validé explici
    *Vérification :* un scénario qui modifie volontairement un composant à un tick donné et vérifie que l'outil nomme ce tick et ce composant.
 4. **L'argent et les biens se conservent.** Les trois invariants du niveau 1, §4 (Technical Plan, point 3), sont vérifiés à chaque tick.
    *Vérification :* une assertion à chaque tick dans les tests et les scénarios, et des tests de propriétés sur des parties générées.
-5. **(amendement 1, réécrit) L'économie reste dans ses fourchettes sur 100 000 ticks.** Sur la partie de référence, l'émission par motif, la destruction par motif et la croissance de la masse monétaire, **par fenêtre de 10 000 ticks**, restent dans les bornes du plan détaillé, point 27. Les prix sont fixes à ce jalon.
-   *Vérification :* inchangée (test en CI et notebook marimo, avec la fonction du plan détaillé, point 25).
+5. **(amendement 1, réécrit) L'économie reste dans ses fourchettes sur 100 000 ticks.** Sur la partie de référence, l'émission par motif, la destruction par motif et la croissance de la masse monétaire, **par fenêtre de 10 000 ticks**, restent dans les bornes du plan détaillé, point 27. Ces bornes sont calculées à la régénération des références, à partir du cycle de chaque PNJ sur le monde de la graine 1, sans lire les ventes de la partie. Les prix sont fixes à ce jalon.
+   *Vérification :* le test `tests/economie/test_fourchettes.py`, lancé en CI par la tâche `rejeu`, rejoue le journal de la partie de référence et compare chaque fenêtre, sauf la première, aux bornes rangées dans `reference.json` ; il vérifie aussi que la destruction est égale à la somme des taxes de chaque vente, arrondies vers le haut. Le notebook marimo affiche les mêmes grandeurs, par la même fonction `window_stats` (plan détaillé, point 25).
 6. **Tous les acteurs passent par la même porte.** Le client Textual et le PNJ reçoivent leurs observations de la seule fonction `observe`, et leurs ordres passent par la même réception, puis par `step`. Aucun champ de données caché n'apparaît dans une observation.
-   *Vérification :* des tests de propriétés sur la visibilité ; les contrats d'imports interdisent à `clients` et `policies` d'importer `core`. **(amendement 1)** Les tests de propriétés couvrent aussi la classe proximité : un vaisseau d'autrui ou un stock de gisement hors de portée n'apparaît pas dans l'observation.
+   *Vérification :* des tests de propriétés sur la visibilité ; les contrats d'imports interdisent à `clients` et `policies` d'importer `core`. **(amendement 1)** Les tests de propriétés couvrent aussi la classe proximité : un vaisseau d'autrui ou un stock de gisement hors de portée n'apparaît pas dans l'observation. La *portée* d'un acteur est le système d'un des vaisseaux de l'acteur et les systèmes voisins (Technical Plan, point 5).
 7. **Tout ce qui persiste ou circule porte un numéro de version.** Le journal des ordres soumis, les instantanés, les événements, le protocole et les règles portent leurs champs de version (niveau 1, §3 et §7).
    *Vérification :* `tests/core/test_versions.py` et `tests/server/test_versions_journal.py` (plan détaillé, points 18 et 23) ; le contrôle de garde exige que `RULES_REVISION` augmente de un quand les références changent.
 8. **Les contrôles de M1 deviennent obligatoires** (niveau 1, §10) : tests et scénarios ; rejeu sous deux `PYTHONHASHSEED` ; tests de propriétés ; contrats d'imports ; mutation sur les fichiers modifiés, scénarios compris (Technical Plan, point 10), avec un score jamais inférieur à celui du commit de base de la pull request. La suite canari et la mutation complète du noyau tournent chaque nuit sur `main`.
@@ -131,7 +140,7 @@ Chaque objectif est vérifiable par un contrôle automatique, ou validé explici
    *Vérification :* la mesure figure dans le compte rendu de M1, avec la commande qui l'a produite.
 10. **Les identifiants du glossaire sont fixés.** Chaque terme marqué « à fixer au niveau 2 de M1 » reçoit son identifiant du code, et le glossaire est mis à jour.
     *Vérification :* plus aucune entrée du glossaire ne porte « à fixer au niveau 2 de M1 ».
-11. **Le propriétaire valide la boucle de jeu.** Après avoir joué, il déclare que la boucle extraire, transporter, vendre lui convient. C'est une validation subjective, assumée par le niveau 1, §11. **(amendement 1, précisé)** Il la valide sur le client et le monde de l'amendement, en mode développement accéléré pour l'enchaînement (à la période nominale, un seul cycle dure plus d'une heure), et sur au moins un saut complet joué à la période nominale (20 minutes) pour le rythme.
+11. **Le propriétaire valide la boucle de jeu.** Après avoir joué, il déclare que la boucle extraire, transporter, vendre lui convient. C'est une validation subjective, assumée par le niveau 1, §11. **(amendement 1, précisé)** Il la valide sur le client et le monde de l'amendement, en mode développement accéléré pour l'enchaînement des étapes du cycle (à la période nominale, un cycle dure de 5 minutes, pour un gisement dans le système d'une station, à plus d'une heure, pour un gisement à deux sauts : 85 minutes), et sur au moins un saut complet joué à la période nominale (20 minutes) pour le rythme.
     *Vérification :* sa décision, consignée dans le compte rendu de M1 ; **(amendement 1)** avec la graine et les paliers de vitesse joués.
 12. **(amendement 1) Le propriétaire lit l'écran sans se perdre.** Après une partie, il déclare savoir à tout moment :
     - où est son vaisseau, et s'il est à l'arrêt, en route ou en minage ;
@@ -146,7 +155,7 @@ Chaque objectif est vérifiable par un contrôle automatique, ou validé explici
     *Vérification :* un scénario sur les vrais réglages : les durées lues dans `observation.public_tunables` sont celles de `tunables.toml`, un trajet observé dure `jump_ticks` ticks, et la cargaison n'est pleine qu'au bout de `cargo_capacity` ÷ `mining_rate` ticks de minage. La valeur 400 n'est vérifiée par aucun test : `tunables.toml` fait foi ; `rules_version` change avec les réglages, et `RULES_REVISION` reste à 0.
 14. **(amendement 1) Le joueur connaît les durées par l'observation seule.** `observe` reçoit les réglages et publie, dans l'observation, une vue des réglages publics : `jump_ticks` et `mining_rate`. La capacité est déjà dans la vue du vaisseau, et la taxe dans l'événement de vente. Aucun autre canal n'apporte d'information du jeu au joueur. L'ADR 0003 change l'interface du niveau 1.
     *Vérification :* les tests de visibilité s'étendent à la nouvelle vue, et vérifient qu'aucun autre réglage n'apparaît dans l'observation ; `protocol_version` passe à 2.
-15. **(amendement 1) L'univers s'accélère en mode développement.** Lancée avec `--dev`, une partie locale offre des paliers de vitesse de l'univers, la pause, et « avancer jusqu'à la prochaine alerte ». Sans `--dev`, l'univers tourne à la période nominale (ou à celle de `--periode`), sans touche de vitesse. La vitesse de l'univers n'est pas celle du vaisseau : un saut dure toujours `jump_ticks` ticks. Rien de cela ne passe par le protocole, le journal des ordres ou les règles : seule la période de l'horloge change, et chaque changement est enregistré dans le dossier de la partie. En mode avec horloge, les PNJ reçoivent leurs mises à jour par la tâche de relais : aux paliers rapides (×100 et ×1000), une décision peut entrer un ou plusieurs ticks plus tard. La partie jouée dépend donc de la vitesse ; le rejeu de son journal, lui, redonne toujours les mêmes empreintes.
+15. **(amendement 1) L'univers s'accélère en mode développement.** Lancée avec `--dev`, une partie locale offre des paliers de vitesse de l'univers, la pause, et « avancer jusqu'à la prochaine alerte ». Sans `--dev`, l'univers tourne à la période nominale, ou à celle de l'option de lancement `--periode`, qui sert aussi aux essais, sans touche de vitesse. La vitesse de l'univers n'est pas celle du vaisseau : un saut dure toujours `jump_ticks` ticks. Rien de cela ne passe par le protocole, le journal des ordres ou les règles : seule la période de l'horloge change, et chaque changement est enregistré dans le dossier de la partie. En mode avec horloge, les PNJ reçoivent leurs mises à jour par la tâche de relais : aux paliers rapides (×100 et ×1000), une décision peut entrer un ou plusieurs ticks plus tard qu'au tick suivant. La partie jouée dépend donc de la vitesse ; le rejeu de son journal, lui, redonne toujours les mêmes empreintes.
     *Vérification :* un test rejoue le journal d'une partie jouée en accéléré et retrouve ses empreintes ; `speed.jsonl` garde la période initiale et chaque changement.
 16. **(amendement 1) Le monde est plus grand, et sa taille vient de la graine.** `world.generate` tire, de façon déterministe, 8 à 12 systèmes reliés en un graphe connexe, 4 à 6 gisements (au moins deux par minerai), 2 à 3 stations, et `__main__.py` crée 3 à 5 PNJ (nombre tiré par `core.world.npc_count`). Une station et un gisement peuvent partager un système. Chaque station rachète chaque minerai à son prix fixe, lu dans les réglages. L'ADR 0004 élargit les fourchettes du CUJ 1.
     *Vérification :* des tests de propriétés sur de nombreuses graines (tailles dans les fourchettes, graphe connexe, au moins deux gisements de chaque minerai, même monde pour la même graine sous deux `PYTHONHASHSEED`) ; le scénario du CUJ 1 joue sur un monde généré, sans supposer sa forme.
@@ -155,7 +164,7 @@ Chaque objectif est vérifiable par un contrôle automatique, ou validé explici
 
 *   **Le marché entre joueurs, les corporations, les permissions, le combat et les pirates.** Ils arrivent à M6. La phase « combat » existe dans l'ordre des phases du tick (niveau 1, §2), mais reste vide à M1.
 *   **La perte de vaisseau.** Aucun vaisseau n'est détruit à M1 (Technical Plan, point 1).
-*   **Les prix variables.** La station rachète chaque minerai à un prix fixe. *(Précisé par l'amendement 1 : chaque station a ses propres prix fixes.)*
+*   **Les prix variables.** La station rachète chaque minerai à un prix fixe *(remplacé par l'amendement 1 : chaque station rachète chaque minerai à son propre prix fixe)*.
 *   **Le transport WebSocket, les comptes et l'authentification par jeton.** Ils arrivent à M3. À M1, le client et le serveur partagent un processus, et les messages circulent déjà typés : un message illisible ne peut pas exister. M3 fixera son traitement.
 *   **Le serveur persistant, les migrations testées, `synchronous=FULL` et la reprise après plantage.** Ils arrivent à M5. Avant M5, un changement incompatible de format fait monter sa version, et les données sont régénérées (niveau 1, §7).
 *   **Les événements v1, Parquet et la page d'accueil.** Ils arrivent à M2. Les événements v0 sont des fichiers JSONL jetables.
@@ -188,13 +197,13 @@ Ces questions sont posées au propriétaire une à une pendant la rédaction. Un
 
 Le propriétaire a confirmé, le 2026-11-08, toutes les lignes du Technical Plan, point 1, marquées « proposition de l'agent de code ».
 
-**(amendement 1)** Aucune question ouverte. La veille de l'ordinateur portable, qui n'a d'effet ni sur les règles ni sur le rejeu, est un risque vérifié au plan détaillé, point 23 quater.
+**(amendement 1)** Aucune question ouverte. La mise en veille de l'ordinateur portable, qui n'a d'effet ni sur les règles ni sur le rejeu, est un risque, vérifié par un essai au plan détaillé, point 23 quater.
 
 ## Critical User Journeys (CUJs)
 
 **(amendement 1)** Le CUJ 1 et le CUJ 4 du niveau 1 sont inchangés, à l'élargissement des fourchettes près (ADR 0004). Ce parcours précise ce que le propriétaire vit sur le client de l'amendement.
 
-### CUJ A (amendement 1) : un cycle complet, lu sur l'écran
+### CUJ A : un cycle complet, lu sur l'écran (amendement 1)
 
 *   **Given :** une partie locale vient de démarrer. Le vaisseau du propriétaire est à une station, cargaison vide. L'écran montre la carte en graphe, les gisements de chaque minerai (stock connu pour les seuls gisements proches), les prix de chaque station, les vaisseaux proches (dans son système et les systèmes voisins) et la barre d'état (tick, solde, graine ; en mode développement, la vitesse de l'univers).
 *   **When :** il choisit un gisement, y envoie son vaisseau en choisissant sa destination dans une liste, confirme, puis (en mode développement) accélère l'univers. À l'arrivée, il mine ; à la fin du minage, il va à la station de son choix et vend.
@@ -238,7 +247,7 @@ Le propriétaire a confirmé, le 2026-11-08, toutes les lignes du Technical Plan
 
 ### 1. Décisions prises pour M1
 
-**Règle de rédaction (propriétaire, 2026-11-02).** M1 fait le minimum possible **dans le cadre déjà fixé** par le niveau 1. Ce document ne réduit aucune exigence du niveau 1, n'en ajoute aucune sauf le seuil de mutation ci-dessous, et ne redéfinit rien : chaque contrôle obligatoire de M1 est livré. Quand une question de contenu du jeu a plusieurs réponses, la plus petite qui respecte le niveau 1 est retenue. **(amendement 1, précisé)** Les décisions du propriétaire du 2026-11-12 priment aussi sur cette règle : elles vont au-delà du minimum (objectifs 12 à 16) et changent le niveau 1 par les ADR 0003 à 0005.
+**Règle de rédaction (propriétaire, 2026-11-02).** M1 fait le minimum possible **dans le cadre déjà fixé** par le niveau 1. Ce document ne réduit aucune exigence du niveau 1, n'en ajoute aucune sauf le seuil de mutation ci-dessous *(remplacé par l'amendement 1 : il en ajoute aussi d'autres, les objectifs 12 à 16)*, et ne redéfinit rien *(remplacé par l'amendement 1 : les ADR 0003 à 0005 changent le niveau 1)* : chaque contrôle obligatoire de M1 est livré. Quand une question de contenu du jeu a plusieurs réponses, la plus petite qui respecte le niveau 1 est retenue. **(amendement 1, précisé)** Les décisions du propriétaire du 2026-11-12 priment aussi sur cette règle du minimum : elles vont au-delà (objectifs 12 à 16).
 
 **Décisions sur le contenu du jeu (propriétaire, 2026-11-06).** Après la rédaction, pendant la revue de l'univers et de la conception du jeu (documents hors de `main`), le propriétaire a tranché quatre points du contenu de la tranche 0. Ils priment sur la règle du minimum et figurent dans le tableau ci-dessous (lignes datées du 2026-11-06, sans autre mention). Aucun ne change le niveau 1.
 
@@ -256,7 +265,7 @@ Le propriétaire a confirmé, le 2026-11-08, toutes les lignes du Technical Plan
 | Outil de mutation | `mutmut` 3.8.0 (choix du propriétaire) | essayé sous Python 3.15 avec pytest 9.1.1 le 2026-11-02 : fonctionne ; cassé par pytest 9.2.0, donc pytest est plafonné sous 9.2 et toute montée de pytest est vérifiée avec `mutmut` avant d'être acceptée |
 | Mode rejeu du client | son identifiant est fixé ici ; il est construit à M3, avec la vidéo rendue depuis un rejeu | aucun critère de sortie de M1 ne l'exige ; l'outil de divergence suffit au CUJ 4 |
 | Station (2026-11-06) | une structure du jeu, pas un personnage : sans `actor_id` ni portefeuille ; elle paie chaque vente par une émission | décision du propriétaire ; le niveau 1, CUJ 1, dit « station PNJ » : la formule désigne ici une structure dont le comportement est fixé par les règles, pas un acteur |
-| Gisements (2026-11-06) | finis : chaque gisement a un stock, qui baisse au minage et revient à `deposit_stock` tous les `regen_ticks` ticks (régénération d'un gisement) | décision du propriétaire : un stock large, qui finit par se vider, oblige les mineurs, surtout quand ils viennent à plusieurs, à changer de gisement ; dans le monde en ligne, la régénération d'un gisement a lieu environ chaque semaine. À M1, avec les valeurs du plan détaillé, point 17, la partie de référence ne vide aucun gisement : le stock n'a aucun effet sur les fourchettes *(remplacé par l'amendement 1 : un gisement peut se vider, surtout s'il partage son système avec une station ; la partie de référence exerce alors l'épuisement et la régénération, Technical Plan, point 9)*, et l'épuisement comme le départage sont vérifiés par les scénarios et les tests de propriétés |
+| Gisements (2026-11-06) | finis : chaque gisement a un stock, qui baisse au minage et revient à `deposit_stock` tous les `regen_ticks` ticks (régénération d'un gisement) | décision du propriétaire : un stock large, qui finit par se vider, oblige les mineurs, surtout quand ils viennent à plusieurs, à changer de gisement ; dans le monde en ligne, la régénération d'un gisement a lieu environ chaque semaine. À M1, avec les valeurs du plan détaillé, point 17, la partie de référence ne vide aucun gisement : le stock n'a aucun effet sur les fourchettes *(remplacé par l'amendement 1 : un gisement peut se vider, surtout s'il partage son système avec une station ; la partie de référence peut alors exercer l'épuisement et la régénération, Technical Plan, point 9)*, et l'épuisement comme le départage sont vérifiés par les scénarios et les tests de propriétés |
 | Visibilité de la vente (2026-11-06) | le vendeur voit sa vente, son paiement et sa taxe dans un événement privé ; les écritures du registre et les compteurs d'émission et de destruction relèvent de l'administration ; aucun acteur ne voit le portefeuille d'un autre | décision du propriétaire (personne ne voit le compte en banque d'un autre, ni l'argent créé par le jeu) ; le niveau 1, CUJ 1, exige que le client affiche le paiement |
 | Argent de départ (2026-11-06) | aucun : tout portefeuille commence à zéro ; le vaisseau de départ est une dotation, sans écriture | décision du propriétaire |
 | Arrondi de la taxe | vers le haut, au profit du compte de destruction | proposition de l'agent de code, confirmée par le propriétaire le 2026-11-08 : arrondie vers zéro, une taxe s'annulerait sur des ventes découpées en petits lots |
@@ -275,12 +284,12 @@ Le propriétaire a confirmé, le 2026-11-08, toutes les lignes du Technical Plan
 | Visibilité des autres vaisseaux (amendement 1) | par proximité : un vaisseau d'autrui, et le stock d'un gisement, ne sont visibles que dans le système d'un des vaisseaux de l'acteur ou dans un système voisin ; d'un vaisseau d'autrui, on ne voit que l'identifiant, le détenteur, le système et la capacité | décision du propriétaire ; plus tard, des scanners porteront plus loin ; ADR 0005 |
 | Accélération de l'univers (amendement 1) | en mode développement seulement (`--dev`) : paliers de vitesse, pause, « avancer jusqu'à la prochaine alerte », par une fonction de rappel locale ; rien dans le protocole, le journal ou les règles | décisions du propriétaire (2026-11-12) : utile au développement et aux essais ; en partie normale, l'univers tourne à son rythme ; ce n'est pas l'alternative C (ticks avancés à la demande d'un joueur, sur un serveur partagé) ; la vitesse de l'univers (secondes par tick) n'est pas celle du vaisseau (ticks par saut, une règle) |
 | PNJ (amendement 1) | `scripted_miner` version 2 (règle au point 7) ; en mode avec horloge, la tâche de relais lui transmet les mises à jour | décisions du propriétaire ; la politique reste simple et ignore le temps de trajet |
-| Colocalisation (amendement 1) | une station et un gisement peuvent partager un système | décision du propriétaire (2026-11-12) : un gisement voisin d'une station s'épuise vite, et l'épuisement oblige joueurs et PNJ à aller miner ailleurs ; voir l'alternative AA |
+| Colocalisation (amendement 1) | une station et un gisement peuvent partager un système | décision du propriétaire (2026-11-12) : un gisement dans le système d'une station s'épuise vite, et l'épuisement oblige joueurs et PNJ à aller miner ailleurs ; voir l'alternative AA |
 | Prix des stations (amendement 1) | `station_ore_prices` = [[10, 15], [12, 12], [8, 18]] | proposition de l'agent de code, confirmée par le propriétaire le 2026-11-12 ; la station 1 garde les prix d'origine |
 
 ### 2. Les règles de la tranche 0
 
-**La carte.** Trois systèmes, `system_1` à `system_3`, reliés en chaîne dans l'ordre de leurs identifiants. La graine du monde fixe le système de chaque site (plan détaillé, point 17, `world.py`) : la station, le gisement de `ore_a` et le gisement de `ore_b` sont chacun dans un système différent. *(Ces deux phrases sont remplacées par l'amendement 1, voir la génération du monde, plus bas dans ce point ; la suite du paragraphe reste en vigueur.)* Un saut vers un système voisin dure `jump_ticks` ticks. Chaque gisement a un stock : il commence à `deposit_stock` unités, baisse de ce qui est extrait, et revient à `deposit_stock` aux ticks multiples de `regen_ticks` (phase de règlement). Un gisement vide ne rend plus rien jusqu'à sa régénération.
+**La carte.** Trois systèmes, `system_1` à `system_3`, reliés en chaîne dans l'ordre de leurs identifiants *(remplacé par l'amendement 1, voir la génération du monde, plus bas dans ce point)*. La graine du monde fixe le système de chaque site (plan détaillé, point 17, `world.py`) : la station, le gisement de `ore_a` et le gisement de `ore_b` sont chacun dans un système différent *(remplacé par l'amendement 1, voir la génération du monde, plus bas dans ce point)*. Un saut vers un système voisin dure `jump_ticks` ticks. Chaque gisement a un stock : il commence à `deposit_stock` unités, baisse de ce qui est extrait, et revient à `deposit_stock` aux ticks multiples de `regen_ticks` (phase de règlement). Un gisement vide ne rend plus rien jusqu'à sa régénération.
 
 **Le placement des sites.** *(remplacé par l'amendement 1, voir la génération du monde, plus bas dans ce point)* Le tirage borné (Technical Plan, point 4) donne, pour (graine du monde, tick 0, entité 0, motif du tirage « carte »), un nombre de 0 à 5 : c'est le rang, dans l'ordre lexicographique, d'une des six permutations de (`system_1`, `system_2`, `system_3`) ; la permutation donne, dans l'ordre, le système de la station, du gisement de `ore_a` et du gisement de `ore_b`.
 
@@ -326,7 +335,7 @@ Le propriétaire a confirmé, le 2026-11-08, toutes les lignes du Technical Plan
 
 **Le départage.** La seule égalité possible à M1 est celle de plusieurs vaisseaux sur un gisement dont le stock ne suffit pas. Chaque vaisseau concerné reçoit un tirage à clé sur (graine du monde, tick, identifiant du vaisseau, motif du tirage « minage ») ; les vaisseaux sont servis par tirage croissant, puis par identifiant croissant en cas d'égalité des tirages. La station rachète sans limite : aucune vente n'est donc départagée.
 
-**Les réglages.** Toutes les valeurs vivent dans `tunables.toml`, sous les noms du type `Tunables` (Technical Plan, point 13) : `jump_ticks`, `mining_rate`, `cargo_capacity`, `ore_prices` *(remplacé par l'amendement 1, voir le tableau des réglages, plus bas dans ce point : `station_ore_prices`)*, `tax_rate_bp` (taux de taxe en points de base), `deposit_stock`, `regen_ticks`, `budget_regen`, `budget_max`. Leurs valeurs sont au plan détaillé, point 17. Le serveur lit ce fichier et passe les réglages à `step` ; le noyau ne lit aucun fichier. `world.generate` copie `ore_prices` dans la station *(remplacé par l'amendement 1 : chaque station reçoit sa ligne de `station_ore_prices`)* : pendant la partie, le prix qui fait foi est celui de la station, et il est public, pour que le client et la politique le voient.
+**Les réglages.** Toutes les valeurs vivent dans `tunables.toml`, sous les noms du type `Tunables` (Technical Plan, point 13) : `jump_ticks`, `mining_rate`, `cargo_capacity`, `ore_prices` *(remplacé par l'amendement 1, voir le tableau des réglages, plus bas dans ce point : `station_ore_prices`)*, `tax_rate_bp` (taux de taxe en points de base), `deposit_stock`, `regen_ticks`, `budget_regen`, `budget_max`. Leurs valeurs sont au plan détaillé, point 17 *(remplacé par l'amendement 1 : les valeurs initiales sont au tableau des réglages, plus bas dans ce point)*. Le serveur lit ce fichier et passe les réglages à `step` ; le noyau ne lit aucun fichier. `world.generate` copie `ore_prices` dans la station *(remplacé par l'amendement 1 : chaque station reçoit sa ligne de `station_ore_prices`)* : pendant la partie, le prix qui fait foi est celui de la station, et il est public, pour que le client et la politique le voient.
 
 **(amendement 1)**
 
@@ -336,7 +345,7 @@ Le propriétaire a confirmé, le 2026-11-08, toutes les lignes du Technical Plan
 2. **Arbre.** Pour k = 2 à N, le système k se relie à un système déjà placé, tiré parmi ceux qui ont moins de `max_neighbors` voisins (4) : entité k, motif `"tree"`. Le plafond garde la carte dessinable.
 3. **Liens en plus.** Leur nombre L est tiré entre 1 et `extra_links_max` (3) : entité 0, motif `"extra_link_count"`. Le lien i (i = 1 à L) relie une paire de systèmes non voisins, tous deux sous le plafond, tirée parmi toutes les paires triées : entité i, motif `"extra_links"`. S'il ne reste aucune paire, on s'arrête.
 4. **Stations.** Leur nombre S est tiré entre `stations_min` et `stations_max` (2 et 3) : entité 0, motif `"station_count"`. La station i (i = 1 à S) est placée parmi les systèmes qui n'ont pas encore de station : entité i, motif `"stations"`. La station k (identifiant k) rachète aux prix de la ligne k de `station_ore_prices`.
-5. **Gisements.** Leur nombre G est tiré entre `deposits_min` et `deposits_max` (4 et 6) : entité 0, motif `"deposit_count"`. Le gisement i (i = 1 à G) est placé parmi les systèmes qui n'ont pas encore de gisement : entité i, motif `"deposits"`. Le gisement k porte le minerai 1 si k est impair et le minerai 2 sinon, donc au moins deux gisements de chaque minerai. Un système peut avoir une station et un gisement : c'est voulu (colocalisation, alternative AA). Il a au plus une station et au plus un gisement.
+5. **Gisements.** Leur nombre G est tiré entre `deposits_min` et `deposits_max` (4 et 6) : entité 0, motif `"deposit_count"`. Le gisement i (i = 1 à G) est placé parmi les systèmes qui n'ont pas encore de gisement : entité i, motif `"deposits"`. Le gisement k porte le minerai 1 (`ore_a`) si k est impair et le minerai 2 (`ore_b`) sinon, donc au moins deux gisements de chaque minerai. Un système peut avoir une station et un gisement : c'est voulu (colocalisation, alternative AA). Il a au plus une station et au plus un gisement.
 6. **Nombre de PNJ.** `npc_count(graine, réglages)` le tire entre `npc_min` et `npc_max` (3 et 5) : entité 0, motif `"npc_count"`. Ce n'est pas un champ de l'état : `__main__.py` crée les PNJ par des ordres d'administration au tick 1, comme dans le code d'origine. La fonction vit dans `core.world` parce que c'est un tirage de la graine du monde, comme la génération.
 
 **Déplacement.** Inchangé : route la plus courte (`plus_court_chemin`, voisins par identifiant croissant), un saut tous les `jump_ticks` ticks. Seule la valeur change : 400 dans les valeurs initiales.
@@ -367,7 +376,7 @@ Le propriétaire a confirmé, le 2026-11-08, toutes les lignes du Technical Plan
 | `extra_links_max` | — | 3 | liens qui créent des boucles |
 | `max_neighbors` | — | 4 | plafond de voisins, pour la carte à l'écran |
 
-Le décodage vérifie en plus : chaque minimum ne dépasse pas son maximum ; `station_ore_prices` a au moins `stations_max` lignes, chacune de 2 prix positifs ; `deposits_min` ≥ 4 (deux gisements par minerai) ; `systems_min` ≥ `deposits_max` et ≥ `stations_max` (assez de systèmes distincts) ; `max_neighbors` ≥ 2 (sinon l'arbre n'a plus de candidat dès le troisième système).
+Le décodage vérifie en plus : chaque minimum ne dépasse pas son maximum ; `station_ore_prices` a au moins `stations_max` lignes, chacune de 2 prix positifs ; `deposits_min` ≥ 4 (deux gisements par minerai) ; `systems_min` ≥ `deposits_max` et ≥ `stations_max` (assez de systèmes distincts) ; `max_neighbors` ≥ 2 (sinon l'arbre n'a plus de candidat dès le troisième système) ; `extra_links_max` ≥ 1 (le nombre de liens en plus est tiré à partir de 1) ; `npc_min` ≥ 1.
 
 `rules_version` change sans autre intervention, par l'empreinte des réglages. `RULES_REVISION` reste à 0.
 
@@ -407,13 +416,13 @@ Le décodage vérifie en plus : chaque minimum ne dépasse pas son maximum ; `st
 
 - **Ordre :** `actor_id`, numéro choisi par l'acteur, catégorie, `policy_id` et `policy_version` (`None` pour un humain), et la commande, union typée des quatre ordres. L'identité d'un ordre est (`actor_id`, tick, numéro). Le journal et `step` reçoivent des **ordres soumis** : l'ordre, le tick auquel il entre, l'acteur du point de connexion qui l'a soumis (`None` pour un ordre d'administration écrit par le serveur), et le code de refus de la réception, s'il y en a un (Technical Plan, point 13).
 - **Résultat d'ordre :** acteur destinataire (celui du point de connexion ; `None` pour un ordre du serveur, dont le résultat n'est observé par personne), identité de l'ordre, accepté ou code de refus, texte, budget restant (niveau 1, §5). Chaque ordre examiné par `step` reçoit un résultat.
-- **Observation :** le tick, l'état visible pour l'acteur, les événements du dernier tick qui lui sont visibles, et ses résultats d'ordre. `observe` lit tout cela dans l'état (table « dernier tick »).
+- **Observation :** le tick, l'état visible pour l'acteur, les événements du dernier tick qui lui sont visibles, et ses résultats d'ordre *(remplacé par l'amendement 1 : et la vue des réglages publics, voir ci-dessous)*. `observe` lit tout cela dans l'état (table « dernier tick ») *(remplacé par l'amendement 1 : et dans les réglages qu'il reçoit, ADR 0003)*.
 - **Visibilité.** Chaque champ de données des entités de l'état déclare sa classe de visibilité par `Annotated[T, msgspec.Meta(extra={"visibility": ...})]` ; `observe` relit ces métadonnées par `msgspec.inspect.type_info` (mécanisme essayé sur `msgspec` 0.22.0 le 2026-11-06 : la métadonnée revient comme `Metadata` avec son `extra`). Chaque type d'événement a une seule classe. « Privé » veut dire visible par le seul acteur qui détient l'entité. Les vues de l'observation reprennent les noms des champs de données de l'état. À M1 :
   - publics : les systèmes et leurs voisins, les sites, le minerai et le stock *(remplacé par l'amendement 1 : le stock est de classe proximité)* des gisements, les prix de rachat de la station, l'identifiant, le détenteur, le système et la capacité des vaisseaux *(remplacé par l'amendement 1, voir ci-dessous : classe `NEARBY`, ADR 0005)*, le `kind` de chaque acteur (`actor_kind`, niveau 1, §5) ;
   - privés : la cargaison, l'activité, la route, les ticks avant le prochain saut et le minage en cours d'un vaisseau, le budget d'actions, le solde (`balance`) du portefeuille personnel ;
   - administration : les écritures du registre, les comptes d'émission et de destruction, les compteurs cumulés.
 
-  Un acteur attentif peut déduire une partie de l'activité d'un autre acteur (position publique, stock public, prix fixes) : c'est accepté à M1. *(Remplacé par l'amendement 1 : la position des vaisseaux d'autrui et le stock des gisements sont de classe proximité ; seuls les prix restent publics.)*
+  Un acteur attentif peut déduire une partie de l'activité d'un autre acteur (position publique, stock public, prix fixes) : c'est accepté à M1 *(remplacé par l'amendement 1 : la position des vaisseaux d'autrui et le stock des gisements sont de classe proximité, et seuls les prix restent publics ; cette déduction n'est donc possible qu'à portée)*.
 - **Événements v0** (`event_schema_version` = 0) : l'enveloppe du niveau 1, §6 : `tick` et `seq`, `event_schema_version` et `rules_version`, `actor_id` et `actor_kind`, `policy_id` et `policy_version`, `causation_id`, la classe de visibilité. `actor_id`, `actor_kind` et `causation_id` sont `None` pour un fait des règles (régénération d'un gisement). `causation_id` est l'identité de l'ordre qui a causé l'événement. **(amendement 1, précisé)** Une fin de minage arrêtée par les règles (cargaison pleine, gisement vide) a `causation_id` = `None` ; une fin de minage provoquée par un ordre qui remplace le minage porte l'identité de cet ordre (`_arreter_minage`, `core/step.py`). `seq` croît avec la production dans le tick : examen des ordres, puis phases du tick dans leur suite fixe, puis, dans une phase, identifiants croissants. Les types sont des types `msgspec`, exportables en JSON Schema :
 
   | Type d'événement | Classe | Contenu | Émis |
@@ -435,12 +444,12 @@ Le décodage vérifie en plus : chaque minimum ne dépasse pas son maximum ; `st
 **(amendement 1)**
 
 - **`Observation`** reçoit le champ `public_tunables: PublicTunablesView` (`jump_ticks`, `mining_rate`), placé en dernier pour l'ordre d'encodage. La vue est construite en recopiant ces deux champs de `Tunables`, nommés un à un. La capacité de cargaison est déjà dans `OwnShipView.capacity`, et le paiement et la taxe d'une vente dans l'événement `Sale`. `Tunables` ne porte pas de classe de visibilité : ce n'est pas un champ de l'état. Un test vérifie que les noms de la vue existent dans `Tunables`.
-- **Classe de visibilité `NEARBY` (proximité)**, ajoutée à `Visibility` (ADR 0005). **Règle :** un champ ou un événement de classe `NEARBY` est visible d'un acteur si son *système de référence* est le système d'un des vaisseaux de l'acteur, ou un système voisin. Le système de référence est le `system_id` de l'entité, celui de la charge utile d'un événement, ou, pour un événement de gisement, le système du gisement ; un type qui porte un champ ou un événement `NEARBY` doit avoir un tel système, ce qu'un test vérifie. Les positions qui comptent sont celles de l'état que reçoit `observe`. Un acteur sans vaisseau ne voit rien de classe proximité.
+- **Classe de visibilité `NEARBY` (proximité)**, ajoutée à `Visibility` (ADR 0005). **Règle :** un champ ou un événement de classe `NEARBY` est visible d'un acteur si son *système de référence* est le système d'un des vaisseaux de l'acteur, ou un système voisin. Le système de référence est le `system_id` de l'entité, celui de la charge utile d'un événement, ou, pour un événement de gisement, le système du gisement ; un type qui porte un champ ou un événement `NEARBY` doit avoir un tel système, ce qu'un test vérifie. Les positions qui comptent sont celles de l'état que reçoit `observe`. Un acteur sans vaisseau ne voit rien de classe proximité. **Hors de portée,** une entité dont l'identité est de classe proximité (un vaisseau d'autrui) disparaît de l'observation, et un champ de classe proximité d'une entité publique (le stock d'un gisement) vaut `None`.
   - **Vaisseaux d'autrui :** `id`, `owner_id`, `system_id` et `capacity` passent de `PUBLIC` à `NEARBY`. Un vaisseau d'autrui hors de portée n'apparaît pas du tout dans l'observation. Les vaisseaux de l'acteur restent entièrement visibles pour lui.
   - **Gisements :** `stock` passe de `PUBLIC` à `NEARBY` (décision du propriétaire, 2026-11-12) ; le gisement lui-même (identifiant, système, minerai) reste public. Hors de portée, la vue porte `stock` = `None` (`DepositView.stock: Int64 | None`). Sinon, la baisse du stock, à un débit d'une unité par tick, compterait les vaisseaux qui minent loin.
   - **Événements :** `Departed` et `Arrived` passent à `NEARBY`, rapportés à leur `system_id` ; `DepositRegenerated` aussi, rapporté au système du gisement, puisqu'il donne le stock. `CharacterCreated` reste public : il dit qu'un personnage existe, pas où est son vaisseau.
 - **`PROTOCOL_VERSION`** passe à 2 (nouveau champ de l'observation). La réception ne vérifie toujours pas la version à M1 (M3 le fera).
-- **Versions des formats.** Les classes de visibilité des champs de l'état ne sont pas encodées, mais `Event.visibility` l'est, et `State.last_tick.events` entre dans l'instantané et dans l'empreinte `last_tick`. La valeur `nearby` casse donc la lecture d'un fichier récent par le code d'origine, pas l'inverse. C'est accepté parce qu'avant M5 les données sont régénérées, et non migrées (niveau 1, §7). `snapshot_schema_version` reste à 1 : l'instantané est pris au tick 0, avec un `last_tick` vide. `event_schema_version` reste à 0 : les événements v0 sont jetables. `DepositView.stock` devient facultatif : c'est le nouveau champ qui fait passer `protocol_version` à 2 avec `public_tunables`.
+- **Versions des formats.** Les classes de visibilité des champs de l'état ne sont pas encodées, mais `Event.visibility` l'est, et `State.last_tick.events` entre dans l'instantané et dans l'empreinte `last_tick`. La valeur `nearby` casse donc la lecture d'un fichier récent par le code d'origine, pas l'inverse. C'est accepté parce qu'avant M5 les données sont régénérées, et non migrées (niveau 1, §7). `snapshot_schema_version` reste à 1 : l'instantané est pris au tick 0, avec un `last_tick` vide. `event_schema_version` reste à 0 : les événements v0 sont jetables. `DepositView.stock` change de type (il devient facultatif) ; avec le seul champ nouveau, `public_tunables`, ce changement fait passer `protocol_version` à 2.
 - **`NOMINAL_TICK_PERIOD_S` = 3.0**, constante de `schema/protocol.py`, lue par le serveur (période par défaut) et par le client (estimation en minutes). C'est une constante du code, pas une donnée transmise : elle ne crée aucun canal.
 
 ### 6. Le serveur en mémoire
@@ -471,16 +480,16 @@ Le décodage vérifie en plus : chaque minimum ne dépasse pas son maximum ; `st
 
 **(amendement 1)**
 
-- **Période nominale.** `Game(..., period_s=NOMINAL_TICK_PERIOD_S)`, et `--periode` a la même valeur par défaut. La valeur n'est écrite qu'à un endroit : `NOMINAL_TICK_PERIOD_S` (Technical Plan, point 5).
+- **Période nominale.** `Game(..., period_s=NOMINAL_TICK_PERIOD_S)`, et `--periode` a la même valeur par défaut. La valeur n'est écrite qu'à un endroit : `NOMINAL_TICK_PERIOD_S` (Technical Plan, point 5). `--periode` est une option de lancement, fixée pour toute la partie, qui sert aussi aux essais ; elle existe sans `--dev`, mais seul `--dev` permet de changer la période en cours de partie.
 - **Premier tick immédiat.** `Game.run` joue un tick dès son lancement, puis attend une période entre deux ticks. Le joueur voit le monde tout de suite.
-- **Vitesse.** `Game.set_period(period_s: float | None)` change la période ; `None` met en pause. Le changement réveille la boucle tout de suite (par un `asyncio.Event`), et un tick est joué aussitôt, sauf en pause. Les paliers sont ×1, ×10, ×100 et ×1000 (3 s, 0,3 s, 0,03 s et 0,003 s) ; la « vitesse maximale » est le palier ×1000. En surcharge, un tick dure ce qu'il dure, puis l'horloge attend la période : la vitesse réelle reste sous la vitesse demandée (niveau 1, §2). **Contre-pression :** sous 0,05 s par tick (paliers ×100 et ×1000), l'horloge attend que la file des mises à jour du propriétaire soit vide avant le tick suivant ; l'arrêt « à la prochaine alerte » déborde donc d'un tick au plus.
+- **Vitesse.** `Game.set_period(period_s: float | None)` change la période ; `None` met en pause. Le changement réveille la boucle (par un `asyncio.Event`), qui recalcule l'attente restante avec la nouvelle période : un tick n'est joué tout de suite que si le temps déjà écoulé depuis le dernier tick dépasse la nouvelle période ; sinon, la boucle attend le reste. En pause, aucun tick n'est joué. Les paliers sont ×1, ×10, ×100 et ×1000 (3 s, 0,3 s, 0,03 s et 0,003 s) ; la « vitesse maximale » est le palier ×1000. En surcharge, un tick dure ce qu'il dure, puis l'horloge attend la période : la vitesse réelle reste sous la vitesse demandée (niveau 1, §2). **Contre-pression :** sous 0,05 s par tick (paliers ×100 et ×1000), l'horloge attend que la file des mises à jour du propriétaire soit vide avant le tick suivant ; l'arrêt « à la prochaine alerte » déborde donc d'un tick au plus.
 - **Enregistrement.** `speed.jsonl`, dans le dossier de la partie, commence par un en-tête versionné (`{"speed_log_schema_version": 1}`), puis la période initiale ; chaque changement ajoute une ligne `{"tick": T, "period_s": P}`. Ce n'est pas le journal des ordres, et le rejeu ne le lit pas.
 - **PNJ.** `__main__.py` crée `npc_count(graine, réglages)` PNJ. Chacun a sa connexion et sa tâche de relais (code d'origine), avec `NpcHost(acteur, scripted_miner.decide)`.
 - **Fonction de rappel de vitesse, mode développement.** Avec `--dev`, `__main__.py` passe à `FourxApp` une fonction de rappel `set_period: Callable[[float | None], None]`, qui appelle `Game.set_period`. Sans `--dev`, il passe `None`, et le client n'offre aucune commande de vitesse. Le client n'importe pas `server` : il reçoit une simple fonction, ou rien. C'est la seule exception locale à « la même porte » (objectif 6) : elle ne commande que l'horloge de la partie locale, ni les règles ni le journal, et disparaît à M3, quand le client et le serveur ne partagent plus de processus.
 
 ### 7. Le client Textual et le PNJ
 
-- **Le client** *(remplacé par l'amendement 1, voir le Technical Plan, point 7 bis)* affiche la carte en ASCII, l'état du vaisseau (système, route, activité, cargaison), le solde du portefeuille, et un historique des résultats d'ordre et des ventes, avec le paiement et la taxe. Le propriétaire donne ses ordres au clavier : `d` (déplacer, puis le numéro du système), `m` (miner, puis la lettre du minerai), `v` (vendre toute la cargaison), `q` (quitter). Le client ne connaît que `schema` (niveau 1, §1).
+- **Le client.** *(remplacé par l'amendement 1, voir le Technical Plan, point 7 bis)* Il affiche la carte en ASCII, l'état du vaisseau (système, route, activité, cargaison), le solde du portefeuille, et un historique des résultats d'ordre et des ventes, avec le paiement et la taxe. Le propriétaire donne ses ordres au clavier : `d` (déplacer, puis le numéro du système), `m` (miner, puis la lettre du minerai), `v` (vendre toute la cargaison), `q` (quitter). Le client ne connaît que `schema` (niveau 1, §1).
 - **Le PNJ de M1** joue la politique `scripted_miner` de `policies`, la référence scriptée du glossaire. Elle décide de l'activité voulue *(remplacé par l'amendement 1, voir ci-dessous : version 2)* :
   - si la cargaison est pleine : aller à la station, puis tout vendre ;
   - sinon : parmi les gisements non vides, aller à celui dont le minerai est le mieux payé, puis miner ;
@@ -493,11 +502,11 @@ Le décodage vérifie en plus : chaque minimum ne dépasse pas son maximum ; `st
 `scripted_miner`, `policy_version` = 2, sans mémoire d'un tick à l'autre. Pour chaque vaisseau à l'arrêt ou en minage :
 1. **À une station, hors minage, cargaison non vide :** vendre le minerai le plus abondant (à quantités égales, le plus petit identifiant).
 2. **Cargaison pleine, ailleurs :** aller à la station qui paie le mieux le minerai le plus abondant de la cargaison (à prix égal, la plus proche en sauts, puis le plus petit identifiant).
-3. **Sinon :** viser le minerai qui a le meilleur prix dans une station (à prix égal, le plus petit identifiant de minerai). Aller au plus proche des gisements de ce minerai dont le stock n'est pas connu pour nul (stock hors de portée, donc inconnu, ou stock positif), en sauts puis par identifiant, puis miner. Arrivé sur un gisement vide, le PNJ repart vers le suivant selon la même règle. Si aucun gisement de ce minerai ne convient, prendre l'autre minerai ; si aucun gisement ne convient, rester à l'arrêt.
+3. **Sinon :** viser le minerai qui a le meilleur prix dans une station (à prix égal, le plus petit identifiant de minerai). Un vaisseau qui se trouve sur un gisement vide du minerai visé vise l'autre minerai, pour cette décision seulement : sans mémoire, il ferait sinon l'aller-retour entre deux gisements vides du même minerai, dont chacun redevient inconnu dès qu'il est hors de portée. Aller au plus proche des gisements du minerai visé dont le stock n'est pas connu pour nul (stock hors de portée, donc inconnu, ou stock positif), en sauts puis par identifiant, puis miner. Si aucun gisement de ce minerai ne convient, prendre l'autre minerai ; si aucun gisement ne convient, rester à l'arrêt.
 
 La distance en sauts se calcule par une seule fonction publique, `distances(systems, start)` de `policies/geometry.py` (parcours en largeur sur les voisins de l'observation, par identifiant croissant). Le client la réutilise pour la carte, le coût d'un déplacement et les messages de refus, comme `most_abundant(cargo)` de `policies/cargo.py`, sans dupliquer le parcours ; ces deux modules n'ont aucune logique de décision, et changer la politique ne les touche pas ; les contrats d'imports permettent à `clients` d'importer `policies`. Le PNJ n'émet un ordre que si l'activité voulue diffère de l'activité observée. Avec les prix proposés, tous les PNJ visent `ore_b` et s'entassent : le propriétaire l'accepte, la référence scriptée devant rester simple.
 
-### 7 bis. (amendement 1) L'écran unique
+### 7 bis. L'écran unique (amendement 1)
 
 **Architecture du client.** `FourxApp` ne garde que l'affichage et les touches. La logique vit dans des modules purs, testés sans Textual et mutés sans plancher (le plancher de 80 % ne vaut que pour `core` et `schema`, Technical Plan, point 1) :
 - `clients/model.py` : `ClientModel`, l'état du client. Il garde la dernière observation, les ordres envoyés sans résultat (numéro → commande), la file de vente, les alertes non acquittées et l'historique. Il reçoit une mise à jour et rend les messages à envoyer (par exemple la vente suivante de la file).
@@ -514,7 +523,7 @@ La distance en sauts se calcule par une seule fonction publique, `distances(syst
 │                         [8]─────[11]S3            ││ plein dans 63 ticks    │
 │ liens : 1–3, 4–8, 10–11                           ││ (≈ 3 min 9 s à 3 s)    │
 │                                                   ││ ordre envoyé : aucun   │
-│ @ vous : [5]   o vaisseaux proches : [3] [7]      │└────────────────────────┘
+│ @ joueur : [5]   o vaisseaux proches : [3] [7]    │└────────────────────────┘
 └───────────────────────────────────────────────────┘┌ Stations ──────────────┐
 ┌ Historique ───────────────────────────────────────┐│ S1 sys 1  a 10  b 15   │
 │ t3 ordre « déplacer vers system_5 » : accepté     ││ S2 sys 6  a 12  b 12   │
@@ -527,9 +536,9 @@ La distance en sauts se calcule par une seule fonction publique, `distances(syst
  Tick 840 │ Solde 0 │ Graine 1 │ dev ×1 │ d m v q · dev : p a r ␣
 ```
 
-Maquette calculée par un script avec la règle de mise en page ci-dessous, sur un graphe d'exemple de 12 systèmes et 12 liens, dont le lien en plus 10–11. `S1`… marquent les stations, `a` et `b` les gisements de `ore_a` et `ore_b` (`[6]S2b` : une station et un gisement dans le même système), `@` mon vaisseau, `o` les vaisseaux proches. Le cadre d'alerte, quand il y en a une, s'affiche en vidéo inverse au-dessus de l'historique. La liste des destinations donne le stock des gisements proches, et « ? » pour les autres.
+Maquette calculée par un script avec la règle de mise en page ci-dessous, sur un graphe d'exemple de 12 systèmes et 12 liens, dont le lien en plus 10–11. `S1`… marquent les stations, `a` et `b` les gisements de `ore_a` et `ore_b` (`[6]S2b` : une station et un gisement dans le même système), `@` le vaisseau du joueur, `o` les vaisseaux proches. Le cadre d'alerte, quand il y en a une, s'affiche en vidéo inverse au-dessus de l'historique. La liste des destinations donne le stock des gisements proches, et « ? » pour les autres.
 
-**Mise en page de la carte (`clients/map_layout.py`, fonction pure).** Les systèmes sont rangés en colonnes de 8 caractères selon leur distance en sauts depuis le système 1 (fonction `distances`). Le parent d'un système est son voisin de plus petit identifiant dans la colonne précédente. Les colonnes sont traitées de gauche à droite et, dans une colonne, les systèmes par identifiant croissant : chacun prend le rang de son parent s'il est libre, sinon le premier rang libre en dessous ; le système 1 prend le rang 0. Un lien entre deux systèmes de colonnes voisines et de même rang est tracé en traits horizontaux : c'est le cas de la plupart des liens de l'arbre. Tout autre lien (même colonne, rangs différents, ou colonne sautée) est écrit en texte sous la carte (« liens : 1–3, 4–8 »). Aucun trait vertical ni oblique. Comme les colonnes ne dépendent que du système 1, la carte ne bouge pas quand le vaisseau se déplace. Une chaîne de 12 systèmes donne 12 colonnes, soit 96 caractères : au-delà de la largeur du cadre (6 colonnes), la carte passe sur deux bandes, coupées après la sixième colonne ; un lien qui traverse la coupe est écrit en texte. Les tests de propriétés vérifient, sur de nombreuses graines, que chaque système et chaque lien apparaissent une fois, dessinés ou écrits ; la part des liens tracés et la hauteur de la carte sont mesurées et publiées au compte rendu de M1.
+**Mise en page de la carte (`clients/map_layout.py`, fonction pure).** Les systèmes sont rangés en colonnes de 8 caractères selon leur distance en sauts depuis le système 1 (fonction `distances`). Le parent d'un système est son voisin de plus petit identifiant dans la colonne précédente. Les colonnes sont traitées de gauche à droite et, dans une colonne, les systèmes par identifiant croissant : chacun prend le rang de son parent s'il est libre, sinon le premier rang libre en dessous ; le système 1 prend le rang 0. Un lien entre deux systèmes de colonnes voisines et de même rang est tracé en traits horizontaux : c'est le cas de la plupart des liens de l'arbre. Tout autre lien (même colonne, rangs différents, ou colonne sautée) est écrit en texte sous la carte (« liens : 1–3, 4–8 »). Aucun trait vertical ni oblique. Comme les colonnes ne dépendent que du système 1, la carte ne bouge pas quand le vaisseau se déplace. Une chaîne de 12 systèmes donne 12 colonnes, soit 96 caractères : au-delà de la largeur du cadre (6 colonnes), la carte passe sur deux bandes, coupées après la sixième colonne ; un lien qui traverse la coupe est écrit en texte. Si la carte dépasse la hauteur du cadre, le cadre Carte défile verticalement. Les tests de propriétés vérifient, sur de nombreuses graines, que chaque système et chaque lien apparaissent une fois, dessinés ou écrits ; la part des liens tracés et la hauteur de la carte sont mesurées et publiées au compte rendu de M1.
 
 **Touches (clavier AZERTY, aucune Majuscule).**
 
@@ -545,7 +554,7 @@ Maquette calculée par un script avec la règle de mise en page ci-dessous, sur 
 | Échap | annuler la saisie en cours |
 | `q` | quitter, après confirmation : « Quitter termine la partie (pas de reprise avant M5). Entrée pour confirmer. » |
 
-Une touche sans effet dans la saisie en cours (liste des destinations, confirmation, ou aucune) affiche une ligne d'aide dans la barre d'état.
+Une touche sans effet dans la saisie en cours (liste des destinations, confirmation, ou aucune saisie) affiche une ligne d'aide dans la barre d'état.
 
 **Ordres envoyés.** Le modèle garde, pour chaque ordre envoyé, sa commande, jusqu'au résultat qui porte le même numéro. Le cadre Vaisseau l'affiche (« ordre envoyé : déplacer vers system_9 »). L'historique désigne un ordre par son contenu, jamais par son numéro. Un ordre manuel ou un refus vide la file de vente.
 
@@ -557,8 +566,8 @@ Une touche sans effet dans la saisie en cours (liste des destinations, confirmat
 La table complète est au plan détaillé, point 23 quinquies. Le texte de `OrderResult`, construit par `step` et pris dans l'empreinte, ne change pas.
 
 **Alertes (deux à M1).**
-- **Arrivée à destination :** un `Arrived` de mon vaisseau, quand sa route est vide après le saut.
-- **Fin de minage :** un `MiningEnded` de mon vaisseau, sans `causation_id` (le minage s'est arrêté seul : cargaison pleine ou gisement vide ; Technical Plan, point 5). La cause se lit dans la cargaison et le stock.
+- **Arrivée à destination :** un `Arrived` du vaisseau du joueur, quand sa route est vide après le saut.
+- **Fin de minage :** un `MiningEnded` du vaisseau du joueur, sans `causation_id` (le minage s'est arrêté seul : cargaison pleine ou gisement vide ; Technical Plan, point 5). La cause se lit dans la cargaison et le stock.
 
 Une alerte reste affichée jusqu'à Entrée. Plusieurs alertes forment une file : la plus ancienne s'affiche d'abord. Chacune est aussi copiée dans l'historique. Pendant « avancer jusqu'à la prochaine alerte », l'arrivée d'une alerte remet la vitesse à ×1.
 
@@ -591,8 +600,8 @@ Les minutes sont une estimation à `NOMINAL_TICK_PERIOD_S`, précédées de « �
 
 - **Partie de référence :** graine 1, jouée par ses `npc_count(1, réglages)` PNJ, à travers le serveur en mode sans horloge, sur 100 000 ticks (inchangé).
 - **Fenêtres :** `window_stats(..., window=10_000)`. Les empreintes de référence restent relevées tous les 1 000 ticks.
-- **Bornes :** calculées par l'outil de régénération à partir de la géométrie du monde de la graine 1 et des réglages, sans lire les ventes de la partie, et rangées dans `reference.json` avec les empreintes (plan détaillé, point 27). La première fenêtre reste exclue (départ à vide).
-- **Épuisement :** une station et un gisement peuvent partager un système (alternative AA). Des PNJ peuvent alors y boucler sans trajet et vider le gisement avant sa régénération. La partie de référence exerce ainsi l'épuisement, la régénération et le départage, que le risque d'origine disait jamais exécutés ; les bornes en tiennent compte.
+- **Bornes (décision du propriétaire, 2026-11-15) :** calculées par l'outil de régénération, avant de jouer la partie de référence, à partir du monde de la graine 1, des réglages et de la règle du PNJ version 2 (Technical Plan, point 7), sans lire les ventes de la partie. L'outil déroule le cycle établi de chaque PNJ (gisement visé, station de vente, distances) et en tire des bornes serrées, à une ou deux ventes près par PNJ et par fenêtre ; il les range dans `reference.json` avec les empreintes (plan détaillé, point 27). Le calcul dépend de la politique du PNJ, mais seulement au moment de la régénération : le test rejoue le journal enregistré, et reste valable si la politique change ensuite (alternative H). Un PNJ dont le gisement peut se vider passe à des bornes larges, dites de repli. La première fenêtre reste exclue (départ à vide).
+- **Épuisement :** une station et un gisement peuvent partager un système (alternative AA). Des PNJ peuvent alors y boucler sans trajet et vider le gisement avant sa régénération. La partie de référence peut ainsi exercer l'épuisement, la régénération et le départage, sans garantie : cela dépend du monde de la graine 1. L'outil de régénération relève si un gisement s'est vidé et si un départage a eu lieu pendant la partie, et le compte rendu de M1 le cite. Les scénarios et les tests de propriétés à stock bas restent la parade principale (Risks & Mitigations).
 
 ### 10. Les contrôles de CI de M1
 
@@ -613,7 +622,7 @@ Les minutes sont une estimation à `NOMINAL_TICK_PERIOD_S`, précédées de « �
 
 ### 11. L'indicateur avancé
 
-Un test marqué `mesure`, sous `tests/` pour la même raison que l'outil de régénération (Technical Plan, point 8), mesure les ticks par seconde de `step` et de `observe` (une observation par acteur et par tick), sans serveur. Le monde a la taille de ceux de l'entraînement : le niveau 1, §8, dit « quelques dizaines d'entités », et M1 retient trois systèmes et 30 PNJ, un vaisseau chacun *(remplacé par l'amendement 1, voir ce point : un monde généré de 12 systèmes, et 30 PNJ)*.
+Un test marqué `mesure`, sous `tests/` pour la même raison que l'outil de régénération (Technical Plan, point 8), mesure les ticks par seconde de `step` et de `observe` (une observation par acteur et par tick), sans serveur. Le monde a la taille de ceux de l'entraînement : le niveau 1, §8, dit « quelques dizaines d'entités », et M1 retient trois systèmes et 30 PNJ, un vaisseau chacun *(remplacé par l'amendement 1, voir ci-dessous : un monde généré de 12 systèmes, et 30 PNJ)*.
 
 **(amendement 1)** Le monde mesuré est généré par `world.generate` avec `systems_min` = `systems_max` = 12 (réglages de mesure, hors de `tunables.toml`), et 30 PNJ sont créés par des ordres d'administration. Trois systèmes ne sont plus possibles : le décodage impose `systems_min` ≥ `deposits_max`. Les ordres des PNJ sont calculés hors du temps mesuré. Le test affiche le résultat ; rien ne dépend de sa valeur.
 
@@ -709,11 +718,14 @@ events.py       EVENT_SCHEMA_VERSION = 0
                       causation_id: OrderId | None, visibility: Visibility, payload: <union des neuf types>)
                 event_json_schema() -> dict[str, object]
 observation.py  SystemView, DepositView, StationView, ActorView (champs publics)
+                    (amendement 1 : DepositView.stock est de classe proximité, Int64 | None)
                 OwnShipView (tous les champs de Ship, mêmes noms) ; OtherShipView (champs publics de Ship)
+                    (amendement 1 : les champs d'OtherShipView sont de classe NEARBY)
                 (StationView reprend ore_prices ; wallet_balance est le balance du portefeuille personnel de l'acteur)
                 Observation(tick: Int64, actor_id: Id, systems, deposits, stations, actors,
                             own_ships, other_ships, wallet_balance: Int64, action_budget: Int64,
                             events: tuple[Event, ...], results: tuple[OrderResult, ...])
+                    (amendement 1 : + public_tunables: PublicTunablesView, dernier champ)
 protocol.py     PROTOCOL_VERSION = 1   (amendement 1 : 2)
                 SubmitOrders(protocol_version: Int64, orders: tuple[Order, ...])
                 TickUpdate(protocol_version: Int64, observation: Observation)
@@ -793,7 +805,7 @@ tools/divergence.py        first_divergence(a, b: Sequence[Fingerprints]) -> tup
 tools/economy.py           WindowStats(first_tick, issued_by_reason, destroyed_by_reason,
                                        money_supply_growth, money_supply_end)
                            window_stats(events: Iterable[Event], window: int = 1000) -> tuple[WindowStats, ...]
-                           (amendement 1 : window = 10 000)
+                           (amendement 1 : window = 10_000)
 ```
 
 Les noms des composants affichés par l'outil de divergence sont ceux des champs de `Fingerprints` (`ledger` pour le registre).
@@ -879,123 +891,123 @@ Ces alternatives ont été pesées pendant la rédaction et la revue de ce docum
 
 **(amendement 1)** Les alternatives A à I du document restent. Celles-ci s'y ajoutent, avec la marque « (amendement 1) » ; leur dernière puce, « Retenu », donne l'option choisie. L'alternative C (« des ticks avancés à la demande du joueur ») reste rejetée : l'accélération de l'amendement n'existe qu'en mode développement d'une partie locale, ne passe ni par le protocole ni par le journal, et ne change que la période de l'horloge (alternative S).
 
-### Alternative J (amendement 1) : un document de niveau 2 séparé pour l'écran
+### Alternative J : un document de niveau 2 séparé pour l'écran (amendement 1)
 
 *   **Avantages :** ce document, déjà approuvé, n'est pas touché.
-*   **Inconvénients :** la feuille de route n'a qu'une cellule et un statut par jalon, et `CLAUDE.md` parle du document du jalon au singulier ; il aurait fallu changer le circuit. Deux textes auraient fait foi, et le nouveau aurait contredit les points 5, 6, 7 et 13 du noyau.
+*   **Inconvénients :** la feuille de route n'a qu'une cellule et un statut par jalon, et `CLAUDE.md` parle du document du jalon au singulier ; il aurait fallu changer le circuit. Deux textes auraient fait foi, et le nouveau aurait contredit le Technical Plan, points 5, 6, 7 et 13, de ce document.
 *   **Retenu :** choix du propriétaire, après le premier tour de revue : un amendement.
 
-### Alternative K (amendement 1) : quatre onglets (Carte, Vaisseau, Station, Journal)
+### Alternative K : quatre onglets, Carte, Vaisseau, Station et Journal (amendement 1)
 
-*   **Avantages :** chaque écran est aéré.
-*   **Inconvénients :** un onglet caché cache aussi ses événements, alors que le joueur se plaignait d'en rater. Les touches 1 à 4 entraient en conflit avec le choix de la destination. « Journal » désigne déjà `OrderLog`.
+*   **Avantages :** chaque écran serait aéré.
+*   **Inconvénients :** un onglet caché cacherait aussi ses événements, alors que le joueur se plaignait d'en rater. Les touches 1 à 4 entreraient en conflit avec le choix de la destination. « Journal » désigne déjà `OrderLog`.
 *   **Retenu :** choix du propriétaire : un écran unique, fait de cadres réarrangeables.
 
-### Alternative L (amendement 1) : ralentir seulement la période de l'horloge
+### Alternative L : ralentir seulement la période de l'horloge (amendement 1)
 
 *   **Avantages :** aucun changement des règles, ni de `rules_version`.
-*   **Inconvénients :** les décisions restent les mêmes, avec plus d'attente entre elles ; le PNJ reste aussi rapide en ticks. Le temps ne devient pas une ressource.
+*   **Inconvénients :** les décisions resteraient les mêmes, avec plus d'attente entre elles ; le PNJ resterait aussi rapide en ticks. Le temps ne deviendrait pas une ressource.
 *   **Retenu :** choix du propriétaire : les durées sont des règles (`jump_ticks` ticks par saut, 400 dans les valeurs initiales ; 100 ticks de minage), et la période nominale passe aussi à 3 s.
 
-### Alternative M (amendement 1) : la taille du monde
+### Alternative M : la taille du monde (amendement 1)
 
 *   **Dans les fourchettes du niveau 1** (5 systèmes, une station) : aucune ADR, mais un seul point de vente, donc aucun choix du lieu de vente.
-*   **Une taille fixe** (8 ou 12 systèmes) : scénarios et bornes plus simples, mais chaque graine donne le même monde, à l'emplacement des sites près.
-*   **Trois minerais :** plus de choix, mais l'ADR touche aussi « deux minerais » du CUJ 1, et les prix et les bornes s'étendent.
+*   **Une taille fixe** (8 ou 12 systèmes) : scénarios et bornes plus simples, mais chaque graine donnerait le même monde, à l'emplacement des sites près.
+*   **Trois minerais :** plus de choix, mais l'ADR toucherait aussi « deux minerais » du CUJ 1, et les prix et les bornes s'étendraient.
 *   **Retenu :** choix du propriétaire : fourchettes tirées par la graine (8 à 12 systèmes, 2 à 3 stations, 4 à 6 gisements, 3 à 5 PNJ), deux minerais, « sans rentrer dans l'excessif ».
 
-### Alternative N (amendement 1) : la forme du graphe
+### Alternative N : la forme du graphe (amendement 1)
 
 *   **Grille partielle** (cases d'une petite grille, liens entre cases voisines) : affichage direct, mais aspect régulier, et des positions de grille dans l'état.
-*   **Anneau et cordes :** toujours connexe, mais forme semblable d'une graine à l'autre, et un anneau de 12 systèmes se dessine mal en 80 × 24.
+*   **Anneau et cordes :** toujours connexe, mais forme semblable d'une graine à l'autre, et un anneau de 12 systèmes se dessinerait mal en 80 × 24.
 *   **Retenu :** choix du propriétaire : un arbre, plus quelques liens qui créent des boucles. Le prix en est une mise en page calculée par le client.
 
-### Alternative O (amendement 1) : les prix des stations
+### Alternative O : les prix des stations (amendement 1)
 
-*   **Mêmes prix partout :** simple, mais le lieu de vente ne compte plus, sinon par la distance.
+*   **Mêmes prix partout :** simple, mais le lieu de vente ne compterait plus, sinon par la distance.
 *   **Prix tirés par la graine dans une fourchette :** plus de variété, mais des bornes d'économie à calculer sur toutes les combinaisons.
 *   **Retenu :** choix du propriétaire : des prix propres à chaque station, écrits dans les réglages (`station_ore_prices`, une ligne par station, jusqu'à `stations_max`). Plus tard, le marché fixera les prix (M6).
 
-### Alternative P (amendement 1) : comment le client connaît les durées
+### Alternative P : comment le client connaît les durées (amendement 1)
 
-*   **Aucune donnée nouvelle** (durées déduites de `ticks_to_next_jump` et de `MiningStarted.rate`) : rien ne change dans `schema`. Mais aucune durée n'est connue avant le premier départ, et la déduction est fragile.
-*   **Un champ dans `TickUpdate` hors de l'observation, ou un message d'accueil :** `observe` ne change pas. Mais c'est un second canal vers le joueur, interdit par le niveau 1, §5 (« il n'y a pas d'autre canal ») ; les joueurs IA, qui s'entraînent sur l'observation seule, en seraient privés. Cette option avait d'abord été retenue pendant le brainstorm, puis écartée pour cette raison.
-*   **Les valeurs copiées sur les entités de l'état** (vitesse et laser sur le vaisseau, taxe sur la station) : `observe` et le niveau 1 ne changent pas, et cela prépare des valeurs propres à chaque vaisseau. Mais `State`, `step`, les empreintes et l'instantané changent, et un rééquilibrage ne toucherait pas les vaisseaux déjà créés.
+*   **Aucune donnée nouvelle** (durées déduites de `ticks_to_next_jump` et de `MiningStarted.rate`) : rien ne changerait dans `schema`. Mais aucune durée ne serait connue avant le premier départ, et la déduction serait fragile.
+*   **Un champ dans `TickUpdate` hors de l'observation, ou un message d'accueil :** `observe` ne changerait pas. Mais ce serait un second canal vers le joueur, interdit par le niveau 1, §5 (« il n'y a pas d'autre canal ») ; les joueurs IA, qui s'entraînent sur l'observation seule, en seraient privés. Cette option avait d'abord été retenue pendant le brainstorm, puis écartée pour cette raison.
+*   **Les valeurs copiées sur les entités de l'état** (vitesse et laser sur le vaisseau, taxe sur la station) : `observe` et le niveau 1 ne changeraient pas, et cela préparerait des valeurs propres à chaque vaisseau. Mais `State`, `step`, les empreintes et l'instantané changeraient, et un rééquilibrage ne toucherait pas les vaisseaux déjà créés.
 *   **Retenu :** choix du propriétaire : `observe` reçoit les réglages et publie une vue des réglages publics (ADR 0003). Quand ces valeurs deviendront propres à chaque vaisseau, elles passeront dans la vue du vaisseau.
 
-### Alternative Q (amendement 1) : les refus en français construits par `step`
+### Alternative Q : les refus en français construits par `step` (amendement 1)
 
 *   **Avantages :** le texte du résultat d'ordre serait déjà en français, pour tous les clients.
 *   **Inconvénients :** ce texte entre dans l'empreinte `last_tick`. Après le volet C, chaque retouche d'un libellé coûterait une régénération des références et une hausse de `RULES_REVISION`. Un champ structuré dans `OrderResult` changerait `schema`, l'instantané et le protocole sans nécessité.
 *   **Retenu :** le client traduit le code de refus, à partir de l'observation (Technical Plan, point 7 bis).
 
-### Alternative R (amendement 1) : la façon de signaler les alertes
+### Alternative R : la façon de signaler les alertes (amendement 1)
 
-*   **`App.notify` de Textual :** déjà là, mais la notification disparaît au bout d'un délai réel, utilise des couleurs, et rend les tests dépendants de l'horloge.
-*   **La comparaison de deux observations successives :** aucun événement à interpréter, mais elle casse dès qu'une mise à jour manque, ce qui arrivera avec les reconnexions de M3.
+*   **`App.notify` de Textual :** déjà là, mais la notification disparaîtrait au bout d'un délai réel, utiliserait des couleurs, et rendrait les tests dépendants de l'horloge.
+*   **La comparaison de deux observations successives :** aucun événement à interpréter, mais elle casserait dès qu'une mise à jour manque, ce qui arrivera avec les reconnexions de M3.
 *   **Retenu :** les alertes viennent des événements de l'observation (`Arrived`, `MiningEnded`), filtrés par le modèle client, et restent affichées jusqu'à Entrée.
 
-### Alternative S (amendement 1) : la façon d'accélérer
+### Alternative S : la façon d'accélérer (amendement 1)
 
-*   **`--periode` seul, au lancement :** rien à construire, mais on ne peut ni ralentir ni mettre en pause en cours de partie, et chaque attente de 20 minutes reste entière.
+*   **`--periode` seul, au lancement :** rien à construire, mais on ne pourrait ni ralentir ni mettre en pause en cours de partie, et chaque attente de 20 minutes resterait entière.
 *   **Un message du protocole :** c'est l'alternative C, déjà rejetée ; un joueur commanderait l'horloge d'un serveur partagé.
-*   **`Game.advance(n)` appelé depuis l'interface :** bloque la boucle de Textual, envoie n mises à jour d'un coup, et mélange les deux modes du serveur.
-*   **Un fichier de réglages « de développement » :** c'est un changement des règles, avec un autre `rules_version`, pas une accélération.
+*   **`Game.advance(n)` appelé depuis l'interface :** il bloquerait la boucle de Textual, enverrait n mises à jour d'un coup, et mélangerait les deux modes du serveur.
+*   **Un fichier de réglages « de développement » :** ce serait un changement des règles, avec un autre `rules_version`, pas une accélération.
 *   **Commandes de vitesse pour tous :** pratiques, mais en partie normale l'univers doit tourner à son rythme ; le propriétaire ne les veut que pour le développement.
 *   **Retenu :** en mode développement seulement (`--dev`), une fonction de rappel locale, passée par `__main__.py`, change la période de l'horloge (paliers, pause, avancer jusqu'à la prochaine alerte) ; chaque changement est enregistré dans `speed.jsonl`.
 
-### Alternative T (amendement 1) : afficher les durées en minutes, ou transmettre la période au client
+### Alternative T : afficher les durées en minutes, ou transmettre la période au client (amendement 1)
 
 *   **Avantages :** le joueur lit directement le temps réel.
 *   **Inconvénients :** la période change avec l'accélération, et ce n'est pas une donnée du jeu ; la transmettre dans l'observation ou dans `TickUpdate` serait un autre canal.
 *   **Retenu :** les ticks restent l'information principale ; les minutes sont une estimation à la période nominale, précédée de « ≈ ».
 
-### Alternative U (amendement 1) : la durée du minage au-delà de 100 ticks
+### Alternative U : la durée du minage au-delà de 100 ticks (amendement 1)
 
-*   **Un compteur de cycles de minage, ou un réglage « ticks par lot » :** des durées aussi longues qu'on veut, mais `step`, `Tunables`, le sens de `MiningStarted.rate`, et peut-être `State` et l'instantané, changent.
-*   **Un changement d'échelle des unités** (cargaison de 4 000, prix et stocks à l'avenant) : seuls les réglages changent, mais tous les montants des scénarios et des bornes sont à refaire.
+*   **Un compteur de cycles de minage, ou un réglage « ticks par lot » :** des durées aussi longues qu'on veut, mais `step`, `Tunables`, le sens de `MiningStarted.rate`, et peut-être `State` et l'instantané, changeraient.
+*   **Un changement d'échelle des unités** (cargaison de 4 000, prix et stocks à l'avenant) : seuls les réglages changeraient, mais tous les montants des scénarios et des bornes seraient à refaire.
 *   **Retenu :** choix du propriétaire : 100 ticks (5 minutes) suffisent à M1 ; la durée dépendra plus tard du laser et de la capacité du vaisseau.
 
-### Alternative V (amendement 1) : le test d'économie
+### Alternative V : le test d'économie (amendement 1)
 
-*   **Garder des fenêtres de 1 000 ticks :** chaque fenêtre contiendrait zéro ou une vente ; la borne basse tombe à 0, et le test ne prouve plus rien.
-*   **Allonger la partie de référence à 1 000 000 de ticks :** environ dix fois plus de temps de rejeu, et un fichier d'empreintes d'environ 300 Mo.
+*   **Garder des fenêtres de 1 000 ticks :** chaque fenêtre contiendrait zéro ou une vente par PNJ ; la borne basse tomberait à 0, et le test ne prouverait plus rien.
+*   **Allonger la partie de référence à 1 000 000 de ticks :** environ dix fois plus de temps de rejeu, et des empreintes de chaque tick, écrites par la tâche `rejeu`, d'environ 284 octets par tick, soit environ 284 Mo.
+*   **Des bornes tirées de la seule géométrie du monde, indépendantes de la politique du PNJ** (version de l'étape 5 de la revue) : aucun calcul ne dépendrait du PNJ, mais la borne basse vaudrait 0 pour presque toute graine, et la borne haute serait environ vingt fois trop lâche. Une panne qui arrête toute vente passerait le test.
 *   **Descendre sous 100 000 ticks :** fixé par le niveau 1 ; il faudrait une ADR, sans bénéfice.
-*   **Retenu :** des fenêtres de 10 000 ticks, sur les 100 000 ticks du niveau 1.
+*   **Retenu :** des fenêtres de 10 000 ticks, sur les 100 000 ticks du niveau 1, et des bornes calculées à partir du cycle de chaque PNJ, à la régénération des références (décision du propriétaire, 2026-11-15 ; plan détaillé, point 27).
 
-### Alternative W (amendement 1) : la politique du PNJ
+### Alternative W : la politique du PNJ (amendement 1)
 
-*   **Le gisement le plus proche, la station la plus proche :** très simple, mais les prix propres des stations ne changent rien à son jeu.
-*   **Un gisement attitré, déduit de l'identifiant :** les PNJ se répartissent sur la carte, mais la répartition est arbitraire.
-*   **Une politique attentive au temps de trajet :** plus crédible comme adversaire, mais ce n'est plus une référence simple, et M1 veut le PNJ simple.
+*   **Le gisement le plus proche, la station la plus proche :** très simple, mais les prix propres des stations ne changeraient rien à son jeu.
+*   **Un gisement attitré, déduit de l'identifiant :** les PNJ se répartiraient sur la carte, mais la répartition serait arbitraire.
+*   **Une politique attentive au temps de trajet :** plus crédible comme adversaire, mais ce ne serait plus une référence simple, et M1 veut le PNJ simple.
 *   **Retenu :** choix du propriétaire : « le mieux payé » (Technical Plan, point 7). Les PNJ s'entassent : c'est accepté.
 
-### Alternative X (amendement 1) : l'attache du PNJ en mode avec horloge
+### Alternative X : l'attache du PNJ en mode avec horloge (amendement 1)
 
 *   **Avantages d'un client synchrone attaché :** la décision du PNJ entre toujours au tick suivant, à toute vitesse, comme dans la partie de référence.
-*   **Inconvénients :** son calcul bloque la boucle des ticks, et le Technical Plan, point 7, est réécrit.
+*   **Inconvénients :** son calcul bloquerait la boucle des ticks, et le Technical Plan, point 7, serait réécrit.
 *   **Retenu :** choix du propriétaire : la tâche de relais du code d'origine. Aux paliers rapides (×100 et ×1000), la partie locale ne joue pas tout à fait comme la partie de référence ; le rejeu reste exact, puisqu'il suit le journal.
 
-### Alternative Y (amendement 1) : la carte à l'écran et la visibilité des autres vaisseaux
+### Alternative Y : la carte à l'écran et la visibilité des autres vaisseaux (amendement 1)
 
-*   **Positions des systèmes dans l'état :** le client dessine aux coordonnées, et cela prépare les distances variables ; mais `State` et l'observation reçoivent deux champs par système, et la génération du graphe se complique.
+*   **Positions des systèmes dans l'état :** le client dessinerait aux coordonnées, et cela préparerait les distances variables ; mais `State` et l'observation recevraient deux champs par système, et la génération du graphe se compliquerait.
 *   **Un tableau, sans dessin :** fidèle au rendu « façon tableur », mais sans vue d'ensemble du graphe, ce qui était l'une des gênes relevées.
 *   **Visibilité :** voir le saut des autres vaisseaux, ou leur activité, partout (plus de mouvement visible, mais une information donnée à tous les concurrents) ; ou le statu quo (tout vaisseau visible partout, mais immobile pendant ses sauts).
 *   **Stock des gisements public :** la carte en dirait plus, mais la baisse du stock, à une unité par tick, compterait les vaisseaux qui minent loin, malgré la proximité.
 *   **Retenu :** choix du propriétaire : mise en page calculée par le client ; les vaisseaux d'autrui et le stock des gisements ne sont visibles qu'à proximité (système d'un des vaisseaux de l'acteur, ou système voisin), sans l'activité des vaisseaux (ADR 0005). Des scanners porteront plus loin plus tard.
 
-### Alternative Z (amendement 1) : les scénarios de partie sur les vrais réglages seulement
+### Alternative Z : les scénarios de partie sur les vrais réglages seulement (amendement 1)
 
 *   **Avantages :** un seul jeu de réglages à suivre.
-*   **Inconvénients :** chaque essai de réglage repasserait par une pull request de scénarios protégée, et la CI comme la mutation s'allongent (un cycle dure plus de 1 600 ticks).
+*   **Inconvénients :** chaque essai de réglage repasserait par une pull request de scénarios protégée, et la CI comme la mutation s'allongeraient (un cycle dure plus de 1 600 ticks).
 *   **Retenu :** des réglages de test explicites dans les étapes, plus un seul scénario sur les vrais réglages.
 
-### Alternative AA (amendement 1) : interdire qu'une station et un gisement partagent un système
+### Alternative AA : interdire qu'une station et un gisement partagent un système (amendement 1)
 
 *   **Avantages :** tout cycle passe par au moins un saut aller et un saut retour (900 ticks ou plus) ; aucun gisement ne peut se vider (6 000 unités extraites au plus par fenêtre, pour un stock de 20 000) ; les bornes d'économie sont plus étroites.
-*   **Inconvénients :** il faut au moins 9 systèmes (`stations_max` + `deposits_max`), donc une fourchette de 9 à 12 ; la carte perd une situation de jeu, le gisement voisin d'une station, qui rapporte vite puis s'épuise.
-*   **Raison du rejet :** décision du propriétaire (2026-11-12) : la colocalisation est voulue ; dans le pire des cas, le gisement s'épuise, et joueurs et PNJ doivent aller miner ailleurs. Elle se produit dans 84 % des mondes générés (calcul du 2026-11-12, moyenne sur les tailles équiprobables).
-*   **Retenu :** une station et un gisement peuvent partager un système (Technical Plan, point 2).
+*   **Inconvénients :** il faudrait au moins 9 systèmes (`stations_max` + `deposits_max`), donc une fourchette de 9 à 12 ; la carte perdrait une situation de jeu, le gisement dans le système d'une station, qui rapporte vite puis s'épuise.
+*   **Retenu :** décision du propriétaire (2026-11-12) : la colocalisation est voulue ; dans le pire des cas, le gisement s'épuise, et joueurs et PNJ doivent aller miner ailleurs. Une station et un gisement peuvent donc partager un système (Technical Plan, point 2). Une station partage son système avec un gisement dans 84 % des mondes générés, et avec un gisement de `ore_b`, le seul minerai que visent les PNJ avec les prix proposés, dans 52 % (calculs du 2026-11-12 et du 2026-11-13, moyenne sur les tailles équiprobables).
 
 
 --------------------------------------------------------------------------------
@@ -1030,20 +1042,20 @@ Ces alternatives ont été pesées pendant la rédaction et la revue de ce docum
 
 | Risque | Effet | Signal | Parade |
 | :-- | :-- | :-- | :-- |
-| Parties manuelles très longues | à 3 s par tick, un cycle dure plus d'une heure ; la validation de la boucle et les essais deviennent pénibles | durée de la partie d'essai | accélération en mode développement (paliers ×1 à ×1000, « avancer jusqu'à la prochaine alerte ») ; enchaînement de l'objectif 11 validé en accéléré, rythme sur un saut à la période nominale |
+| Parties manuelles très longues | à 3 s par tick, un cycle dure de 5 minutes (gisement dans le système d'une station) à plus d'une heure (gisement à deux sauts : 85 minutes) ; la validation de la boucle et les essais deviennent pénibles | durée de la partie d'essai | accélération en mode développement (paliers ×1 à ×1000, « avancer jusqu'à la prochaine alerte ») ; enchaînement des étapes du cycle (objectif 11) validé en accéléré, rythme sur un saut à la période nominale |
 | Accélération oubliée | le joueur croit le jeu figé, ou rate une alerte à ×1000 | retour du propriétaire à la partie d'essai | en mode développement, vitesse toujours affichée dans la barre d'état ; retour à ×1 à chaque alerte pendant « avancer jusqu'à la prochaine alerte » |
 | Dérive entre `tunables.toml`, les réglages de test et le document | un test ou un scénario passe sur des valeurs qui ne sont plus celles du jeu | scénario sur les vrais réglages en échec | `tunables.toml` est la seule source ; le scénario sur les vrais réglages les lit au lieu de recopier des nombres ; le tableau du document donne les valeurs initiales |
 | File de vente coincée | une vente refusée laisse la file attendre | tests du modèle client | la file avance au résultat de la vente précédente ; un refus ou un ordre manuel la vide |
 | Jeu d'attente avec un seul vaisseau | environ 94 % d'un cycle en trajet (1 600 ticks sur 1 701, carte d'origine) ; une décision par trajet | verdict de la partie d'essai | accepté à M1 ; la flotte et les scanners viendront plus tard |
 | Conséquences pour M4 | environ 4 ordres par cycle de 1 701 ticks, soit environ 425 ticks par décision : des épisodes faits surtout d'attente, des récompenses rares, et un « pas » du niveau 1 (§2 et §8) qui compte surtout des ticks sans décision | mesure au document de niveau 2 de M4 | risque ouvert : la définition du pas et du verdict du niveau 1 est à revoir à M4 ; entraîner sur d'autres réglages n'est pas une issue, puisque M5 compare `rules_version` au déploiement (alternative H) ; piste qui ne change pas `rules_version` : un environnement d'entraînement qui enchaîne les ticks sans décision jusqu'à la suivante |
-| Veille de l'ordinateur portable | l'univers se fige probablement pendant la veille | essai du plan détaillé, point 23 quater | vérifiée par cet essai ; sans effet sur les règles ni sur le rejeu |
+| Mise en veille de l'ordinateur portable | l'univers se fige probablement pendant la mise en veille | essai du plan détaillé, point 23 quater | vérifiée par cet essai ; sans effet sur les règles ni sur le rejeu |
 | Écritures disque à vitesse élevée | à ×1000, un commit SQLite par tick | mesure du plan détaillé, point 28 bis | la contre-pression et le palier ×1000 (0,003 s) bornent le débit |
 | Mises à jour accumulées | aux paliers rapides, la file des mises à jour du client grossit | débordement mesuré au plan détaillé, point 28 bis | sous 0,05 s par tick, l'horloge attend que la file du propriétaire soit vide ; le modèle client traite toutes les mises à jour, et l'écran ne redessine que la dernière |
 | Peu de PNJ visibles | avec la visibilité par proximité, la plupart des 3 à 5 PNJ, et le stock des gisements lointains, sont hors de vue sur 8 à 12 systèmes | verdict de la partie d'essai | accepté par le propriétaire (décision de jeu, ADR 0005) ; à revoir à la partie d'essai, qui dira si l'écran paraît vide |
 | Carte illisible pour certaines graines | une chaîne longue ou beaucoup de liens hors de l'arbre | part des liens tracés, mesurée sur de nombreuses graines | rang du parent pour les liens de l'arbre ; deux bandes au-delà de la largeur ; autres liens écrits en texte |
-| PNJ décalés aux paliers rapides | avec la tâche de relais, une décision peut entrer un ou plusieurs ticks plus tard | rejeu d'une partie accélérée | accepté par le propriétaire, qui a gardé la tâche de relais (alternative X) ; le rejeu suit le journal, il reste exact |
-| Épuisement par colocalisation | des PNJ bouclent sur un gisement voisin d'une station et le vident avant sa régénération | stock à 0 dans les événements de la partie de référence | accepté (alternative AA) : le PNJ repart vers un autre gisement ; les bornes d'économie couvrent ce cas (plan détaillé, point 27) |
-| Gisement vide découvert à l'arrivée | hors de portée, le stock est inconnu : un vaisseau peut faire un trajet vers un gisement vide | tests de la politique du PNJ | accepté (ADR 0005) : le PNJ repart vers le gisement suivant ; les bornes couvrent le détour |
+| PNJ décalés aux paliers rapides | avec la tâche de relais, une décision peut entrer un ou plusieurs ticks plus tard qu'au tick suivant ; si plusieurs décisions d'un PNJ en retard entrent dans le même tick, la plus ancienne gagne (un ordre par vaisseau et par tick, celui de plus petit numéro ; Technical Plan, point 2) | rejeu d'une partie accélérée | accepté par le propriétaire, qui a gardé la tâche de relais (alternative X) ; le rejeu suit le journal, il reste exact |
+| Épuisement par colocalisation | des PNJ bouclent sur un gisement dans le système d'une station et le vident avant sa régénération | épuisement prévu par l'outil de régénération ; stock à 0 dans la partie de référence | accepté (alternative AA) : le PNJ vise l'autre minerai (Technical Plan, point 7) ; l'outil de régénération prévoit l'épuisement et le signale, et les PNJ de ce gisement passent aux bornes de repli (plan détaillé, point 27) |
+| Gisement vide découvert à l'arrivée | hors de portée, le stock est inconnu : un vaisseau peut faire un trajet vers un gisement vide | tests de la politique du PNJ | accepté (ADR 0005) : sur un gisement vide du minerai visé, le PNJ vise l'autre minerai pour sa décision suivante (Technical Plan, point 7), ce qui rompt l'aller-retour entre deux gisements vides du même minerai ; la borne basse d'un PNJ au repli est 0, et aucune durée maximale de cycle n'est supposée (plan détaillé, point 27) |
 
 ## Additional Resources
 
@@ -1051,15 +1063,13 @@ Ces alternatives ont été pesées pendant la rédaction et la revue de ce docum
 *   Essais du 2026-11-02, hors du dépôt : `mutmut` 3.8.0 et `cosmic-ray` 8.7.0 sous Python 3.15 ; lecture du chargement de la configuration de `mutmut` 3.8.0 (`pyproject.toml` d'abord, sinon section `[mutmut]` de `setup.cfg`).
 *   Essais du 2026-11-06, hors du dépôt, sous Python 3.15.2 : lecture du code de `mutmut` 3.8.0 (clés `source_paths`, `only_mutate`, `do_not_mutate`, `also_copy`, `pytest_add_cli_args` ; filtrage de `mutmut run` par motifs de noms de mutants ; `export-cicd-stats` ne donne que des totaux ; sortie de `mutmut results --all true`) et une mutation d'un petit projet ; métadonnées `msgspec.Meta(extra=...)` relues par `msgspec.inspect.type_info` sur `msgspec` 0.22.0 ; route `GET /repos/EZPK/4X/branches/main` lue sans jeton.
 *   Rapports de la revue EGM de ce document : `docs/revues/2026-11-06-niveau-2-m1-noyau/`.
-
-*   **(amendement 1)** Brief du brainstorm et rapports de revue de l'amendement : `docs/revues/2026-11-12-niveau-2-m1-noyau-amendement-1/`. Simulation du 2026-11-12, hors du dépôt : cycle de 1 701 ticks et 10 à 12 ventes par fenêtre de 10 000 ticks (carte d'origine, `jump_ticks` = 400, `mining_rate` = 1, deux PNJ). Calcul du 2026-11-12 : une station et un gisement partagent un système dans 84 % des mondes générés (moyenne sur les tailles équiprobables).
+*   **(amendement 1)** Brief du brainstorm et rapports de revue de l'amendement : `docs/revues/2026-11-12-niveau-2-m1-noyau-amendement-1/`. Simulation du 2026-11-12, hors du dépôt : cycle de 1 701 ticks et 10 à 12 ventes par fenêtre de 10 000 ticks (carte d'origine, `jump_ticks` = 400, `mining_rate` = 1, deux PNJ). Calculs du 2026-11-12 et du 2026-11-13 : une station partage son système avec un gisement dans 84 % des mondes générés, et avec un gisement de `ore_b` dans 52 % (moyenne sur les tailles équiprobables). Essai du 2026-11-15, hors du dépôt, de la méthode des bornes du plan détaillé, point 27, sur la génération du Technical Plan, point 2, écrite d'après ce document avec `keyed_below` du noyau : pour la graine 1 (11 systèmes, 2 stations, 6 gisements, 5 PNJ), deux PNJ bouclent sur un gisement de `ore_b` dans le système de la station 2 et passent au repli, et l'émission `ORE_SALE` est bornée entre 45 000 et 361 500 par fenêtre ; sur les graines 1 à 10 000, 47 % des mondes ont au moins un PNJ au repli, et 35 % les ont tous (borne basse nulle). Ces chiffres sont à refaire sur le code livré.
 
 ## Future Improvements
 
 *   **Le mode rejeu du client Textual**, à M3, avec la vidéo rendue depuis un rejeu.
 *   **Le journal public de chaque corporation** (niveau 1, §4), à M6 : il sera construit à partir des événements « écriture du registre », puisque l'état ne garde que les écritures du tick.
 *   **Une seconde partie de référence, contrainte par le stock** (plusieurs PNJ sur un gisement, `deposit_stock` bas), si les scénarios et les tests de propriétés ne suffisent pas à couvrir l'épuisement et le départage.
-
 *   **(amendement 1) Des événements pendant les trajets** (idée du propriétaire, 2026-11-12) : ce qui peut arriver à un vaisseau en route, une fois les sauts longs. Hors de M1.
 *   **(amendement 1) La vitesse propre à chaque vaisseau et la distance entre systèmes :** la durée d'un saut en dépendra, comme celle d'un minage dépendra du laser et de la capacité.
 *   **(amendement 1) Des scanners** pour voir plus loin que les systèmes voisins (ADR 0005).
@@ -1235,13 +1245,13 @@ Chaque volet a sa pull request de scénarios (fichiers `.feature` en français e
 *   **Proposed Changes :** les modules du Technical Plan, point 13 :
     - `arith.py`, seul module exempté de l'interdiction de `//` et `%` ;
     - `keyed_random.py` ;
-    - `tunables.py` et `tunables.toml`. Valeurs de M1 : `jump_ticks` = 5, `mining_rate` = 10, `cargo_capacity` = 100, `ore_prices` = [10, 15], `tax_rate_bp` = 1 000 (10 %), `budget_regen` = 1, `budget_max` = 10, `deposit_stock` = 20 000, `regen_ticks` = 1 000. Ce fichier est une donnée du paquet, lue par le serveur.
+    - `tunables.py` et `tunables.toml`. Valeurs de M1 : `jump_ticks` = 5, `mining_rate` = 10, `cargo_capacity` = 100, `ore_prices` = [10, 15], `tax_rate_bp` = 1 000 (10 %), `budget_regen` = 1, `budget_max` = 10, `deposit_stock` = 20 000, `regen_ticks` = 1 000 *(remplacé par l'amendement 1, voir ci-dessous)*. Ce fichier est une donnée du paquet, lue par le serveur.
 
-      La régénération d'un gisement tous les 1 000 ticks est alignée sur les fenêtres des fourchettes économiques. Avec deux PNJ, au plus 10 200 unités sont extraites par fenêtre (point 27) : aucun gisement ne se vide, et les bornes du point 27 restent valables. *(Remplacé par l'amendement 1 : `regen_ticks` = 10 000, et un gisement peut se vider, voir le point 27.)* Les valeurs du monde en ligne (stock plus large, régénération d'un gisement environ chaque semaine) seront fixées à M5 ;
+      La régénération d'un gisement tous les 1 000 ticks *(remplacé par l'amendement 1 : tous les 10 000 ticks)* est alignée sur les fenêtres des fourchettes économiques. Avec deux PNJ, au plus 10 200 unités sont extraites par fenêtre (point 27) : aucun gisement ne se vide, et les bornes du point 27 restent valables *(remplacé par l'amendement 1 : un gisement peut se vider, voir le point 27)*. Les valeurs du monde en ligne (stock plus large, régénération d'un gisement environ chaque semaine) seront fixées à M5 ;
     - `state.py`, `ledger.py`, `world.py` (génération et placement des sites, Technical Plan, point 2 ; libellés neutres), `step.py`, `observe.py`, `fingerprints.py`, `snapshot.py` ;
     - `version.py` : `RULES_REVISION` = 0 au volet A ; il passe à 1 avec la première création des références (point 26), selon la règle « plus un » du contrôle de garde.
 
-*   **Proposed Changes (amendement 1, ajout) :** les valeurs de `tunables.toml` sont celles du Technical Plan, point 2 (amendement 1). Les valeurs d'origine (saut de 5 ticks, minage de 10 unités par tick, `regen_ticks` = 1 000, un seul jeu de prix) ne valent plus.
+*   **Proposed Changes (amendement 1, remplacement) :** les valeurs de `tunables.toml` sont celles du Technical Plan, point 2 (amendement 1). Les valeurs d'origine (saut de 5 ticks, minage de 10 unités par tick, `regen_ticks` = 1 000, un seul jeu de prix) ne valent plus.
 
 #### 18. `tests/core/` et `tests/schema/` (Create)
 
@@ -1300,9 +1310,9 @@ Chaque volet a sa pull request de scénarios (fichiers `.feature` en français e
 
 *   **(amendement 1)** Complété par le volet B bis.
 
-**Volet B bis (amendement 1) : un monde plus grand, un écran lisible, le temps comme ressource**
+**Volet B bis : un monde plus grand, un écran lisible, le temps comme ressource (amendement 1)**
 
-**Règles d'intégration.** Aucun point du plan détaillé de ce document n'est renuméroté. Les points 17, 25, 26, 27 et 28 bis sont modifiés sur place. Les points 5, 20, 22 et 23 (déjà livrés) reçoivent une ligne de renvoi vers ce volet. Le nouveau **volet B bis** (points 23 bis à 23 sexies) s'insère entre les points 23 et 24. **Aucune pull request du volet C ne s'ouvre avant la fin du point 23 sexies.** Une seule pull request de chaque type est ouverte à la fois.
+**Règles d'intégration.** Aucun point du plan détaillé de ce document n'est renuméroté. Les points 17, 25, 26, 27, 28 et 28 bis sont modifiés sur place, et les points 29 et 32 bis reçoivent une marque de remplacement. Les points 5, 20, 22 et 23 (déjà livrés) reçoivent une ligne de renvoi vers ce volet. Le nouveau **volet B bis** (points 23 bis à 23 sexies) s'insère entre les points 23 et 24. **Aucune pull request du volet C ne s'ouvre avant la fin du point 23 sexies.** Une seule pull request de chaque type est ouverte à la fois.
 
 #### 23 bis. Pull request protégée de l'amendement
 
@@ -1355,12 +1365,12 @@ Chaque volet a sa pull request de scénarios (fichiers `.feature` en français e
     - `src/fourx/schema/observation.py` (Modify) : `PublicTunablesView`, le champ `public_tunables` (dernier champ de `Observation`), et `DepositView.stock: Int64 | None`.
     - `src/fourx/schema/protocol.py` (Modify) : `PROTOCOL_VERSION` = 2 et `NOMINAL_TICK_PERIOD_S` = 3.0.
     - `src/fourx/core/observe.py` (Modify) : la signature `observe(state, actor_id, tunables)`, la vue des réglages publics, le filtre de proximité, selon la règle du Technical Plan, point 5 (système de référence, positions de l'état reçu, stock `None` hors de portée).
-    - `src/fourx/server/game.py` (Modify) : la période nominale par défaut, le premier tick immédiat, `set_period` (paliers ×1 à ×1000, `None` pour la pause, réveil par `asyncio.Event` avec un tick aussitôt, contre-pression sous 0,05 s par tick), `speed.jsonl` (avec son en-tête versionné), l'appel à `observe` avec les réglages. Le nombre de PNJ vient de `core.world.npc_count`, appelé par `__main__.py`.
+    - `src/fourx/server/game.py` (Modify) : la période nominale par défaut, le premier tick immédiat, `set_period` (paliers ×1 à ×1000, `None` pour la pause, réveil par `asyncio.Event` et recalcul de l'attente restante, contre-pression sous 0,05 s par tick), `speed.jsonl` (avec son en-tête versionné), l'appel à `observe` avec les réglages. Le nombre de PNJ vient de `core.world.npc_count`, appelé par `__main__.py`.
     - `src/fourx/__main__.py` (Modify) : `--periode` par défaut à `NOMINAL_TICK_PERIOD_S` ; l'option `--dev`, qui seule donne au client la fonction de rappel `set_period` ; création de `npc_count` PNJ, chacun avec sa connexion et sa tâche de relais ; la fonction `set_period` passée au client. La graine est déjà dans le dossier de la partie (instantané, journal) et s'affiche dans la barre d'état.
     - `src/fourx/policies/scripted_miner.py` (Modify) : la règle du Technical Plan, point 7 (dont le stock inconnu hors de portée), `POLICY_VERSION` = 2.
     - `src/fourx/policies/geometry.py` et `src/fourx/policies/cargo.py` (Create) : `distances(systems, start)` et `most_abundant(cargo)`, sans logique de décision, réutilisées par le PNJ et par le client.
     - `src/fourx/clients/textual_app.py` (Modify) : adaptation minimale à l'observation nouvelle (prix de la station du système, stock `None` affiché « ? »), pour que le client d'origine reste jouable jusqu'au point 23 quinquies.
-    - Tests non protégés (Modify) : `tests/aide_monde.py` (nouveaux champs de `REGLAGES`, plusieurs stations) ; `tests/aide_observation.py` (`public_tunables`) ; `tests/core/test_step.py` (vente à plusieurs stations, système de départ, colocalisation) ; `tests/core/test_observe.py` (proximité des vaisseaux, des événements et du stock ; réglages publics ; aucun champ caché ; tout type qui porte un champ `NEARBY` a un système de référence) ; `tests/core/test_monde_version_empreintes.py` (génération : fourchettes, connexité, plafond de voisins, déterminisme) ; `tests/core/test_versions.py` (`PROTOCOL_VERSION` 2) ; `tests/schema/test_schema.py` ; `tests/proprietes/test_proprietes.py` (génération sur de nombreuses graines, proximité) ; `tests/policies/test_scripted_miner.py` (règle version 2, dont le départ d'un gisement trouvé vide) ; `tests/policies/test_geometry.py` et `tests/policies/test_cargo.py` (Create) ; `tests/server/test_partie.py` (période nominale, premier tick, `set_period`, `speed.jsonl`, rejeu exact d'une partie jouée en accéléré) ; `tests/test_point_d_entree.py` (plusieurs PNJ).
+    - Tests non protégés (Modify) : `tests/aide_monde.py` (nouveaux champs de `REGLAGES`, plusieurs stations) ; `tests/aide_observation.py` (`public_tunables`) ; `tests/core/test_step.py` (vente à plusieurs stations, système de départ, colocalisation) ; `tests/core/test_observe.py` (proximité des vaisseaux, des événements et du stock ; réglages publics ; aucun champ caché ; tout type qui porte un champ `NEARBY` a un système de référence) ; `tests/core/test_monde_version_empreintes.py` (génération : fourchettes, connexité, plafond de voisins, déterminisme) ; `tests/core/test_versions.py` (`PROTOCOL_VERSION` 2) ; `tests/schema/test_schema.py` ; `tests/proprietes/test_proprietes.py` (génération sur de nombreuses graines, proximité) ; `tests/policies/test_scripted_miner.py` (règle version 2, dont le départ vers l'autre minerai d'un gisement trouvé vide, et l'absence d'aller-retour entre deux gisements vides du même minerai) ; `tests/policies/test_geometry.py` et `tests/policies/test_cargo.py` (Create) ; `tests/server/test_partie.py` (période nominale, premier tick, `set_period`, `speed.jsonl`, rejeu exact d'une partie jouée en accéléré) ; `tests/test_point_d_entree.py` (plusieurs PNJ).
     - **Essai de la veille** (risque) : une partie lancée, l'ordinateur portable mis en veille cinq minutes ; le tick avant et après est relevé et cité dans la description de la pull request, puis dans le compte rendu de M1.
 
 #### 23 quinquies. Pull request de fonctionnalité : l'écran unique
@@ -1417,13 +1427,13 @@ Chaque volet a sa pull request de scénarios (fichiers `.feature` en français e
 
     L'outil de régénération et l'indicateur avancé ne sont pas dans `tools`, qui ne peut pas importer `policies` ni `clients` (niveau 1, §1) : ils sont au point 27.
 
-*   **Proposed Changes (amendement 1, modification) :** `window_stats` prend des fenêtres de **10 000** ticks par défaut.
+*   **Proposed Changes (amendement 1, ajout) :** `window_stats` prend des fenêtres de **10 000** ticks par défaut.
 
 #### 26. `tests/references/rules-1/` (Create)
 
 *   **Type / Scope :** références, chemin protégé (point 4). Produites par l'outil de régénération du point 27, dans la pull request de fonctionnalité du volet C : c'est le seul chemin protégé qu'une pull request de fonctionnalité peut modifier (`CLAUDE.md`, circuit des pull requests). La même pull request passe `RULES_REVISION` de 0 à 1.
 *   **Proposed Changes :** `orders.jsonl` et `reference.json` (Technical Plan, point 8), pour la révision 1 des règles.
-*   **(amendement 1)** `reference.json` contient aussi les bornes d'économie, calculées par l'outil de régénération (point 27).
+*   **(amendement 1)** `reference.json` contient aussi les bornes d'économie et le cycle établi de chaque PNJ, calculés par l'outil de régénération (point 27).
 
 #### 27. `tests/rejeu/partie_reference.py`, `tests/rejeu/test_rejeu.py`, `tests/economie/test_fourchettes.py`, `tests/mesure/test_indicateur_avance.py` (Create)
 
@@ -1432,33 +1442,37 @@ Chaque volet a sa pull request de scénarios (fichiers `.feature` en français e
     - `partie_reference.py` : la partie de référence : graine 1, deux PNJ *(remplacé par l'amendement 1, voir ci-dessous : `npc_count(1, réglages)` PNJ)* joués par l'hôte des PNJ, 100 000 ticks, serveur en mode sans horloge ;
     - `test_rejeu.py` (marque `rejeu`) : importe `tests/references/rules-<RULES_REVISION>/orders.jsonl`, régénère l'état initial par `world.generate(1, tunables)`, rejoue par `replay_orders`, compare `rules_version` et les empreintes tous les 1 000 ticks à `reference.json`, et écrit les empreintes de chaque tick dans `runs/rejeu-<PYTHONHASHSEED>/fingerprints.jsonl` (`runs/rejeu-aleatoire/` si la variable n'est pas définie, comme dans `tests-outillage` avant le palier 4 ; comparées entre elles par la tâche `rejeu`, point 8) ;
     - **outil de régénération :** `FOURX_REGENERER_REFERENCES=1 uv run pytest -m rejeu tests/rejeu/test_rejeu.py`, lancé sur l'ordinateur portable, joue la partie de référence, exporte son journal et ses empreintes dans `tests/references/rules-<RULES_REVISION>/` au lieu de comparer, supprime l'ancien dossier, et affiche le rapport de différences avec la révision précédente. C'est l'outil de régénération que cite `CLAUDE.md` ;
-    - `test_fourchettes.py` (marque `lent`) : rejoue le journal enregistré de la partie de référence par `replay_orders`, calcule les grandeurs par `window_stats`, et vérifie, sur chaque fenêtre de 1 000 ticks sauf la première :
-      - *(remplacé par l'amendement 1, voir les bornes ci-dessous)* émission `ORE_SALE` entre 84 000 et 153 000 ;
+    - `test_fourchettes.py` (marque `lent`) : rejoue le journal enregistré de la partie de référence par `replay_orders`, calcule les grandeurs par `window_stats`, et vérifie, sur chaque fenêtre de 1 000 ticks sauf la première *(remplacé par l'amendement 1, voir les bornes ci-dessous : fenêtres de 10 000 ticks, bornes calculées)* :
+      - émission `ORE_SALE` entre 84 000 et 153 000 ;
       - destruction `SALE_TAX` entre 8 400 et 15 300, et égale à la somme des taxes de chaque vente, arrondies vers le haut ;
       - croissance de la masse monétaire entre 75 600 et 137 700 ;
     - `test_indicateur_avance.py` (marque `mesure`, lancé à la main par `FOURX_MESURE=1 uv run pytest -m mesure -s`) : mesure les ticks par seconde de `step` et `observe` sur trois systèmes et 30 PNJ *(remplacé par l'amendement 1, voir le Technical Plan, point 11 : 12 systèmes générés)*, et affiche le résultat (Technical Plan, point 11).
 
-    **Calcul des bornes** (fait avec un script le 2026-11-02, refait le 2026-11-06 ; à refaire si un réglage change) :
+    **Calcul des bornes** *(remplacé par l'amendement 1, voir les bornes ci-dessous)* (fait avec un script le 2026-11-02, refait le 2026-11-06 ; à refaire si un réglage change) :
     - durée minimale d'un aller-retour : `2 × jump_ticks + cargo_capacity / mining_rate` = 20 ticks (gisement voisin de la station) ;
     - durée maximale : `4 × jump_ticks + cargo_capacity / mining_rate + 4` = 34 ticks (gisement à deux sauts, et un tick de délai à chacune des quatre décisions, Technical Plan, point 6) ;
     - ventes par PNJ et par fenêtre : au moins 28 (1 000 / 34, arrondi en dessous, moins une vente coupée par la fenêtre), au plus 51 (1 000 / 20, arrondi au-dessus, plus une) ;
     - chaque vente : 100 unités de `ore_b` à 15, soit 1 500 d'émission et 150 de taxe ;
     - deux PNJ : émission de 84 000 à 153 000, destruction de 8 400 à 15 300, croissance de la masse monétaire de 75 600 à 137 700.
 
-*   **Proposed Changes (amendement 1, bornes) :** les bornes ne sont plus des nombres écrits ici. L'outil de régénération les calcule pour le monde de la graine 1, au moment où il joue la partie de référence, et les range dans `reference.json` (point 26) ; `test_fourchettes.py` les y relit. Le calcul part de la **géométrie** du monde (état initial) et des réglages, **sans lire les ventes de la partie** ni reproduire la logique du PNJ : le test reste une vérification indépendante. Notations :
-    - N = `npc_count(1, réglages)` ; W = 10 000 ; J = `jump_ticks` ; M = `cargo_capacity` ÷ `mining_rate` ; Q = `cargo_capacity` ; G = nombre de gisements du monde ;
-    - d_min : plus petite distance en sauts entre une station et un gisement (0 si une station et un gisement partagent un système) ; d_max : plus grande distance en sauts entre deux systèmes du monde ;
-    - p_min et p_max : plus petit et plus grand prix de rachat d'un minerai dans une station du monde ;
-    - C_min = 2 × d_min × J + M : aller-retour le plus court ;
-    - C_max = (G + 1) × d_max × J + M + G + 4 : aller-retour le plus long, quand un vaisseau visite jusqu'à G gisements avant d'en trouver un non vide (stock vidé, ou inconnu hors de portée), puis revient ; le « + G + 4 » couvre un tick de délai à chaque décision ;
-    - V = N × (⌈W ÷ C_min⌉ + 1) × 2 : nombre de ventes possibles par fenêtre (au plus deux ventes par cycle, une par minerai d'une cargaison mêlée).
+*   **Proposed Changes (amendement 1, remplacement) :** les bornes ne sont plus des nombres écrits ici (décision du propriétaire, 2026-11-15). L'outil de régénération les calcule pour le monde de la graine 1, avant de jouer la partie de référence, à partir de la géométrie du monde (état initial), des réglages et de la règle du PNJ version 2 (Technical Plan, point 7), **sans lire les ventes de la partie**. Il les range dans `reference.json` (point 26), et `test_fourchettes.py` les y relit. L'outil écrit sa propre version de la règle, avec `distances` et `most_abundant` de `policies` (Technical Plan, point 7), sans appeler `scripted_miner.decide` : un défaut de la politique fait alors sortir la partie des bornes dès la régénération. Notations : W = 10 000 ; J = `jump_ticks` ; M = `cargo_capacity` ÷ `mining_rate` ; Q = `cargo_capacity` ; t = `tax_rate_bp` ÷ 10 000.
 
-    Par fenêtre, sauf la première, chaque PNJ vend entre (⌊W ÷ C_max⌋ − 1) × Q et (⌈W ÷ C_min⌉ + 1) × Q unités, à un prix unitaire entre p_min et p_max. Les bornes portent sur les unités vendues et non sur le nombre de ventes. Avec E_min = N × (⌊W ÷ C_max⌋ − 1) × Q × p_min (tenue à 0 si elle est négative), E_max = N × (⌈W ÷ C_min⌉ + 1) × Q × p_max et t = `tax_rate_bp` ÷ 10 000 :
-    - émission `ORE_SALE` entre E_min et E_max ;
-    - destruction `SALE_TAX` entre E_min × t et E_max × t + V (l'arrondi vers le haut ajoute au plus une unité par vente) ; elle reste égale à la somme des taxes de chaque vente, arrondies vers le haut ;
-    - croissance de la masse monétaire entre E_min − (E_min × t + V) et E_max − E_max × t.
+    1. **Le cycle établi de chaque PNJ.** Chaque PNJ part de son système de départ (Technical Plan, point 2), cargaison vide. L'outil applique la règle version 2 décision après décision, sur la géométrie seule, en supposant positif le stock de chaque gisement. Chaque décision a une durée : d × J pour un trajet de d sauts, M pour un minage qui remplit la cargaison, 0 pour une vente ; chaque décision ajoute au plus un tick de délai (Technical Plan, point 6). La politique n'a pas de mémoire : le PNJ revient donc à un état déjà vu (système, cargaison), et la boucle ainsi trouvée est son *cycle établi*. L'outil en retient :
+       - la durée sans délai c_i et le nombre de décisions k_i du cycle ;
+       - le gisement miné ;
+       - l'émission par cycle e_i (somme des q × p de ses ventes, q la quantité et p le prix de la station) et la taxe par cycle x_i (somme des taxes de ses ventes, chacune arrondie vers le haut) ;
+       - le tick où commence le cycle établi.
+    2. **Le nombre de cycles par fenêtre.** Un PNJ fait, dans une fenêtre, entre a_i = ⌊W ÷ (c_i + k_i)⌋ − 1 et b_i = ⌈W ÷ c_i⌉ + 1 cycles (un cycle coupé à chaque bord). Dans la fenêtre où commence son cycle établi, a_i vaut 0.
+    3. **L'épuisement prévu.** Tant que tous les gisements ont du stock, chaque PNJ suit son cycle établi : un premier écart suppose donc qu'un gisement s'est vidé, au seul profit des PNJ qui le minent dans leur cycle. Pour chaque gisement, l'outil additionne Q × b_i sur ces PNJ, plus Q par cargaison minée sur ce gisement avant le cycle établi, plus R = max(0, Q × Σ b'_j − `deposit_stock`), qui borne ce que les PNJ déjà au repli (point 4) peuvent miner hors de leur propre gisement, la somme portant sur ces PNJ. Si le total atteint `deposit_stock`, le gisement peut se vider avant sa régénération, qui a lieu au bord de chaque fenêtre (`regen_ticks` = W) : l'outil le signale, et les PNJ qui le minent passent au repli. Le calcul recommence jusqu'à ce que l'ensemble des PNJ au repli ne change plus.
+    4. **Le repli.** Un PNJ au repli a une borne basse nulle, et une borne haute géométrique : au plus b'_i = ⌈W ÷ C_min⌉ + 1 cycles, avec C_min = 2 × d_min × J + M (d_min : plus petite distance en sauts entre une station et un gisement, 0 en cas de colocalisation) ; chaque cycle vend au plus Q unités, au plus grand prix de rachat du monde, p_max, en au plus deux ventes (une par minerai d'une cargaison mêlée). Aucune durée maximale de cycle n'est supposée : un PNJ qui trouve des gisements vides peut perdre un temps que la géométrie ne borne pas.
+    5. **Les bornes.** Sur chaque fenêtre sauf la première, qui contient le départ, avec des sommes en a_i et b_i sur les PNJ hors repli, et des sommes en b'_i sur les PNJ au repli :
+       - émission `ORE_SALE` entre Σ a_i × e_i et Σ b_i × e_i + Σ b'_i × Q × p_max ;
+       - destruction `SALE_TAX` entre Σ a_i × x_i et Σ b_i × x_i + Σ b'_i × (Q × p_max × t + 2), le « + 2 » couvrant l'arrondi vers le haut de deux ventes par cycle ; elle reste égale à la somme des taxes de chaque vente, arrondies vers le haut ;
+       - croissance de la masse monétaire entre Σ a_i × (e_i − x_i) et Σ b_i × (e_i − x_i) + Σ b'_i × Q × p_max × (1 − t). Une vente ne fait jamais baisser la masse monétaire : la taxe ne dépasse pas le paiement.
 
-    Les bornes basses sont arrondies vers le bas et les bornes hautes vers le haut, par les fonctions de `core.arith`. Elles supposent qu'un gisement non vide existe toujours : au plus N × (⌈W ÷ C_min⌉ + 1) × Q = 5 × 101 × 100 = 50 500 unités sont extraites par fenêtre (avec d_min = 0, donc C_min = 100), pour au moins 4 × `deposit_stock` = 80 000 unités, remises à neuf tous les `regen_ticks` = 10 000 ticks, au bord de chaque fenêtre. Un gisement peut donc se vider (colocalisation, alternative AA), jamais tous à la fois. Si la partie de référence sort des bornes à la régénération, l'outil refuse d'écrire les références, et l'agent de code le signale au propriétaire, sans changer de graine ni de règle de lui-même. Les bornes sont larges : le bas vaut souvent 0, et la valeur réelle pour la graine 1 est citée au compte rendu de M1. C'est le prix d'un calcul indépendant de la partie.
+    Les bornes basses sont arrondies vers le bas et les bornes hautes vers le haut, par les fonctions de `core.arith`. `reference.json` garde, pour chaque PNJ, son cycle établi (c_i, k_i, gisement, ventes par cycle) ou son passage au repli, pour que le rapport de différences les montre. L'outil vérifie aussi que la partie jouée reste dans les bornes : sinon, il refuse d'écrire les références, et l'agent de code le signale au propriétaire, sans changer de graine, de règle ni de politique de lui-même. L'outil relève enfin, dans la partie jouée, si un gisement s'est vidé et si un départage a eu lieu ; le compte rendu de M1 cite ces relevés, les bornes de la graine 1 et la valeur réelle de chaque fenêtre.
+
+    Le calcul dépend de la politique du PNJ, mais seulement au moment de la régénération : le test rejoue le journal enregistré, et reste valable si la politique change ensuite (alternative H). Un changement de la politique ne touche donc pas les références ; c'est à la régénération suivante, après un changement des règles ou des réglages, que l'outil doit suivre la version de la politique alors en vigueur. Un essai de la méthode sur la génération écrite d'après ce document est cité dans Additional Resources.
 
 #### 28. `notebooks/economie_m1.py` (Create)
 
@@ -1482,7 +1496,7 @@ Chaque volet a sa pull request de scénarios (fichiers `.feature` en français e
     - `core` qui importe `server` → `imports` ;
     - une vente sans écriture de taxe, mais avec le compteur cumulé de destruction augmenté → `tests` (invariants) ;
     - le portefeuille d'un autre acteur laissé dans une observation (`observe`) → `proprietes` ;
-    - le placement des sites tiré par `hash()` d'une chaîne au lieu de `keyed_below` (`world.generate`) → `rejeu` (ce tirage a lieu dans chaque partie, et `hash()` d'une chaîne change avec `PYTHONHASHSEED`) ;
+    - le placement des sites *(remplacé par l'amendement 1 : un tirage de la génération du monde, Technical Plan, point 2)* tiré par `hash()` d'une chaîne au lieu de `keyed_below` (`world.generate`) → `rejeu` (ce tirage a lieu dans chaque partie, et `hash()` d'une chaîne change avec `PYTHONHASHSEED`) ;
     - une fonction insérée à la fin de `core/arith.py` (ancre : fin du module), et un appel inséré au début de `step` dont aucun test ne vérifie le résultat → `mutation` (`mutation.py --base main --tete <commit de la copie>` : le score de `arith.py` baisse par rapport à `main`).
 
 #### 30. `tests/outillage/test_canaris.py` (Create)
@@ -1538,7 +1552,7 @@ Chaque volet a sa pull request de scénarios (fichiers `.feature` en français e
     | Essai | Branche | Contenu | Attendu |
     | :-- | :-- | :-- | :-- |
     | E1 | `essai-tests` | le bug volontaire « nombre flottant dans `step` » | `tests` en échec, fusion refusée |
-    | E2 | `essai-rejeu` | le bug volontaire « placement des sites par `hash()` » | `rejeu` en échec, fusion refusée |
+    | E2 | `essai-rejeu` | le bug volontaire « placement des sites par `hash()` » (amendement 1 : un tirage de la génération du monde par `hash()`) | `rejeu` en échec, fusion refusée |
     | E3 | `essai-proprietes` | le bug volontaire « portefeuille d'un autre acteur dans l'observation » | `proprietes` en échec, fusion refusée |
     | E4 | `essai-imports` | le bug volontaire « `core` importe `server` » | `imports` en échec, fusion refusée |
     | E5 | `essai-mutation` | le bug volontaire « fonction non vérifiée dans `arith.py` » | `mutation` en échec, fusion refusée |
@@ -1568,7 +1582,7 @@ Chaque volet a sa pull request de scénarios (fichiers `.feature` en français e
 *   **Build et types :** `uv sync --locked`, `uv run mypy`.
 *   **Tests :** `uv run pytest` (tests, scénarios, tests de propriétés), sans aucun scénario de `partie.feature` ni de `ecrans.feature` dans `en_attente.txt` à la fin du point 23 quinquies.
 *   **Analyse statique :** `uv run ruff check`, `uv run ruff format --check`, `uv run lint-imports` (`clients` n'importe toujours ni `core` ni `server`).
-*   **Mutation :** `.github/scripts/mutation.py` ; plancher de 80 % sur les fichiers modifiés de `core` et `schema` ; `clients/model.py`, `map_layout.py` et `texts.py` mutés sans plancher.
+*   **Mutation :** `.github/scripts/mutation.py` ; plancher de 80 % sur les fichiers nouveaux de `core` et `schema` (l'amendement n'en crée aucun) ; pour les fichiers modifiés, un score jamais inférieur à celui du commit de base (Technical Plan, point 10) ; `clients/model.py`, `map_layout.py` et `texts.py` mutés sans plancher.
 *   **Déterminisme :** la génération du monde et une partie de 2 000 ticks donnent les mêmes empreintes sous `PYTHONHASHSEED=0` et `1`.
 *   **Carte :** part des liens tracés et hauteur de la carte, mesurées par les tests de propriétés sur de nombreuses graines, publiées au compte rendu de M1.
 *   **Manuel :** la partie d'essai du point 23 sexies, et l'essai de la veille du point 23 quater.
