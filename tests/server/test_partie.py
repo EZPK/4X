@@ -4,6 +4,7 @@
 import asyncio
 import re
 from collections.abc import Iterator
+from datetime import UTC, datetime
 from pathlib import Path
 
 import msgspec.json
@@ -15,7 +16,7 @@ from fourx.policies.scripted_miner import POLICY_ID, decide
 from fourx.schema.actors import ActorKind
 from fourx.schema.events import CharacterCreated, Event
 from fourx.schema.orders import CreateCharacter, Move, Order, OrderCategory
-from fourx.schema.protocol import PROTOCOL_VERSION, SubmitOrders, TickUpdate
+from fourx.schema.protocol import NOMINAL_TICK_PERIOD_S, PROTOCOL_VERSION, SubmitOrders, TickUpdate
 from fourx.server.game import Game
 from fourx.server.order_log import OrderLog
 from fourx.server.tunables_loader import load_tunables
@@ -43,7 +44,7 @@ def journal(jeu: Game) -> OrderLog:
 
 def test_dossier_de_la_partie(jeu: Game, tmp_path: Path) -> None:
     assert jeu.run_dir.parent == tmp_path
-    assert (jeu.world_seed, jeu.period_s) == (3, 1.0)
+    assert (jeu.world_seed, jeu.period_s) == (3, NOMINAL_TICK_PERIOD_S)
     assert re.fullmatch(r"\d{8}-\d{6}-\d{6}", jeu.run_dir.name)
     fichiers = {f.name for f in jeu.run_dir.iterdir()}
     assert {"snapshot.msgpack", "orders.sqlite", "events.jsonl"} <= fichiers
@@ -144,6 +145,31 @@ def test_cree_les_dossiers_parents(tmp_path: Path) -> None:
     assert partie.run_dir.parent == tmp_path / "a" / "b"
 
 
+class HorlogeFixe:
+    """Remplace `datetime` dans fourx.server.game : une seule heure, demandée en UTC."""
+
+    @staticmethod
+    def now(tz: object) -> datetime:
+        assert tz is UTC
+        return datetime(2026, 11, 21, 8, 30, 5, 123456, tzinfo=UTC)
+
+
+def test_dossier_de_partie_horodate_en_utc(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("fourx.server.game.datetime", HorlogeFixe)
+    partie = Game(tmp_path, world_seed=3, tunables=load_tunables())
+    partie.close()
+    assert partie.run_dir == tmp_path / "20261121-083005-123456"
+
+
+def test_un_dossier_de_partie_existant_n_est_pas_reutilise(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("fourx.server.game.datetime", HorlogeFixe)
+    (tmp_path / "20261121-083005-123456").mkdir()
+    with pytest.raises(FileExistsError):
+        Game(tmp_path, world_seed=3, tunables=load_tunables())
+
+
 def test_boucle_avec_horloge(tmp_path: Path) -> None:
     async def jouer() -> list[int]:
         partie = Game(tmp_path, world_seed=3, tunables=load_tunables(), period_s=0.001)
@@ -159,3 +185,23 @@ def test_boucle_avec_horloge(tmp_path: Path) -> None:
             partie.close()
 
     assert asyncio.run(jouer()) == [1, 2, 3]
+
+
+def test_premier_tick_immediat(tmp_path: Path) -> None:
+    """Le mode avec horloge joue un tick dès son lancement, sans attendre la période."""
+
+    async def jouer() -> int:
+        partie = Game(tmp_path, world_seed=3, tunables=load_tunables(), period_s=60.0)
+        acteur = partie.create_character(ActorKind.HUMAN)
+        connexion = partie.connect(acteur)
+        horloge = asyncio.create_task(partie.run())
+        try:
+            mise_a_jour = await asyncio.wait_for(connexion.next_update(), timeout=5)
+            return int(mise_a_jour.observation.tick)
+        finally:
+            horloge.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await horloge
+            partie.close()
+
+    assert asyncio.run(jouer()) == 1

@@ -67,7 +67,13 @@ def test_valeurs_des_enumerations() -> None:
         "personal_wallet",
         "corporation_wallet",
     ]
-    assert [v.value for v in visibility.Visibility] == ["public", "corporation", "private", "admin"]
+    assert [v.value for v in visibility.Visibility] == [
+        "public",
+        "corporation",
+        "private",
+        "admin",
+        "nearby",
+    ]
     assert len(RefusalCode) == 18
     assert all(code.value == code.name.lower() for code in RefusalCode)
 
@@ -160,9 +166,11 @@ def test_evenements_classes_et_schema() -> None:
     assert len(events.CLASSES) == 9
     assert events.CLASSES[events.Sale] is visibility.Visibility.PRIVATE
     assert events.CLASSES[events.LedgerEntryRecorded] is visibility.Visibility.ADMIN
-    assert events.CLASSES[events.Departed] is visibility.Visibility.PUBLIC
+    assert events.CLASSES[events.Departed] is visibility.Visibility.NEARBY
     publics = {t.__name__ for t, c in events.CLASSES.items() if c is visibility.Visibility.PUBLIC}
-    assert publics == {"CharacterCreated", "Departed", "Arrived", "DepositRegenerated"}
+    assert publics == {"CharacterCreated"}
+    proches = {t.__name__ for t, c in events.CLASSES.items() if c is visibility.Visibility.NEARBY}
+    assert proches == {"Departed", "Arrived", "DepositRegenerated"}
     schema = events.event_json_schema()
     assert schema["$ref"] == "#/$defs/Event"
     definitions = schema["$defs"]
@@ -199,8 +207,8 @@ def test_evenement_aller_retour() -> None:
 
 
 def test_protocole() -> None:
-    assert protocol.PROTOCOL_VERSION == 1
-    message = protocol.SubmitOrders(protocol_version=1, orders=())
+    assert protocol.PROTOCOL_VERSION == 2
+    message = protocol.SubmitOrders(protocol_version=2, orders=())
     assert msgspec.json.decode(msgspec.json.encode(message), type=protocol.SubmitOrders) == message
     obs = observation.Observation(
         tick=0,
@@ -215,6 +223,8 @@ def test_protocole() -> None:
         action_budget=0,
         events=(),
         results=(),
+        public_tunables=observation.PublicTunablesView(jump_ticks=400, mining_rate=1),
     )
-    maj = protocol.TickUpdate(protocol_version=1, observation=obs)
+    assert observation.Observation.__struct_fields__[-1] == "public_tunables"
+    maj = protocol.TickUpdate(protocol_version=2, observation=obs)
     assert msgspec.json.decode(msgspec.json.encode(maj), type=protocol.TickUpdate) == maj

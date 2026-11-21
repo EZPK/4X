@@ -15,6 +15,7 @@ def mise_a_jour(obs: Observation) -> TickUpdate:
 
 def test_transmet_l_observation_et_renvoie_les_ordres() -> None:
     vues: list[Observation] = []
+    memoires: list[frozenset[int]] = []
     ordre = Order(
         actor_id=1,
         number=5,
@@ -24,9 +25,12 @@ def test_transmet_l_observation_et_renvoie_les_ordres() -> None:
         command=Move(ship_id=1, target_system_id=2),
     )
 
-    def politique(obs: Observation) -> tuple[Order, ...]:
+    def politique(
+        obs: Observation, vus: frozenset[int]
+    ) -> tuple[tuple[Order, ...], frozenset[int]]:
         vues.append(obs)
-        return (ordre,)
+        memoires.append(vus)
+        return (ordre,), vus | {obs.tick}
 
     obs = observation((navire(),))
     hote = NpcHost(1, politique)
@@ -34,10 +38,13 @@ def test_transmet_l_observation_et_renvoie_les_ordres() -> None:
     reponse = hote.on_update(mise_a_jour(obs))
     assert vues == [obs]
     assert reponse == SubmitOrders(protocol_version=PROTOCOL_VERSION, orders=(ordre,))
+    hote.on_update(mise_a_jour(observation((navire(),), tick=8)))
+    assert memoires == [frozenset(), frozenset({7})], "l'hôte repasse la mémoire rendue"
+    assert hote.seen_empty == frozenset({7, 8})
 
 
 def test_aucun_ordre_aucun_message() -> None:
-    hote = NpcHost(1, lambda obs: ())
+    hote = NpcHost(1, lambda obs, vus: ((), vus))
     assert hote.on_update(mise_a_jour(observation((navire(),)))) is None
 
 
@@ -45,4 +52,4 @@ def test_avec_la_politique_scriptee() -> None:
     obs = observation((navire(system=1),))
     reponse = NpcHost(1, decide).on_update(mise_a_jour(obs))
     assert reponse is not None
-    assert reponse.orders == decide(obs)
+    assert reponse.orders == decide(obs, frozenset())[0]

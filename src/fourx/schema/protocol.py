@@ -8,7 +8,10 @@ from fourx.schema.observation import Observation
 from fourx.schema.orders import Order
 from fourx.schema.types import Int64
 
-PROTOCOL_VERSION = 1
+PROTOCOL_VERSION = 2
+# Période nominale d'un tick, en secondes : constante du code, lue par le serveur (période par
+# défaut) et par le client (estimation en minutes). Ce n'est pas une donnée transmise.
+NOMINAL_TICK_PERIOD_S = 3.0
 
 
 class SubmitOrders(msgspec.Struct, frozen=True):

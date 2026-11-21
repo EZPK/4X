@@ -1,6 +1,10 @@
 """Tests de fourx.core.world, version, fingerprints et snapshot (docs/designs/niveau-2-m1-noyau.md,
 Technical Plan, points 2, 4, 6 et 8)."""
 
+import os
+import subprocess
+import sys
+
 import msgspec
 import msgspec.structs
 import pytest
@@ -9,43 +13,151 @@ from fourx.core import version
 from fourx.core.fingerprints import Fingerprints, empreinte, fingerprints
 from fourx.core.keyed_random import keyed_below
 from fourx.core.snapshot import SNAPSHOT_SCHEMA_VERSION, Snapshot, decode, encode
-from fourx.core.world import PERMUTATIONS, generate, label
+from fourx.core.world import generate, label, npc_count
 from fourx.schema.actors import ActorKind
 from fourx.schema.orders import CreateCharacter, Mine, OrderCategory
 from tests.aide_monde import REGLAGES, avancer, monde, ordre, vaisseau
 
 
 def test_generation_graine_1() -> None:
+    """Le monde de la graine 1 avec les réglages de test (essai du 2026-11-15, hors du dépôt)."""
     etat = generate(1, REGLAGES)
     assert etat.tick == 0
-    assert [(s.id, s.neighbors) for s in etat.systems] == [(1, (2,)), (2, (1, 3)), (3, (2,))]
-    assert [(d.id, d.ore_id, d.system_id, d.stock) for d in etat.deposits] == [
-        (1, 1, 2, 20000),
-        (2, 2, 3, 20000),
+    assert len(etat.systems) == 11
+    assert [(s.id, s.system_id, s.ore_prices) for s in etat.stations] == [
+        (1, 2, (10, 15)),
+        (2, 4, (12, 12)),
     ]
-    assert [(s.id, s.system_id, s.ore_prices) for s in etat.stations] == [(1, 1, (10, 15))]
+    assert [(d.id, d.system_id, d.ore_id) for d in etat.deposits] == [
+        (1, 5, 1),
+        (2, 7, 2),
+        (3, 11, 1),
+        (4, 4, 2),
+        (5, 1, 1),
+        (6, 3, 2),
+    ]
+    assert all(d.stock == REGLAGES.deposit_stock for d in etat.deposits)
+    assert npc_count(1, REGLAGES) == 5
     assert etat.actors == () and etat.ships == ()
     assert [c.id for c in etat.ledger.accounts] == [1, 2]
     assert etat.last_tick.events == () and etat.last_tick.results == ()
 
 
-@pytest.mark.parametrize("graine", [1, 2, 3, 42, 1000])
-def test_placement_des_sites_par_tirage(graine: int) -> None:
+def _connexe(etat: object) -> bool:
+    systemes = {s.id: s.neighbors for s in etat.systems}  # type: ignore[attr-defined]
+    vus = {1}
+    file = [1]
+    while file:
+        for v in systemes[file.pop()]:
+            if v not in vus:
+                vus.add(v)
+                file.append(v)
+    return vus == set(systemes)
+
+
+@pytest.mark.parametrize("graine", [1, 2, 3, 42, 1000, 123_456])
+def test_generation_dans_les_fourchettes(graine: int) -> None:
     etat = generate(graine, REGLAGES)
-    attendu = PERMUTATIONS[keyed_below(graine, 0, 0, "carte", 6)]
-    assert (
-        etat.stations[0].system_id,
-        etat.deposits[0].system_id,
-        etat.deposits[1].system_id,
-    ) == attendu
-    assert sorted(attendu) == [1, 2, 3]
+    assert REGLAGES.systems_min <= len(etat.systems) <= REGLAGES.systems_max
+    assert REGLAGES.stations_min <= len(etat.stations) <= REGLAGES.stations_max
+    assert REGLAGES.deposits_min <= len(etat.deposits) <= REGLAGES.deposits_max
+    assert REGLAGES.npc_min <= npc_count(graine, REGLAGES) <= REGLAGES.npc_max
+    assert [s.id for s in etat.systems] == list(range(1, len(etat.systems) + 1))
+    assert _connexe(etat)
+    for s in etat.systems:
+        assert list(s.neighbors) == sorted(s.neighbors)
+        assert len(s.neighbors) <= REGLAGES.max_neighbors
+        assert s.id not in s.neighbors
+        for v in s.neighbors:
+            assert s.id in etat.systems[v - 1].neighbors
+    assert len({s.system_id for s in etat.stations}) == len(etat.stations)
+    assert len({d.system_id for d in etat.deposits}) == len(etat.deposits)
+    for station in etat.stations:
+        assert station.ore_prices == REGLAGES.station_ore_prices[station.id - 1]
+    for minerai in (1, 2):
+        assert sum(1 for d in etat.deposits if d.ore_id == minerai) >= 2
+    assert generate(graine, REGLAGES) == etat
 
 
-def test_les_six_permutations() -> None:
-    assert len(set(PERMUTATIONS)) == 6
-    assert list(PERMUTATIONS) == sorted(PERMUTATIONS)
-    rangs = {keyed_below(g, 0, 0, "carte", 6) for g in range(200)}
-    assert rangs == set(range(6))
+def test_generation_sous_deux_pythonhashseed() -> None:
+    """La même graine donne le même monde sous deux valeurs de PYTHONHASHSEED."""
+    programme = (
+        "import msgspec;"
+        "from fourx.core.world import generate;"
+        "from tests.aide_monde import REGLAGES;"
+        "print(msgspec.json.encode([generate(g, REGLAGES) for g in (1, 2, 3, 42)]).decode())"
+    )
+    sorties = [
+        subprocess.run(
+            [sys.executable, "-c", programme],
+            check=True,
+            capture_output=True,
+            text=True,
+            env={**os.environ, "PYTHONHASHSEED": valeur},
+        ).stdout
+        for valeur in ("0", "1")
+    ]
+    assert sorties[0] == sorties[1] and sorties[0]
+
+
+def test_tirages_de_la_generation() -> None:
+    """La taille du monde vient du tirage (entité 0, motif « world_size »)."""
+    for graine in (1, 2, 3):
+        taille = REGLAGES.systems_min + keyed_below(
+            graine, 0, 0, "world_size", REGLAGES.systems_max - REGLAGES.systems_min + 1
+        )
+        assert len(generate(graine, REGLAGES).systems) == taille
+
+
+def test_voisins_de_la_graine_1() -> None:
+    assert [s.neighbors for s in generate(1, REGLAGES).systems] == [
+        (2, 3, 4, 5),
+        (1, 3, 11),
+        (1, 2, 11),
+        (1, 6, 8),
+        (1, 10),
+        (4, 7, 8, 9),
+        (6,),
+        (4, 6),
+        (6,),
+        (5,),
+        (2, 3),
+    ]
+
+
+def _tirage(graine: int, motif: str, bas: int, haut: int) -> int:
+    """Un nombre « entre bas et haut » de la génération : entité 0, tick 0."""
+    return bas + keyed_below(graine, 0, 0, motif, haut - bas + 1)
+
+
+@pytest.mark.parametrize("graine", [1, 2, 3, 42])
+def test_liens_en_plus_tires(graine: int) -> None:
+    """Un arbre de N − 1 liens, plus le nombre de liens tiré entre 1 et extra_links_max."""
+    etat = generate(graine, REGLAGES)
+    liens = sum(len(s.neighbors) for s in etat.systems) // 2
+    en_plus = _tirage(graine, "extra_link_count", 1, REGLAGES.extra_links_max)
+    assert liens == len(etat.systems) - 1 + en_plus
+
+
+@pytest.mark.parametrize("graine", [1, 2, 3, 4, 5, 42])
+def test_nombres_tires_de_stations_de_gisements_et_de_pnj(graine: int) -> None:
+    etat = generate(graine, REGLAGES)
+    r = REGLAGES
+    assert len(etat.stations) == _tirage(graine, "station_count", r.stations_min, r.stations_max)
+    assert len(etat.deposits) == _tirage(graine, "deposit_count", r.deposits_min, r.deposits_max)
+    assert npc_count(graine, r) == _tirage(graine, "npc_count", r.npc_min, r.npc_max)
+
+
+def test_au_plus_deux_voisins_la_carte_est_un_cycle() -> None:
+    """Avec deux voisins au plus, l'arbre est une chaîne et seul le lien entre ses deux bouts
+    reste possible : la carte est un cycle, même quand plus d'un lien est tiré."""
+    reglages = msgspec.structs.replace(REGLAGES, max_neighbors=2)
+    graines = range(1, 13)
+    assert any(_tirage(g, "extra_link_count", 1, reglages.extra_links_max) > 1 for g in graines)
+    for graine in graines:
+        etat = generate(graine, reglages)
+        assert all(len(s.neighbors) == 2 for s in etat.systems), graine
+        assert _connexe(etat)
 
 
 def test_libelles() -> None:
@@ -69,7 +181,17 @@ def test_reglages_bornes_au_decodage() -> None:
         ("jump_ticks", 0),
         ("mining_rate", 0),
         ("cargo_capacity", 0),
-        ("ore_prices", (10, 0)),
+        ("station_ore_prices", ((10, 0), (12, 12), (8, 18))),
+        ("station_ore_prices", ((10, 15), (12, 12))),
+        ("station_ore_prices", ((10, 15, 1), (12, 12), (8, 18))),
+        ("systems_min", 13),
+        ("deposits_min", 3),
+        ("systems_min", 5),
+        ("max_neighbors", 1),
+        ("extra_links_max", 0),
+        ("npc_min", 0),
+        ("npc_min", 6),
+        ("stations_min", 4),
         ("tax_rate_bp", 10_001),
         ("tax_rate_bp", -1),
         ("deposit_stock", -1),

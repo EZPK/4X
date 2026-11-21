@@ -6,8 +6,9 @@ import asyncio
 import contextlib
 from pathlib import Path
 
-from fourx.__main__ import relayer
+from fourx.__main__ import creer_pnj, relayer
 from fourx.clients.npc_host import NpcHost
+from fourx.core.world import npc_count
 from fourx.policies.scripted_miner import POLICY_ID, decide
 from fourx.schema.actors import ActorKind
 from fourx.server.game import Game
@@ -45,3 +46,16 @@ def test_relais_des_ordres_du_pnj(tmp_path: Path) -> None:
     assert du_pnj
     assert du_pnj[0].tick == 2
     assert all(s.order.policy_id == POLICY_ID and s.reception_refusal is None for s in du_pnj)
+
+
+def test_plusieurs_pnj(tmp_path: Path) -> None:
+    """`creer_pnj` crée les npc_count(graine, réglages) PNJ de la partie."""
+    reglages = load_tunables()
+    partie = Game(tmp_path, world_seed=3, tunables=reglages)
+    humain = partie.create_character(ActorKind.HUMAN)
+    pnj = creer_pnj(partie, 3, reglages)
+    partie.advance(1)
+    partie.close()
+    assert len(pnj) == npc_count(3, reglages) >= reglages.npc_min
+    assert pnj == tuple(range(humain + 1, humain + 1 + len(pnj)))
+    assert [a.kind for a in partie.state.actors if a.id in pnj] == [ActorKind.NPC] * len(pnj)

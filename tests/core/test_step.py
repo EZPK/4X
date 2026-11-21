@@ -7,7 +7,7 @@ import msgspec.structs
 import pytest
 
 from fourx.core.keyed_random import keyed_draw
-from fourx.core.state import Ship, State
+from fourx.core.state import Ship, State, Station
 from fourx.core.step import Phase, plus_court_chemin, step
 from fourx.core.version import rules_version
 from fourx.schema.actors import Activity, ActorKind
@@ -17,6 +17,7 @@ from fourx.schema.events import (
     CharacterCreated,
     Departed,
     DepositRegenerated,
+    Event,
     LedgerEntryRecorded,
     MiningEnded,
     MiningStarted,
@@ -83,7 +84,7 @@ def test_deplacement_en_deux_sauts() -> None:
     assert [type(e.payload) for e in suite] == [Departed, Arrived]
     assert suite[0].payload == Departed(ship_id=1, system_id=1)
     assert suite[1].payload == Arrived(ship_id=1, system_id=2)
-    assert all(e.visibility is Visibility.PUBLIC and e.actor_id == 1 for e in suite)
+    assert all(e.visibility is Visibility.NEARBY and e.actor_id == 1 for e in suite)
     etat, _ = avancer(etat, (), 5)
     assert (etat.ships[0].system_id, etat.ships[0].activity, etat.ships[0].ticks_to_next_jump) == (
         3,
@@ -523,21 +524,19 @@ def test_creation_de_personnage() -> None:
     )
     apres, evenements = avancer(etat, (soumis,))
     assert [(a.id, a.kind, a.action_budget) for a in apres.actors] == [(1, ActorKind.NPC, 10)]
-    navire = apres.ships[0]
-    assert (
-        navire.id,
-        navire.owner_id,
-        navire.system_id,
-        navire.capacity,
-        navire.cargo,
-        navire.activity,
-    ) == (
-        1,
-        1,
-        1,
-        100,
-        (0, 0),
-        Activity.IDLE,
+    assert apres.ships == (
+        Ship(
+            id=1,
+            owner_id=1,
+            system_id=1,
+            capacity=100,
+            activity=Activity.IDLE,
+            route=(),
+            ticks_to_next_jump=0,
+            cargo=(0, 0),
+            mining_ore_id=None,
+            mined_since_start=0,
+        ),
     )
     assert apres.ledger.accounts[-1].owner_id == 1
     assert evenements[0].payload == CharacterCreated(
@@ -545,12 +544,14 @@ def test_creation_de_personnage() -> None:
     )
     assert evenements[0].visibility is Visibility.PUBLIC
     assert evenements[0].actor_kind is ActorKind.NPC
+    assert evenements[0].causation_id == OrderId(actor_id=1, tick=1, number=1)
     resultat = apres.last_tick.results[0]
-    assert (resultat.recipient_actor_id, resultat.accepted, resultat.budget_left) == (
-        None,
-        True,
-        10,
-    )
+    assert (
+        resultat.recipient_actor_id,
+        resultat.accepted,
+        resultat.text,
+        resultat.budget_left,
+    ) == (None, True, "personnage créé", 10)
     deux = ordre(
         apres,
         2,
@@ -601,3 +602,149 @@ def test_regain_de_budget_plafonne() -> None:
     etat = monde((vaisseau(1, 1, 2),), budgets={1: 9})
     apres, _ = avancer(etat, (), 3)
     assert apres.actors[0].action_budget == 10
+
+
+# --- Amendement 1 : plusieurs stations, système de départ, colocalisation
+
+
+def deux_stations(etat: State) -> State:
+    """La station 1 dans system_1 ; la station 2 dans system_3, avec le gisement de ore_b."""
+    return msgspec.structs.replace(
+        etat,
+        stations=(
+            Station(id=1, system_id=1, ore_prices=REGLAGES.station_ore_prices[0]),
+            Station(id=2, system_id=3, ore_prices=REGLAGES.station_ore_prices[1]),
+        ),
+    )
+
+
+def test_vente_a_la_station_du_systeme_au_prix_de_cette_station() -> None:
+    etat = deux_stations(monde((vaisseau(1, 1, 3, cargo=(0, 10)),)))
+    apres, evenements = avancer(etat, (ordre(etat, 1, 1, Sell(ship_id=1, ore_id=2, quantity=10)),))
+    ventes = [e.payload for e in evenements if isinstance(e.payload, Sale)]
+    assert [(v.price, v.payment, v.tax) for v in ventes] == [(12, 120, 12)]
+
+
+def test_vente_refusee_hors_du_systeme_d_une_station() -> None:
+    etat = deux_stations(monde((vaisseau(1, 1, 2, cargo=(0, 10)),)))
+    apres, _ = avancer(etat, (ordre(etat, 1, 1, Sell(ship_id=1, ore_id=2, quantity=10)),))
+    assert refus(apres, 1) is RefusalCode.NOT_AT_STATION
+
+
+def test_systeme_de_depart_par_rang_de_station() -> None:
+    """Le personnage d'identifiant n part de la station de rang rem_trunc(n − 1, S)."""
+    etat = deux_stations(monde())
+    soumis = tuple(
+        ordre(
+            etat,
+            n,
+            0,
+            CreateCharacter(actor_kind=ActorKind.HUMAN),
+            sender=None,
+            category=OrderCategory.ADMIN,
+        )
+        for n in (1, 2, 3)
+    )
+    apres, _ = avancer(etat, soumis)
+    assert [(v.owner_id, v.system_id) for v in apres.ships] == [(1, 1), (2, 3), (3, 1)]
+    assert all(v.cargo == (0, 0) for v in apres.ships)
+
+
+def test_colocalisation_miner_puis_vendre_sans_saut() -> None:
+    etat = deux_stations(monde((vaisseau(1, 1, 3),)))
+    etat, _ = avancer(etat, (ordre(etat, 1, 1, Mine(ship_id=1, ore_id=2)),), 10)
+    assert etat.ships[0].cargo == (0, 100) and etat.ships[0].system_id == 3
+    apres, evenements = avancer(etat, (ordre(etat, 1, 2, Sell(ship_id=1, ore_id=2, quantity=100)),))
+    assert [e.payload.price for e in evenements if isinstance(e.payload, Sale)] == [12]
+    assert apres.ships[0].system_id == 3
+
+
+def test_systeme_de_depart_par_rang_parmi_trois_stations() -> None:
+    etat = msgspec.structs.replace(
+        monde(),
+        stations=(
+            Station(id=1, system_id=1, ore_prices=REGLAGES.station_ore_prices[0]),
+            Station(id=2, system_id=3, ore_prices=REGLAGES.station_ore_prices[1]),
+            Station(id=3, system_id=2, ore_prices=REGLAGES.station_ore_prices[2]),
+        ),
+    )
+    soumis = tuple(
+        ordre(
+            etat,
+            n,
+            0,
+            CreateCharacter(actor_kind=ActorKind.HUMAN),
+            sender=None,
+            category=OrderCategory.ADMIN,
+        )
+        for n in (1, 2, 3, 4)
+    )
+    apres, _ = avancer(etat, soumis)
+    assert [v.system_id for v in apres.ships] == [1, 3, 2, 1]
+
+
+def test_creation_demandee_par_un_ordre_de_joueur_refusee() -> None:
+    etat = monde((vaisseau(1, 1, 2),))
+    apres, _ = avancer(etat, (ordre(etat, 1, 1, CreateCharacter(actor_kind=ActorKind.HUMAN)),))
+    assert refus(apres, 1) is RefusalCode.FORBIDDEN_CATEGORY
+    assert len(apres.actors) == 1 and len(apres.ships) == 1
+
+
+def test_ordre_accepte_texte_du_resultat() -> None:
+    etat = monde((vaisseau(1, 1, 2),))
+    apres, _ = avancer(etat, (ordre(etat, 1, 1, Mine(ship_id=1, ore_id=1)),))
+    assert [(r.accepted, r.text) for r in apres.last_tick.results] == [(True, "ordre accepté")]
+
+
+def test_un_nouveau_minage_repart_de_zero() -> None:
+    """Le compteur d'un minage précédent ne s'ajoute pas au nouveau : 10 unités au premier tick."""
+    etat = monde((vaisseau(1, 1, 2),))
+    ancien = msgspec.structs.replace(etat.ships[0], mined_since_start=30)
+    etat = msgspec.structs.replace(etat, ships=(ancien,))
+    apres, _ = avancer(etat, (ordre(etat, 1, 1, Mine(ship_id=1, ore_id=1)),))
+    assert (apres.ships[0].mined_since_start, apres.ships[0].cargo) == (10, (10, 0))
+
+
+def test_seul_un_vaisseau_en_minage_mine() -> None:
+    etat = monde((vaisseau(1, 1, 2),))
+    inactif = msgspec.structs.replace(etat.ships[0], mining_ore_id=1)
+    etat = msgspec.structs.replace(etat, ships=(inactif,))
+    apres, _ = avancer(etat)
+    assert apres.ships[0].cargo == (0, 0)
+
+
+def test_ventes_du_tick_par_identifiant_de_vaisseau() -> None:
+    """L'acteur 1, examiné le premier, vend avec le vaisseau 2 : la vente du vaisseau 1 passe
+    quand même avant."""
+    etat = monde((vaisseau(1, 2, 1, cargo=(5, 0)), vaisseau(2, 1, 1, cargo=(0, 5))))
+    _, evenements = avancer(
+        etat,
+        (
+            ordre(etat, 1, 1, Sell(ship_id=2, ore_id=2, quantity=5)),
+            ordre(etat, 2, 1, Sell(ship_id=1, ore_id=1, quantity=5)),
+        ),
+    )
+    assert [e.payload.ship_id for e in evenements if isinstance(e.payload, Sale)] == [1, 2]
+
+
+def _raisons(evenements: list[Event]) -> list[tuple[Reason, int]]:
+    return [
+        (e.payload.entry.reason, e.payload.entry.amount)
+        for e in evenements
+        if isinstance(e.payload, LedgerEntryRecorded)
+    ]
+
+
+def test_une_taxe_d_une_unite_est_passee() -> None:
+    etat = monde((vaisseau(1, 1, 1, cargo=(1, 0)),))
+    _, evenements = avancer(etat, (ordre(etat, 1, 1, Sell(ship_id=1, ore_id=1, quantity=1)),))
+    assert _raisons(evenements) == [(Reason.ORE_SALE, 10), (Reason.SALE_TAX, 1)]
+
+
+def test_sans_taxe_aucune_ecriture_de_taxe() -> None:
+    sans_taxe = msgspec.structs.replace(REGLAGES, tax_rate_bp=0)
+    etat = monde((vaisseau(1, 1, 1, cargo=(1, 0)),), reglages=sans_taxe)
+    _, evenements = avancer(
+        etat, (ordre(etat, 1, 1, Sell(ship_id=1, ore_id=1, quantity=1)),), reglages=sans_taxe
+    )
+    assert _raisons(evenements) == [(Reason.ORE_SALE, 10)]

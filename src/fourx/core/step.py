@@ -104,8 +104,12 @@ class _Tick:
         self.ledger = post(self.ledger, entry)
         self.emettre(LedgerEntryRecorded(entry=entry), actor_id, cause)
 
-    def station(self) -> Station:
-        return self.stations[0]
+    def station_du_systeme(self, system_id: int) -> Station | None:
+        """La station du système, s'il en a une (un système a au plus une station)."""
+        for s in self.stations:
+            if s.system_id == system_id:
+                return s
+        return None
 
     def gisement(self, system_id: int, ore_id: int) -> Deposit | None:
         for d in sorted(self.deposits.values(), key=lambda g: g.id):
@@ -127,23 +131,21 @@ class _Tick:
 def plus_court_chemin(
     voisins: dict[int, tuple[int, ...]], depart: int, arrivee: int
 ) -> tuple[int, ...]:
-    """Parcours en largeur, voisins par identifiant croissant ; la route exclut le départ."""
-    precedent: dict[int, int] = {depart: depart}
+    """Parcours en largeur, voisins par identifiant croissant ; la route exclut le départ.
+
+    Chaque système découvert garde sa route depuis le départ : aucune boucle ne remonte les
+    prédécesseurs (un mutant de cette boucle la rendait infinie et saturait la mémoire)."""
+    routes: dict[int, tuple[int, ...]] = {depart: ()}
     file = [depart]
     while file:
         courant = file.pop(0)
         if courant == arrivee:
             break
         for voisin in sorted(voisins[courant]):
-            if voisin in voisins and voisin not in precedent:
-                precedent[voisin] = courant
+            if voisin in voisins and voisin not in routes:
+                routes[voisin] = (*routes[courant], voisin)
                 file.append(voisin)
-    route: list[int] = []
-    noeud = arrivee
-    while noeud != depart:
-        route.append(noeud)
-        noeud = precedent[noeud]
-    return tuple(reversed(route))
+    return routes[arrivee]
 
 
 def _refus_d_etat(t: _Tick, soumis: SubmittedOrder) -> RefusalCode | None:
@@ -173,7 +175,7 @@ def _refus_d_etat(t: _Tick, soumis: SubmittedOrder) -> RefusalCode | None:
         if sum(vaisseau.cargo) >= vaisseau.capacity:
             return RefusalCode.CARGO_FULL
     else:
-        if vaisseau.system_id != t.station().system_id:
+        if t.station_du_systeme(vaisseau.system_id) is None:
             return RefusalCode.NOT_AT_STATION
         if commande.quantity <= 0:
             return RefusalCode.QUANTITY_NOT_POSITIVE
@@ -212,12 +214,12 @@ def _creer_personnage(t: _Tick, soumis: SubmittedOrder, commande: CreateCharacte
     t.ships[ship_id] = Ship(
         id=ship_id,
         owner_id=actor_id,
-        system_id=t.station().system_id,
+        system_id=t.stations[rem_trunc(actor_id - 1, len(t.stations))].system_id,
         capacity=t.tunables.cargo_capacity,
         activity=Activity.IDLE,
         route=(),
         ticks_to_next_jump=0,
-        cargo=(0,) * len(t.tunables.ore_prices),
+        cargo=(0,) * len(t.tunables.station_ore_prices[0]),
         mining_ore_id=None,
         mined_since_start=0,
     )
@@ -228,7 +230,8 @@ def _creer_personnage(t: _Tick, soumis: SubmittedOrder, commande: CreateCharacte
     )
     t.results.append(
         OrderResult(
-            recipient_actor_id=soumis.sender_actor_id,
+            # Une création n'est acceptée que sans émetteur (ordre d'administration du serveur).
+            recipient_actor_id=None,
             order_id=identite(soumis),
             accepted=True,
             refusal=None,
@@ -380,10 +383,12 @@ def _minage(t: _Tick) -> None:
 
 
 def _commerce(t: _Tick) -> None:
-    station = t.station()
     for soumis, vente in sorted(t.ventes, key=lambda v: v[1].ship_id):
         order_id = identite(soumis)
         vaisseau = t.ships[vente.ship_id]
+        station = t.station_du_systeme(vaisseau.system_id)
+        if station is None:
+            raise AssertionError("vente validée hors du système d'une station")
         rang = vente.ore_id - 1
         prix = station.ore_prices[rang]
         paiement = vente.quantity * prix

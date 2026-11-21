@@ -8,9 +8,3 @@ ecrans.feature::Une alerte signale l'arrivée à destination, et aucune un saut 
 ecrans.feature::Une alerte signale la fin d'un minage arrêté par une cargaison pleine
 ecrans.feature::Aucune alerte ne signale un minage interrompu par un ordre
 ecrans.feature::La carte d'un monde de 12 systèmes contient chaque système et chaque lien une fois
-partie.feature::Le propriétaire extrait ore_b, le ramène à la station qui le paie le mieux et le vend
-partie.feature::Les durées lues dans l'observation sont celles du jeu, sur les vrais réglages
-partie.feature::Une vente à une autre station que la station 1 se fait au prix de cette station
-partie.feature::On ne voit un autre vaisseau, et le stock d'un gisement, qu'à proximité
-partie.feature::Dans le système d'une station, on mine puis on vend sans saut
-partie.feature::Le PNJ vend une cargaison en 2 000 ticks sur un monde généré
