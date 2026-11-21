@@ -109,6 +109,57 @@ def test_tirages_de_la_generation() -> None:
         assert len(generate(graine, REGLAGES).systems) == taille
 
 
+def test_voisins_de_la_graine_1() -> None:
+    assert [s.neighbors for s in generate(1, REGLAGES).systems] == [
+        (2, 3, 4, 5),
+        (1, 3, 11),
+        (1, 2, 11),
+        (1, 6, 8),
+        (1, 10),
+        (4, 7, 8, 9),
+        (6,),
+        (4, 6),
+        (6,),
+        (5,),
+        (2, 3),
+    ]
+
+
+def _tirage(graine: int, motif: str, bas: int, haut: int) -> int:
+    """Un nombre « entre bas et haut » de la génération : entité 0, tick 0."""
+    return bas + keyed_below(graine, 0, 0, motif, haut - bas + 1)
+
+
+@pytest.mark.parametrize("graine", [1, 2, 3, 42])
+def test_liens_en_plus_tires(graine: int) -> None:
+    """Un arbre de N − 1 liens, plus le nombre de liens tiré entre 1 et extra_links_max."""
+    etat = generate(graine, REGLAGES)
+    liens = sum(len(s.neighbors) for s in etat.systems) // 2
+    en_plus = _tirage(graine, "extra_link_count", 1, REGLAGES.extra_links_max)
+    assert liens == len(etat.systems) - 1 + en_plus
+
+
+@pytest.mark.parametrize("graine", [1, 2, 3, 4, 5, 42])
+def test_nombres_tires_de_stations_de_gisements_et_de_pnj(graine: int) -> None:
+    etat = generate(graine, REGLAGES)
+    r = REGLAGES
+    assert len(etat.stations) == _tirage(graine, "station_count", r.stations_min, r.stations_max)
+    assert len(etat.deposits) == _tirage(graine, "deposit_count", r.deposits_min, r.deposits_max)
+    assert npc_count(graine, r) == _tirage(graine, "npc_count", r.npc_min, r.npc_max)
+
+
+def test_au_plus_deux_voisins_la_carte_est_un_cycle() -> None:
+    """Avec deux voisins au plus, l'arbre est une chaîne et seul le lien entre ses deux bouts
+    reste possible : la carte est un cycle, même quand plus d'un lien est tiré."""
+    reglages = msgspec.structs.replace(REGLAGES, max_neighbors=2)
+    graines = range(1, 13)
+    assert any(_tirage(g, "extra_link_count", 1, reglages.extra_links_max) > 1 for g in graines)
+    for graine in graines:
+        etat = generate(graine, reglages)
+        assert all(len(s.neighbors) == 2 for s in etat.systems), graine
+        assert _connexe(etat)
+
+
 def test_libelles() -> None:
     assert label("system", 3) == "system_3"
     assert label("deposit", 2) == "deposit_2"

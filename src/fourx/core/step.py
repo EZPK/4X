@@ -131,23 +131,21 @@ class _Tick:
 def plus_court_chemin(
     voisins: dict[int, tuple[int, ...]], depart: int, arrivee: int
 ) -> tuple[int, ...]:
-    """Parcours en largeur, voisins par identifiant croissant ; la route exclut le départ."""
-    precedent: dict[int, int] = {depart: depart}
+    """Parcours en largeur, voisins par identifiant croissant ; la route exclut le départ.
+
+    Chaque système découvert garde sa route depuis le départ : aucune boucle ne remonte les
+    prédécesseurs (un mutant de cette boucle la rendait infinie et saturait la mémoire)."""
+    routes: dict[int, tuple[int, ...]] = {depart: ()}
     file = [depart]
     while file:
         courant = file.pop(0)
         if courant == arrivee:
             break
         for voisin in sorted(voisins[courant]):
-            if voisin in voisins and voisin not in precedent:
-                precedent[voisin] = courant
+            if voisin in voisins and voisin not in routes:
+                routes[voisin] = (*routes[courant], voisin)
                 file.append(voisin)
-    route: list[int] = []
-    noeud = arrivee
-    while noeud != depart:
-        route.append(noeud)
-        noeud = precedent[noeud]
-    return tuple(reversed(route))
+    return routes[arrivee]
 
 
 def _refus_d_etat(t: _Tick, soumis: SubmittedOrder) -> RefusalCode | None:
@@ -232,7 +230,8 @@ def _creer_personnage(t: _Tick, soumis: SubmittedOrder, commande: CreateCharacte
     )
     t.results.append(
         OrderResult(
-            recipient_actor_id=soumis.sender_actor_id,
+            # Une création n'est acceptée que sans émetteur (ordre d'administration du serveur).
+            recipient_actor_id=None,
             order_id=identite(soumis),
             accepted=True,
             refusal=None,

@@ -51,16 +51,16 @@ def mettre_a_jour(observation: Observation, seen_empty: frozenset[int]) -> froze
 def _gisement_vise(
     observation: Observation, dist: dict[int, int], seen_empty: frozenset[int]
 ) -> DepositView | None:
-    nombre = len(observation.stations[0].ore_prices)
+    # Indices de prix, de 0 à nombre − 1 : le minerai d'indice i a l'identifiant i + 1.
     meilleurs = sorted(
-        range(1, nombre + 1),
-        key=lambda o: (-max(s.ore_prices[o - 1] for s in observation.stations), o),
+        range(len(observation.stations[0].ore_prices)),
+        key=lambda i: (-max(s.ore_prices[i] for s in observation.stations), i),
     )
-    for ore_id in meilleurs:
+    for indice in meilleurs:
         candidats = [
             d
             for d in observation.deposits
-            if d.ore_id == ore_id and d.id not in seen_empty and d.system_id in dist
+            if d.ore_id == indice + 1 and d.id not in seen_empty and d.system_id in dist
         ]
         if candidats:
             return min(candidats, key=lambda d: (dist[d.system_id], d.id))

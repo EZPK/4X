@@ -55,10 +55,9 @@ class Connexion:
         return await self.mises_a_jour.get()
 
     def vider_ordres(self) -> list[SubmitOrders]:
-        messages: list[SubmitOrders] = []
-        while not self.ordres.empty():
-            messages.append(self.ordres.get_nowait())
-        return messages
+        # Une itération par message présent : un mutant ne peut pas rendre la boucle infinie
+        # (elle saturait la mémoire pendant le contrôle de mutation).
+        return [self.ordres.get_nowait() for _ in range(self.ordres.qsize())]
 
 
 class Game:

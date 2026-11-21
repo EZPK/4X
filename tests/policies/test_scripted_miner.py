@@ -8,7 +8,7 @@ from fourx.core.observe import observe
 from fourx.core.state import State
 from fourx.policies.scripted_miner import POLICY_ID, POLICY_VERSION, decide, mettre_a_jour
 from fourx.schema.actors import Activity
-from fourx.schema.observation import DepositView, Observation, OwnShipView, SystemView
+from fourx.schema.observation import DepositView, Observation, OwnShipView, StationView, SystemView
 from fourx.schema.orders import Command, Mine, Move, OrderCategory, Sell, SubmittedOrder
 from tests.aide_monde import REGLAGES, avancer, monde, vaisseau
 from tests.aide_observation import ACTEUR, navire, observation
@@ -73,6 +73,28 @@ def test_tous_les_gisements_vus_vides_l_ensemble_se_vide() -> None:
 def test_egalite_de_prix_plus_petit_minerai() -> None:
     obs = observation((navire(system=1),), prix=(15, 15))
     assert commandes(obs) == [Move(ship_id=1, target_system_id=2)]
+
+
+@pytest.mark.parametrize(
+    ("cargo", "cible"),
+    [
+        # ore_a : station_2 paie 20, station_1 10 ; station_2 est aussi la plus proche.
+        ((100, 0), 2),
+        # ore_b : station_1 paie 15, station_2 5 ; le prix l'emporte sur la distance.
+        ((0, 100), 1),
+    ],
+)
+def test_cargaison_pleine_vers_la_station_qui_paie_le_mieux_ce_minerai(
+    cargo: tuple[int, int], cible: int
+) -> None:
+    deux_stations = (
+        StationView(id=1, system_id=1, ore_prices=(10, 15)),
+        StationView(id=2, system_id=2, ore_prices=(20, 5)),
+    )
+    obs = msgspec.structs.replace(
+        observation((navire(system=3, cargo=cargo),)), stations=deux_stations
+    )
+    assert commandes(obs) == [Move(ship_id=1, target_system_id=cible)]
 
 
 def test_champs_de_l_ordre() -> None:

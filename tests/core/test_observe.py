@@ -6,14 +6,45 @@ Document : docs/designs/niveau-2-m1-noyau.md, Technical Plan, point 5.
 import msgspec
 import pytest
 
+from fourx.core import observe as observe_module
 from fourx.core.ledger import Account, Ledger
-from fourx.core.observe import classes, observe, portee, vue
+from fourx.core.observe import (
+    A_PORTEE,
+    DETENUE,
+    PUBLIQUE,
+    classes,
+    observe,
+    plan,
+    portee,
+    systeme_de_reference,
+    vue,
+)
 from fourx.core.state import Actor, Deposit, LastTick, Ship, Station, System
-from fourx.schema.events import CLASSES, Arrived, DepositRegenerated, Event
+from fourx.schema.events import CLASSES, Arrived, DepositRegenerated, Event, MiningStarted
 from fourx.schema.observation import DepositView, OtherShipView, OwnShipView
 from fourx.schema.orders import Mine, Move, Sell
 from fourx.schema.visibility import Visibility
 from tests.aide_monde import REGLAGES, avancer, monde, ordre, vaisseau
+
+
+@pytest.fixture(autouse=True)
+def plans_vides(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Chaque test part d'un cache de plans vide : `plan` et `classes` y sont donc exécutés.
+
+    Sans cela, un cache rempli par un test précédent, ou par le passage des tests que mutmut
+    fait avant de copier ses processus, cacherait le code de `plan` aux mutants."""
+    monkeypatch.setattr(observe_module, "_PLANS", {})
+
+
+def test_le_plan_est_relu_une_seule_fois_par_couple_de_types() -> None:
+    premier = plan(Ship, OtherShipView)
+    assert plan(Ship, OtherShipView) is premier
+    assert premier == (
+        ("id", Visibility.NEARBY),
+        ("owner_id", Visibility.NEARBY),
+        ("system_id", Visibility.NEARBY),
+        ("capacity", Visibility.NEARBY),
+    )
 
 
 def test_chaque_champ_d_entite_a_une_classe() -> None:
@@ -49,12 +80,29 @@ def test_classes_attendues() -> None:
 
 def test_vue_refuse_un_champ_prive_d_un_autre() -> None:
     navire = vaisseau(1, 2, 1)
-    assert vue(navire, OtherShipView, False, True) == OtherShipView(
+    assert vue(navire, OtherShipView, A_PORTEE) == OtherShipView(
         id=1, owner_id=2, system_id=1, capacity=100
     )
-    with pytest.raises(ValueError):
-        vue(navire, OwnShipView, False)
-    assert vue(navire, OwnShipView, True).cargo == (0, 0)
+    with pytest.raises(ValueError, match="^champ activity invisible pour cet acteur$"):
+        vue(navire, OwnShipView, A_PORTEE)
+    assert vue(navire, OwnShipView, DETENUE).cargo == (0, 0)
+
+
+def test_vue_publique_d_un_vaisseau_d_autrui_hors_de_portee() -> None:
+    """Hors de portée, les champs de proximité valent None : observe ne garde pas ce vaisseau."""
+    assert vue(vaisseau(1, 2, 1), OtherShipView, PUBLIQUE) == OtherShipView(
+        id=None,  # type: ignore[arg-type]
+        owner_id=None,  # type: ignore[arg-type]
+        system_id=None,  # type: ignore[arg-type]
+        capacity=None,  # type: ignore[arg-type]
+    )
+
+
+def test_un_champ_sans_metadonnee_n_a_aucune_classe() -> None:
+    class SansClasse(msgspec.Struct):
+        valeur: int
+
+    assert classes(SansClasse) == {"valeur": None}
 
 
 def test_observation_d_un_acteur() -> None:
@@ -164,5 +212,39 @@ def test_tout_type_de_proximite_a_un_systeme_de_reference() -> None:
 
 def test_vue_d_un_gisement_hors_de_portee() -> None:
     gisement = Deposit(id=1, system_id=3, ore_id=1, stock=7)
-    assert vue(gisement, DepositView, False, False).stock is None
-    assert vue(gisement, DepositView, False, True).stock == 7
+    assert vue(gisement, DepositView, PUBLIQUE).stock is None
+    assert vue(gisement, DepositView, A_PORTEE).stock == 7
+
+
+def _evenement(visibilite: Visibility, charge: object, acteur: int | None = None) -> Event:
+    return Event(
+        tick=0,
+        seq=0,
+        event_schema_version=0,
+        rules_version="r",
+        actor_id=acteur,
+        actor_kind=None,
+        policy_id=None,
+        policy_version=None,
+        causation_id=None,
+        visibility=visibilite,
+        payload=charge,  # type: ignore[arg-type]
+    )
+
+
+def test_un_evenement_public_est_vu_de_tous() -> None:
+    public = _evenement(Visibility.PUBLIC, DepositRegenerated(deposit_id=2, stock=20000))
+    etat = monde((vaisseau(1, 1, 1),))
+    etat = msgspec.structs.replace(etat, last_tick=LastTick(events=(public,), results=()))
+    assert observe(etat, 1, REGLAGES).events == (public,)
+    assert observe(etat, 9, REGLAGES).events == (public,)
+
+
+def test_un_evenement_de_proximite_sans_systeme_de_reference_est_refuse() -> None:
+    sans_systeme = _evenement(
+        Visibility.NEARBY, MiningStarted(ship_id=1, ore_id=1, rate=10), acteur=1
+    )
+    with pytest.raises(
+        ValueError, match="^événement de proximité sans système de référence : MiningStarted$"
+    ):
+        systeme_de_reference(monde((vaisseau(1, 1, 1),)), sans_systeme)
