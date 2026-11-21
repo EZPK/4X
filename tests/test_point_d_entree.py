@@ -6,11 +6,12 @@ import asyncio
 import contextlib
 from pathlib import Path
 
-from fourx.__main__ import creer_pnj, relayer
+from fourx.__main__ import analyser, creer_pnj, fonction_de_vitesse, relayer
 from fourx.clients.npc_host import NpcHost
 from fourx.core.world import npc_count
 from fourx.policies.scripted_miner import POLICY_ID, decide
 from fourx.schema.actors import ActorKind
+from fourx.schema.protocol import NOMINAL_TICK_PERIOD_S
 from fourx.server.game import Game
 from fourx.server.order_log import OrderLog
 from fourx.server.tunables_loader import load_tunables
@@ -59,3 +60,32 @@ def test_plusieurs_pnj(tmp_path: Path) -> None:
     assert len(pnj) == npc_count(3, reglages) >= reglages.npc_min
     assert pnj == tuple(range(humain + 1, humain + 1 + len(pnj)))
     assert [a.kind for a in partie.state.actors if a.id in pnj] == [ActorKind.NPC] * len(pnj)
+
+
+def test_options_de_lancement() -> None:
+    defaut = analyser([])
+    assert (defaut.graine, defaut.periode, defaut.runs, defaut.dev) == (
+        None,
+        NOMINAL_TICK_PERIOD_S,
+        Path("runs"),
+        False,
+    )
+    options = analyser(["--dev", "--graine", "7", "--periode", "0.5", "--runs", "ailleurs"])
+    assert (options.graine, options.periode, options.runs, options.dev) == (
+        7,
+        0.5,
+        Path("ailleurs"),
+        True,
+    )
+
+
+def test_la_fonction_de_vitesse_divise_la_periode_de_lancement(tmp_path: Path) -> None:
+    """Le client choisit un palier ; Game.set_period reçoit des secondes, ou None en pause."""
+    partie = Game(tmp_path, world_seed=3, tunables=load_tunables(), period_s=3.0)
+    set_speed = fonction_de_vitesse(partie, 3.0)
+    vues: list[float | None] = []
+    for facteur in (10, 100, None, 1):
+        set_speed(facteur)
+        vues.append(partie.period_s)
+    partie.close()
+    assert vues == [0.3, 0.03, None, 3.0]
