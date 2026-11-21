@@ -15,6 +15,13 @@ Conventions que ces étapes figent :
   par le propriétaire avec la pull request de scénarios) ;
 - le compte débité d'une écriture est celui d'où part l'argent (« émission → portefeuille ») ;
 - après `step`, `ledger.tick_entries` contient les écritures du tick produit.
+
+Amendement 1 (plan détaillé, point 23 ter) : les réglages de test prennent `station_ore_prices` et
+les fourchettes de la génération du monde. `Partie.construire` ne passe à `Tunables` que les champs
+qu'il déclare : sur le code d'origine, `ore_prices` reçoit la première ligne de
+`station_ore_prices` et les champs nouveaux sont omis ; après le point 23 quater, tous les champs
+passent. Les scénarios du noyau restent ainsi valables avant et après l'amendement, et ne sont pas
+en attente.
 """
 
 import importlib
@@ -22,6 +29,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+import msgspec
 import pytest
 from pytest_bdd import given, parsers, then, when
 
@@ -30,13 +38,51 @@ REGLAGES_M1: dict[str, Any] = {
     "jump_ticks": 5,
     "mining_rate": 10,
     "cargo_capacity": 100,
-    "ore_prices": (10, 15),
+    "station_ore_prices": ((10, 15), (12, 12), (8, 18)),
     "tax_rate_bp": 1000,
     "deposit_stock": 20000,
     "regen_ticks": 1000,
     "budget_regen": 1,
     "budget_max": 10,
+    "systems_min": 8,
+    "systems_max": 12,
+    "deposits_min": 4,
+    "deposits_max": 6,
+    "stations_min": 2,
+    "stations_max": 3,
+    "npc_min": 3,
+    "npc_max": 5,
+    "extra_links_max": 3,
+    "max_neighbors": 4,
 }
+# Champs de REGLAGES_M1 que le code d'origine ne déclare pas encore (Technical Plan, point 2).
+CHAMPS_DE_L_AMENDEMENT = frozenset(
+    {
+        "station_ore_prices",
+        "systems_min",
+        "systems_max",
+        "deposits_min",
+        "deposits_max",
+        "stations_min",
+        "stations_max",
+        "npc_min",
+        "npc_max",
+        "extra_links_max",
+        "max_neighbors",
+    }
+)
+
+
+def construire_tunables(tunables_mod: Any, reglages: dict[str, Any]) -> Any:
+    """`Tunables` à partir des réglages de test, sur le code d'origine comme sur celui de
+    l'amendement (voir l'en-tête du module)."""
+    champs = {f.name for f in msgspec.structs.fields(tunables_mod.Tunables)}
+    valeurs = dict(reglages)
+    if "ore_prices" in champs:
+        valeurs["ore_prices"] = tuple(valeurs["station_ore_prices"][0])
+    omis = set(valeurs) - champs
+    assert omis <= CHAMPS_DE_L_AMENDEMENT, omis
+    return tunables_mod.Tunables(**{k: v for k, v in valeurs.items() if k in champs})
 
 
 def m(nom: str) -> Any:
@@ -88,7 +134,7 @@ class Partie:
         ledger = m("fourx.core.ledger")
         actors = m("fourx.schema.actors")
         schema_ledger = m("fourx.schema.ledger")
-        self.tunables = tunables_mod.Tunables(**self.reglages)
+        self.tunables = construire_tunables(tunables_mod, self.reglages)
         systemes = tuple(
             state.System(
                 id=s,
@@ -107,7 +153,9 @@ class Partie:
         )
         stations = (
             state.Station(
-                id=1, system_id=self.station, ore_prices=tuple(self.reglages["ore_prices"])
+                id=1,
+                system_id=self.station,
+                ore_prices=tuple(self.reglages["station_ore_prices"][0]),
             ),
         )
         acteurs = tuple(
@@ -262,7 +310,7 @@ def partie() -> Partie:
 # --- Étant donné
 
 
-@given("les réglages de M1")
+@given("des réglages de test")
 def reglages_m1(partie: Partie) -> None:
     partie.reglages = dict(REGLAGES_M1)
 
