@@ -2,7 +2,7 @@
 
 - **Numéro :** 0003
 - **Titre :** `observe` reçoit les réglages
-- **Statut :** proposée
+- **Statut :** acceptée
 - **Date :** 2026-11-12
 - **Décideur :** le propriétaire
 - **Contexte :** l'amendement 1 du niveau 2 de M1 fait du temps une ressource : un saut dure `jump_ticks` = 400 ticks, et remplir une cargaison vide prend `cargo_capacity` ÷ `mining_rate` = 100 ticks. Le joueur doit voir ces durées : coût d'un déplacement avant de le confirmer, ticks restants d'un trajet ou d'un minage. Or ces valeurs sont des réglages, pas des champs de l'état. Le niveau 1, §5, dit que `observe(état, acteur)` ne renvoie que les champs visibles de l'état, et qu'« il n'y a pas d'autre canal vers le joueur ». Le client ne peut donc pas les connaître aujourd'hui, et les joueurs IA non plus.

@@ -2,7 +2,7 @@
 
 - **Numéro :** 0004
 - **Titre :** Fourchettes de la tranche 0
-- **Statut :** proposée
+- **Statut :** acceptée
 - **Date :** 2026-11-12
 - **Décideur :** le propriétaire
 - **Contexte :** le CUJ 1 du niveau 1 décrit la tranche 0 comme « un monde hors ligne généré à partir d'une graine, avec 3 à 5 systèmes reliés en graphe ; deux minerais, et une station PNJ qui rachète chacun à son propre prix fixe ». Le niveau 2 de M1 en a retenu le bas : 3 systèmes en ligne, 1 station, 1 PNJ. Après la partie de test du 2026-11-11, le propriétaire veut, « sans rentrer dans l'excessif », plus de nœuds, plus d'endroits où miner, plus de vaisseaux qui bougent et plus de points de vente. Avec trois systèmes en ligne et une station, il n'y a ni choix de route, ni choix du lieu de vente.

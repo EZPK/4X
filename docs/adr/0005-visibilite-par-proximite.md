@@ -2,7 +2,7 @@
 
 - **Numéro :** 0005
 - **Titre :** Visibilité par proximité
-- **Statut :** proposée
+- **Statut :** acceptée
 - **Date :** 2026-11-12
 - **Décideur :** le propriétaire
 - **Contexte :** le niveau 1, §5, donne à chaque champ de l'état et à chaque événement une classe de visibilité : public, corporation, privé ou administration. Aucune ne dépend de la distance. Aujourd'hui, le système où se trouve un vaisseau est public : chaque acteur voit tous les vaisseaux, où qu'ils soient, et les événements de saut (`Departed`, `Arrived`) sont publics. Avec l'amendement 1 du niveau 2 de M1 (sauts de 400 ticks, monde de 8 à 12 systèmes, 3 à 5 PNJ), le propriétaire veut qu'on ne voie les autres vaisseaux qu'à proximité ; plus tard, des scanners porteront plus loin. Le stock des gisements, public lui aussi, trahirait sinon les mineurs lointains : à un débit d'une unité par tick, sa baisse compte les vaisseaux qui minent.
