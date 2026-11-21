@@ -1,0 +1,29 @@
+# ADR 0005 — Visibilité par proximité
+
+- **Numéro :** 0005
+- **Titre :** Visibilité par proximité
+- **Statut :** proposée
+- **Date :** 2026-11-12
+- **Décideur :** le propriétaire
+- **Contexte :** le niveau 1, §5, donne à chaque champ de l'état et à chaque événement une classe de visibilité : public, corporation, privé ou administration. Aucune ne dépend de la distance. Aujourd'hui, le système où se trouve un vaisseau est public : chaque acteur voit tous les vaisseaux, où qu'ils soient, et les événements de saut (`Departed`, `Arrived`) sont publics. Avec l'amendement 1 du niveau 2 de M1 (sauts de 400 ticks, monde de 8 à 12 systèmes, 3 à 5 PNJ), le propriétaire veut qu'on ne voie les autres vaisseaux qu'à proximité ; plus tard, des scanners porteront plus loin. Le stock des gisements, public lui aussi, trahirait sinon les mineurs lointains : à un débit d'une unité par tick, sa baisse compte les vaisseaux qui minent.
+- **Options :**
+  - **(a)** une classe de visibilité « proximité » : un champ ou un événement de cette classe n'est visible que des acteurs dont un vaisseau est dans le système concerné, ou dans un système voisin ;
+  - **(b)** rendre public le saut en cours des autres vaisseaux, partout : plus de mouvement visible, mais une information donnée à tous les concurrents ;
+  - **(c)** le statu quo : tout vaisseau visible partout, mais immobile pendant ses sauts.
+- **Décision :** l'option (a), avec la classe `NEARBY` (proximité) ajoutée à `Visibility`.
+  - **Règle :** un champ ou un événement de classe proximité est visible d'un acteur si son système de référence est le système d'un des vaisseaux de l'acteur, ou un système voisin. Le système de référence est le `system_id` de l'entité, celui de la charge utile d'un événement, ou, pour un événement de gisement, le système du gisement. Les positions qui comptent sont celles de l'état que reçoit `observe`.
+  - Les champs `id`, `owner_id`, `system_id` et `capacity` d'un vaisseau sont de classe proximité : hors de portée, le vaisseau n'apparaît pas. Ses autres champs (activité, route, cargaison…) restent privés. Les vaisseaux d'un acteur restent entièrement visibles pour leur détenteur.
+  - Le champ `stock` d'un gisement est de classe proximité (décision du propriétaire, 2026-11-12) : hors de portée, la vue porte `stock` = `None`. Le gisement lui-même (identifiant, système, minerai) reste public.
+  - Les événements `Departed`, `Arrived` et `DepositRegenerated` sont de classe proximité, rapportés à leur système.
+  - Le reste de la carte (systèmes, liens, emplacement des gisements et des stations, prix) reste public. `CharacterCreated` reste public.
+  - La portée vaut un saut : le système d'un des vaisseaux de l'acteur et ses voisins.
+- **Conséquences :**
+  - le niveau 1, §5, ajoute la classe proximité à la liste des classes ;
+  - le glossaire ajoute `NEARBY` à la classe de visibilité ;
+  - `observe` filtre les champs et les événements de classe proximité d'après les systèmes des vaisseaux de l'acteur ; un acteur sans vaisseau ne voit rien de classe proximité ;
+  - les tests de visibilité vérifient qu'un vaisseau à deux sauts n'apparaît pas, que le stock d'un gisement à deux sauts vaut `None`, et qu'un vaisseau voisin apparaît sans son activité ;
+  - le PNJ et le client ne connaissent pas le stock des gisements lointains : un vaisseau peut trouver vide, à l'arrivée, un gisement qu'il ne voyait pas ;
+  - la forme de l'état ne change pas, et les classes de visibilité des champs ne sont pas encodées ; mais `Event.visibility` l'est : la valeur `nearby` casse la lecture d'un fichier récent par le code d'origine. C'est accepté parce qu'avant M5 les données sont régénérées (niveau 1, §7) ; `snapshot_schema_version` reste à 1 (instantané pris au tick 0, `last_tick` vide) ;
+  - `DepositView.stock` devient facultatif : avec les réglages publics (ADR 0003), `protocol_version` passe à 2.
+- **Condition de révision :** les scanners (portée propre à un vaisseau ou à un équipement) ; ou une corporation partage la vision de ses membres (M6).
+- **Section du niveau 1 modifiée :** §5 (acteurs, égalité d'accès et visibilité), la puce sur les classes de visibilité.
