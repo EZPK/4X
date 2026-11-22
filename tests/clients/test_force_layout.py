@@ -12,6 +12,7 @@ import math
 import pytest
 
 from fourx.clients.force_layout import (
+    CARTE_MINIMALE,
     HAUTEUR_BOITE,
     LARGEUR_BOITE,
     RECTANGLE_UTILE,
@@ -24,7 +25,14 @@ from fourx.clients.force_layout import (
     separate,
     snap_overlaps,
 )
-from fourx.clients.map_view import _pixel, _segment, anchor, initial_view
+from fourx.clients.map_view import (
+    HAUTEUR_CADRE,
+    LARGEUR_CADRE,
+    _centre_du_cadre,
+    _trace,
+    anchor,
+    initial_view,
+)
 from fourx.core import world
 from fourx.core.observe import observe
 from fourx.schema.observation import SystemView
@@ -51,7 +59,7 @@ def verifier(positions: Positions, systemes: tuple[SystemView, ...]) -> None:
     assert sorted(positions) == sorted(s.id for s in systemes)
     for x, y in positions.values():
         assert X0 - 1e-9 <= x <= X1 + 1e-9 and Y0 - 1e-9 <= y <= Y1 + 1e-9
-        assert x + LARGEUR_BOITE <= 1 + 1e-9 and y - HAUTEUR_BOITE >= -1e-9
+        assert x + LARGEUR_BOITE <= 1 + 1e-9 and y + HAUTEUR_BOITE <= 1 + 1e-9
     idents = sorted(positions)
     for rang, a in enumerate(idents):
         for b in idents[rang + 1 :]:
@@ -127,10 +135,12 @@ def test_normalize_un_axe_plat_et_un_point_seul_vont_au_milieu() -> None:
 
 
 def test_separate_ecarte_sur_l_axe_du_plus_petit_deplacement() -> None:
-    # Écart horizontal 0,1 (manque 0,035), vertical 0,02 (manque 0,14) : l'axe horizontal.
-    positions = separate({1: (0.4, 0.5), 2: (0.5, 0.52)})
-    assert positions[1] == pytest.approx((0.4 - 0.0175, 0.5))
-    assert positions[2] == pytest.approx((0.5 + 0.0175, 0.52))
+    # Écart horizontal 0,06, vertical 0,02 : il manque moins sur l'axe horizontal.
+    positions = separate({1: (0.4, 0.5), 2: (0.46, 0.52)})
+    manque = LARGEUR_BOITE - 0.06
+    assert manque < HAUTEUR_BOITE - 0.02
+    assert positions[1] == pytest.approx((0.4 - manque / 2, 0.5))
+    assert positions[2] == pytest.approx((0.46 + manque / 2, 0.52))
     assert not recouvrement(positions[1], positions[2])
 
 
@@ -217,19 +227,19 @@ def test_croisements_d_un_carre_et_de_ses_diagonales() -> None:
 
 
 def traversees(systemes: tuple[SystemView, ...], positions: Positions) -> int:
-    """Les liens qui traversent la pastille d'un autre système, au zoom 1 en 72 × 27."""
-    vue = initial_view(72, 27)
-    pastilles = {}
+    """Les liens qui traversent le cadre d'un autre système, au zoom 1 sur la carte minimale."""
+    vue = initial_view(*CARTE_MINIMALE)
+    cadres = {}
     for s in systemes:
         colonne, ligne = anchor(vue, positions[s.id])
-        pastilles[s.id] = {(colonne, ligne), (colonne + 1, ligne)}
+        cadres[s.id] = {
+            (colonne + dx, ligne + dy) for dx in range(LARGEUR_CADRE) for dy in range(HAUTEUR_CADRE)
+        }
     liens = sorted({(min(s.id, v), max(s.id, v)) for s in systemes for v in s.neighbors})
     total = 0
     for a, b in liens:
-        cases = {
-            (x, y // 2) for x, y in _segment(_pixel(vue, positions[a]), _pixel(vue, positions[b]))
-        }
-        if any(cases & pastilles[c] for c in pastilles if c not in (a, b)):
+        trace = _trace(_centre_du_cadre(vue, positions[a]), _centre_du_cadre(vue, positions[b]))
+        if any(set(trace) & cadres[c] for c in cadres if c not in (a, b)):
             total += 1
     return total
 
@@ -249,5 +259,5 @@ def test_les_graines_1_a_2000() -> None:
     print(
         f"\ncroisements de liens sur les graines 1 à 2000 : moyenne {moyenne:.2f}, "
         f"maximum {max(comptes)}, part des mondes qui en ont {part:.0%} ; "
-        f"liens qui traversent la pastille d'un autre système : {traverses}"
+        f"liens qui traversent le cadre d'un autre système : {traverses}"
     )

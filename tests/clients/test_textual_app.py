@@ -31,7 +31,7 @@ from fourx.clients.frames import (
     texte_touches,
     texte_vaisseau,
 )
-from fourx.clients.map_view import ZOOMS, anchor, ship_position, to_pixels
+from fourx.clients.map_view import ZOOMS, anchor, ship_position, to_cells
 from fourx.clients.model import ClientModel
 from fourx.clients.palette import PALETTE
 from fourx.clients.textual_app import (
@@ -438,9 +438,8 @@ def test_chaque_etat_du_vaisseau_se_lit_dans_son_cadre(monde_12: Observation, et
         canevas = app.query_one(MapCanvas)
         for s in obs.systems:
             colonne, ligne = anchor(canevas.vue, canevas.positions[s.id])
-            pastille = canevas.grille[ligne][colonne].char + canevas.grille[ligne][colonne + 1].char
-            # En route, le vaisseau est peint sur le lien, par-dessus une pastille s'il y passe.
-            assert pastille == f"{s.id:>2}" or (etat == "route" and "▲" in pastille)
+            numero = canevas.grille[ligne + 1][colonne + 1 : colonne + 3]
+            assert "".join(c.char for c in numero) == f"{s.id:>2}"  # au centre de son cadre
         stations = lire(app, "#stations-texte").replace("★", "")
         for st in obs.stations:
             assert (
@@ -620,6 +619,9 @@ def test_disposition_en_120_x_36() -> None:
     async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
         assert place(app, "#barre") == (0, 0, 120, 2)
         assert place(app, "#carte") == (0, 2, 72, 27)
+        assert place(app, "#carte-entete") == (1, 3, 70, 1)
+        assert place(app, "#carte-canevas") == (1, 4, 70, 23)  # la carte minimale
+        assert place(app, "#carte-legende") == (1, 27, 70, 1)
         assert place(app, "#etape") == (73, 2, 47, 7)
         assert place(app, "#vaisseau") == (73, 9, 47, 8)
         assert place(app, "#stations") == (73, 17, 47, 12)
@@ -633,19 +635,17 @@ def test_disposition_en_120_x_36() -> None:
     jouer(observation((navire(system=1),)), scenario)
 
 
-def test_disposition_en_100_x_30_la_carte_et_les_stations_retrecissent() -> None:
+def test_au_dela_de_120_x_36_la_carte_et_les_stations_grandissent() -> None:
     async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
-        assert place(app, "#carte") == (0, 2, 52, 21)
-        assert place(app, "#etape") == (53, 2, 47, 7)
-        assert place(app, "#vaisseau") == (53, 9, 47, 8)
-        assert place(app, "#stations") == (53, 17, 47, 6)
-        assert place(app, "#historique") == (0, 23, 100, 6)
-        assert not app.query_one("#petite").display
+        assert place(app, "#carte") == (0, 2, 92, 33)
+        assert place(app, "#carte-canevas") == (1, 4, 90, 29)
+        assert place(app, "#etape") == (93, 2, 47, 7)
+        assert place(app, "#stations") == (93, 17, 47, 18)
 
-    jouer(observation((navire(system=1),)), scenario, taille=(100, 30))
+    jouer(observation((navire(system=1),)), scenario, taille=(140, 42))
 
 
-@pytest.mark.parametrize("taille", [(99, 30), (100, 29)])
+@pytest.mark.parametrize("taille", [(119, 36), (120, 35)])
 def test_petite_fenetre_un_message_et_seule_q_agit(taille: tuple[int, int]) -> None:
     sorties: list[bool] = []
 
@@ -655,7 +655,7 @@ def test_petite_fenetre_un_message_et_seule_q_agit(taille: tuple[int, int]) -> N
         assert not app.query_one("#aide").display
         assert lire(app, "#petite") == message_petite_fenetre(*taille)
         assert lire(app, "#petite") == (
-            "Agrandis la fenêtre : 100 colonnes × 30 lignes au moins "
+            "Agrandis la fenêtre : 120 colonnes × 36 lignes au moins "
             f"(actuellement {taille[0]} × {taille[1]})."
         )
         await pilot.press("d", "enter", "m", "v")
@@ -820,9 +820,9 @@ def test_les_fleches_deplacent_la_vue_et_c_la_recentre() -> None:
     async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
         canevas = app.query_one(MapCanvas)
         await pilot.press("z", "right", "down")
-        echelle = 2 * canevas.vue.height * ZOOMS[1]
+        assert (canevas.vue.width, canevas.vue.height) == (70, 23)
         assert canevas.vue.center == pytest.approx(
-            (0.5 + (72 // 10) / echelle, 0.5 + 2 * (27 // 10) / echelle)
+            (0.5 + 7 / (70 * ZOOMS[1]), 0.5 + 2 / (23 * ZOOMS[1]))
         )
         await pilot.press("left", "up")
         assert canevas.vue.center == pytest.approx((0.5, 0.5))
@@ -852,11 +852,10 @@ def test_la_molette_zoome_autour_du_pointeur() -> None:
         assert apres.zoom_index == 1
         # Le point sous la case (10, 5) y reste.
         point = (
-            (10 - avant.width / 2) / (2 * avant.height) + avant.center[0],
-            (11 - avant.height) / (2 * avant.height) + avant.center[1],
+            (10.5 - avant.width / 2) / avant.width + avant.center[0],
+            (5.5 - avant.height / 2) / avant.height + avant.center[1],
         )
-        x, y = to_pixels(apres, point)
-        assert (x, y) == pytest.approx((10, 11))
+        assert to_cells(apres, point) == pytest.approx((10.5, 5.5))
         canevas.post_message(souris(events.MouseScrollDown, canevas, 10, 5))
         await pilot.pause()
         assert canevas.vue.zoom_index == 0
@@ -873,9 +872,8 @@ def test_le_glisser_deplace_la_vue_sans_cliquer() -> None:
         canevas.post_message(souris(events.MouseMove, canevas, 34, 12, bouton=1))
         canevas.post_message(souris(events.MouseUp, canevas, 34, 12, bouton=1))
         await pilot.pause()
-        echelle = 2 * canevas.vue.height * ZOOMS[1]
         assert canevas.vue.center == pytest.approx(
-            (depart[0] - 4 / echelle, depart[1] - 4 / echelle)
+            (depart[0] - 4 / (70 * ZOOMS[1]), depart[1] - 2 / (23 * ZOOMS[1]))
         )
         assert app.saisie is None
 
@@ -886,7 +884,7 @@ def test_le_survol_montre_la_bulle_et_le_clic_ouvre_la_liste() -> None:
     async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
         canevas = app.query_one(MapCanvas)
         colonne, ligne = anchor(canevas.vue, canevas.positions[3])
-        await pilot.hover(MapCanvas, offset=(colonne, ligne))
+        await pilot.hover(MapCanvas, offset=(colonne + 1, ligne + 1))
         await pilot.pause()
         bulle = app.query_one("#bulle")
         assert bulle.display
@@ -896,13 +894,13 @@ def test_le_survol_montre_la_bulle_et_le_clic_ouvre_la_liste() -> None:
             "gisement de ore_b, stock 20000",
             "2 sauts, 10 ticks (≈ 30 s à 3 s)",
         ]
-        assert canevas.grille[ligne][colonne].bg == "accent"
-        await pilot.click(MapCanvas, offset=(colonne + 1, ligne))
+        assert canevas.grille[ligne + 1][colonne + 2].bg == "accent"
+        await pilot.click(MapCanvas, offset=(colonne + 3, ligne + 2))
         assert app.saisie == "destination"
         assert lire(app, "#destinations").startswith("system_3 : 2 sauts")
         await pilot.press("escape")
         colonne, ligne = anchor(canevas.vue, canevas.positions[1])
-        await pilot.click(MapCanvas, offset=(colonne, ligne))
+        await pilot.click(MapCanvas, offset=(colonne + 1, ligne + 1))
         assert app.saisie is None
         assert "déjà dans system_1" in lire(app, "#barre")
 
@@ -948,3 +946,17 @@ def test_rien_de_l_application_n_importe_le_serveur() -> None:
     """Le client reçoit une simple fonction de vitesse, ou rien (Technical Plan, point 6)."""
     source = Path(__file__).resolve().parents[2] / "src" / "fourx" / "clients" / "textual_app.py"
     assert "fourx.server" not in source.read_text(encoding="utf-8")
+
+
+def test_entete_et_legende_de_la_carte() -> None:
+    async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
+        assert lire(app, "#carte-entete") == (
+            " 3 systèmes · 2 à portée · zoom ×1   molette, glisser, clic : y aller"
+        )
+        await pilot.press("z")
+        assert "zoom ×1,5" in lire(app, "#carte-entete")
+        assert lire(app, "#carte-legende") == (
+            " S1 station  ◆ ore_a  ◆ ore_b  ▲ toi  ── à portée  ··· loin, stock ?"
+        )
+
+    jouer(observation((navire(system=1),)), scenario)

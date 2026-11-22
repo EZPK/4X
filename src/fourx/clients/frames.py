@@ -15,7 +15,7 @@ from rich.style import Style
 from rich.text import Text
 from textual import events
 from textual.app import ComposeResult
-from textual.containers import VerticalScroll
+from textual.containers import Vertical, VerticalScroll
 from textual.message import Message
 from textual.strip import Strip
 from textual.widget import Widget
@@ -23,7 +23,17 @@ from textual.widgets import Static
 
 from fourx.clients.force_layout import force_layout
 from fourx.clients.guide import next_step
-from fourx.clients.map_view import Cell, View, initial_view, pan, render, system_at, zoom
+from fourx.clients.map_view import (
+    ZOOMS,
+    Cell,
+    View,
+    in_range,
+    initial_view,
+    pan,
+    render,
+    system_at,
+    zoom,
+)
 from fourx.clients.model import ClientModel, HistoryKind, decrire
 from fourx.clients.palette import PALETTE
 from fourx.clients.texts import duration_text, help_pages, minerai, station, systeme
@@ -44,6 +54,38 @@ COULEURS_DE_L_HISTORIQUE = {
 
 def couleur(role: str) -> str:
     return PALETTE[role]
+
+
+def texte_entete_carte(model: ClientModel, vue: View) -> Text:
+    """L'en-tête de la carte : le nombre de systèmes, combien sont à portée, le zoom, et les
+    gestes."""
+    obs = model.observation
+    texte = Text(" ")
+    if obs is not None:
+        portee = len(in_range(obs, model.vaisseau()))
+        texte.append(f"{len(obs.systems)} systèmes", style=couleur("texte"))
+        texte.append(f" · {portee} à portée", style=couleur("texte"))
+    zoom_affiche = f"{ZOOMS[vue.zoom_index]:g}".replace(".", ",")
+    texte.append(f" · zoom ×{zoom_affiche}", style=couleur("accent"))
+    texte.append("   molette, glisser, clic : y aller", style=couleur("texte_attenue"))
+    return texte
+
+
+def texte_legende_carte() -> Text:
+    """La légende des symboles de la carte."""
+    texte = Text(" ")
+    morceaux = [
+        ("S1", f"{couleur('fond')} on {couleur('station')}", " station  "),
+        ("◆", couleur("ore_a"), " ore_a  "),
+        ("◆", couleur("ore_b"), " ore_b  "),
+        ("▲", couleur("vaisseau"), " toi  "),
+        ("──", couleur("trait_fort"), " à portée  "),
+        ("···", couleur("trait_faible"), " loin, stock ?"),
+    ]
+    for symbole, style, libelle in morceaux:
+        texte.append(symbole, style=style)
+        texte.append(libelle, style=couleur("texte_attenue"))
+    return texte
 
 
 def texte_bulle(model: ClientModel, ident: int) -> str:
@@ -331,8 +373,11 @@ class MapCanvas(Widget):
             self.x = x
             self.y = y
 
+    class Vue(Message):
+        """La vue a changé (zoom, déplacement) : l'en-tête de la carte se met à jour."""
+
     def __init__(self) -> None:
-        super().__init__(id="carte")
+        super().__init__(id="carte-canevas")
         self.model: ClientModel | None = None
         self.positions: dict[int, tuple[float, float]] = {}
         self._graphe: tuple[tuple[int, tuple[int, ...]], ...] = ()
@@ -396,6 +441,7 @@ class MapCanvas(Widget):
     def changer_vue(self, vue: View) -> None:
         self.vue = vue
         self.dessiner()
+        self.post_message(self.Vue())
 
     def on_resize(self, event: events.Resize) -> None:
         self.vue = View(self.vue.zoom_index, self.vue.center, event.size.width, event.size.height)
@@ -463,6 +509,34 @@ class MapCanvas(Widget):
             self.survol = None
             self.dessiner()
         self.post_message(self.Survol(None, 0, 0))
+
+
+class CadreCarte(Vertical):
+    """Le cadre de la carte : l'en-tête, le canevas et la légende."""
+
+    can_focus = False
+
+    def __init__(self) -> None:
+        super().__init__(id="carte")
+        self.border_title = "Carte"
+        self.model: ClientModel | None = None
+
+    def compose(self) -> ComposeResult:
+        yield Static("", markup=False, id="carte-entete")
+        yield MapCanvas()
+        yield Static(texte_legende_carte(), markup=False, id="carte-legende")
+
+    def montrer(self, model: ClientModel) -> None:
+        self.model = model
+        canevas = self.query_one(MapCanvas)
+        canevas.montrer(model)
+        self.query_one("#carte-entete", Static).update(texte_entete_carte(model, canevas.vue))
+
+    def on_map_canvas_vue(self, message: MapCanvas.Vue) -> None:
+        if self.model is not None:
+            canevas = self.query_one(MapCanvas)
+            entete = texte_entete_carte(self.model, canevas.vue)
+            self.query_one("#carte-entete", Static).update(entete)
 
 
 class Bulle(Static):

@@ -10,7 +10,8 @@ Les positions sont dans le carré [0, 1] × [0, 1], axe des y vers le bas. Cinq 
 1. `initial_layers` : départ en couches, par distance en sauts depuis le plus petit identifiant ;
 2. `relax` : 300 itérations de répulsion, de ressorts et de rappel vers l'origine ;
 3. `normalize` : une échelle par axe : les positions remplissent le rectangle utile R ;
-4. `separate` : les boîtes des systèmes (0,135 × 0,16, vers la droite et vers le haut) sont
+4. `separate` : les boîtes des systèmes (7 × 5 cases d'une carte de 70 × 23, à partir du coin
+   en haut à gauche du cadre, vers la droite et vers le bas) sont
    écartées jusqu'à ne plus se recouvrir, en au plus 100 passes ;
 5. `snap_overlaps` : un système encore en recouvrement va au point libre le plus proche d'un
    quadrillage au quart de boîte.
@@ -29,10 +30,14 @@ ITERATIONS = 300
 PAS_INITIAL = 0.1
 DISTANCE_MINIMALE = 0.01
 RAPPEL = 0.05
-LARGEUR_BOITE = 0.135
-HAUTEUR_BOITE = 0.16
-MARGE = 0.05
-RECTANGLE_UTILE = (MARGE, MARGE + HAUTEUR_BOITE, 1 - MARGE - LARGEUR_BOITE, 1 - MARGE)
+# La boîte d'un système, dans la plus petite carte (70 × 23 cases, terminal de 120 × 36) :
+# 7 colonnes (cadre de 4, étiquette de station de 2, une de marge) et 5 lignes (cadre de 3,
+# gisement et stock, une de marge), à partir du coin en haut à gauche du cadre, plus une
+# demi-case de réserve dans chaque sens, pour que l'arrondi aux cases garde la case de marge.
+CARTE_MINIMALE = (70, 23)
+LARGEUR_BOITE = 7.5 / CARTE_MINIMALE[0]
+HAUTEUR_BOITE = 5.5 / CARTE_MINIMALE[1]
+RECTANGLE_UTILE = (0.0, 0.0, 1 - LARGEUR_BOITE, 1 - HAUTEUR_BOITE)
 PASSES_MAXIMALES = 100
 QUART = 4
 TOLERANCE = 1e-9

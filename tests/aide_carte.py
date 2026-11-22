@@ -3,14 +3,16 @@ point 7 ter, disposition de la carte) : utilisée sur 50 graines (marque `propri
 graines 1 à 2 000 (marque `lent`).
 
 Les systèmes passent par `observe(generate(graine, réglages), 1, réglages).systems`. Pour dessiner
-la ligne des vaisseaux, l'observation reçoit, par `msgspec.structs.replace`, un vaisseau du joueur
-et deux autres vaisseaux dans chaque système (« ▲2 »), et le modèle la reçoit par `on_update`.
+les vaisseaux, l'observation reçoit, par `msgspec.structs.replace`, un vaisseau du joueur et deux
+autres vaisseaux dans chaque système (« ▲2 »), et le modèle la reçoit par `on_update`. L'emprise
+d'un système est son cadre (4 × 3 cases), l'étiquette de sa station à droite du cadre, et la ligne
+de son gisement sous le cadre (◆ et le stock) ; les vaisseaux sont dans les bordures du cadre.
 """
 
 import msgspec
 
-from fourx.clients.force_layout import force_layout, recouvrement
-from fourx.clients.map_view import VIDE, View, anchor, render
+from fourx.clients.force_layout import CARTE_MINIMALE, force_layout, recouvrement
+from fourx.clients.map_view import HAUTEUR_CADRE, LARGEUR_CADRE, VIDE, View, anchor, render
 from fourx.clients.model import ClientModel
 from fourx.core import world
 from fourx.core.observe import observe
@@ -19,7 +21,7 @@ from fourx.schema.observation import Observation, OtherShipView, OwnShipView
 from fourx.schema.protocol import PROTOCOL_VERSION, TickUpdate
 from fourx.server.tunables_loader import load_tunables
 
-TAILLES = ((72, 27), (52, 21))
+TAILLES = (CARTE_MINIMALE, (100, 30))
 
 
 def observation_chargee(graine: int) -> Observation:
@@ -49,20 +51,20 @@ def observation_chargee(graine: int) -> Observation:
 def empreintes(
     vue: View, positions: dict[int, tuple[float, float]], obs: Observation
 ) -> dict[int, set[tuple[int, int]]]:
-    """Les cases que chaque système occupe au zoom 1 : pastille, gisement, ligne des vaisseaux."""
-    joueur = obs.own_ships[0].system_id
+    """Les cases que chaque système occupe : cadre, étiquette de station, ligne du gisement."""
     cases: dict[int, set[tuple[int, int]]] = {}
     for s in obs.systems:
         colonne, ligne = anchor(vue, positions[s.id])
-        siennes = {(colonne, ligne), (colonne + 1, ligne)}
-        gisements = [d for d in obs.deposits if d.system_id == s.id]
-        for rang in range(len(gisements)):
-            siennes |= {(colonne + 2 + 2 * rang, ligne), (colonne + 3 + 2 * rang, ligne)}
-        debut = colonne
-        if s.id == joueur:
-            siennes.add((colonne, ligne - 1))
-            debut += 1
-        siennes |= {(debut, ligne - 1), (debut + 1, ligne - 1)}  # « ▲2 »
+        siennes = {
+            (colonne + dx, ligne + dy) for dx in range(LARGEUR_CADRE) for dy in range(HAUTEUR_CADRE)
+        }
+        for st in obs.stations:
+            if st.system_id == s.id:
+                siennes |= {(colonne + LARGEUR_CADRE + k, ligne) for k in range(len(f"S{st.id}"))}
+        for d in obs.deposits:
+            if d.system_id == s.id:
+                stock = "?" if d.stock is None else str(d.stock)
+                siennes |= {(colonne + k, ligne + HAUTEUR_CADRE) for k in range(1 + len(stock))}
         cases[s.id] = siennes
     return cases
 

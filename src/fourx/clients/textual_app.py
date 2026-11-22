@@ -14,7 +14,7 @@ survol (bulle) et clic sur un système (liste des destinations ouverte sur sa li
 développement : p pause ou reprise, a / r accélérer / ralentir (×1, ×10, ×100), Espace avancer
 jusqu'à la prochaine alerte. L'aide s'ouvre au lancement : c'est une saisie, un widget
 superposé, et non un écran modal, pour que `FourxApp` reçoive toujours les touches. En dessous de
-100 × 30, seul un message s'affiche, et seule la touche q agit.
+120 × 36, seul un message s'affiche, et seule la touche q agit.
 """
 
 from collections.abc import Callable
@@ -29,6 +29,7 @@ from fourx.clients.frames import (
     BarreTouches,
     Bulle,
     CadreAide,
+    CadreCarte,
     CadreDestinations,
     CadreEtape,
     CadreHistorique,
@@ -47,7 +48,7 @@ from fourx.schema.orders import Command, Mine, Move
 from fourx.schema.protocol import Connection, TickUpdate
 
 PALIERS = (1, 10, 100)
-TAILLE_MINIMALE = (100, 30)
+TAILLE_MINIMALE = (120, 36)
 TAILLE_AIDE = (90, 28)
 QUITTER = "Quitter termine la partie (pas de reprise avant M5). Entrée pour confirmer."
 AIDE = "sans effet ici · d déplacer · m miner · v vendre · h aide · q quitter"
@@ -74,7 +75,15 @@ def feuille_de_style() -> str:
     #petite {{ display: none; padding: 1 2; color: {p["texte"]}; }}
     #barre {{ height: 2; background: {p["fond"]}; }}
     #corps {{ height: 1fr; }}
-    #carte {{ width: 1fr; background: {p["fond"]}; color: {p["texte"]}; }}
+    #carte {{
+        width: 1fr;
+        background: {p["fond"]};
+        color: {p["texte"]};
+        border: round {p["trait"]};
+        border-title-color: {p["texte_attenue"]};
+    }}
+    #carte-entete, #carte-legende {{ height: 1; background: {p["fond"]}; }}
+    #carte-canevas {{ height: 1fr; }}
     #droite {{ width: 47; margin-left: 1; }}
     .cadre {{
         background: {p["cadre"]};
@@ -82,7 +91,7 @@ def feuille_de_style() -> str:
         border-title-color: {p["texte_attenue"]};
         padding: 0 1;
     }}
-    #etape {{ height: 7; }}
+    #etape {{ height: 7; border: round {p["accent"]}; border-title-color: {p["accent"]}; }}
     #vaisseau {{ height: 8; }}
     #stations, #destinations {{ height: 1fr; }}
     #destinations {{ display: none; }}
@@ -140,7 +149,7 @@ class FourxApp(App[None]):
         with Vertical(id="ecran"):
             yield BarreEtat()
             with Horizontal(id="corps"):
-                yield MapCanvas()
+                yield CadreCarte()
                 with Vertical(id="droite"):
                     yield CadreEtape()
                     yield CadreVaisseau()
@@ -164,7 +173,7 @@ class FourxApp(App[None]):
         self.rafraichir()
 
     def placer(self, largeur: int, hauteur: int) -> None:
-        """Centre l'aide et son ombre ; en dessous de 100 × 30, n'affiche que le message."""
+        """Centre l'aide et son ombre ; en dessous de 120 × 36, n'affiche que le message."""
         self.taille = (largeur, hauteur)
         self.petite_fenetre = largeur < TAILLE_MINIMALE[0] or hauteur < TAILLE_MINIMALE[1]
         x = max((largeur - TAILLE_AIDE[0]) // 2, 0)
@@ -211,7 +220,7 @@ class FourxApp(App[None]):
             message = message_petite_fenetre(*self.taille)
             petite.update(message + ("\n\n" + QUITTER if self.saisie == "quitter" else ""))
             return
-        self.query_one(MapCanvas).montrer(self.model)
+        self.query_one(CadreCarte).montrer(self.model)
         self.query_one(CadreEtape).montrer(self.model)
         self.query_one(CadreVaisseau).montrer(self.model)
         self.query_one(CadreHistorique).montrer(self.model)
