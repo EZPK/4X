@@ -30,13 +30,15 @@ Conventions que ces étapes figent :
   (`scripted_miner.decide`) ;
 - réglages de test : ceux de `tunables.toml` (`load_tunables`), sauf `jump_ticks` = 5 et
   `mining_rate` = 10 ; une graine « première dont … » est la plus petite, de 1 à 1000, dont
-  `world.generate(graine, réglages)` donne le monde demandé ;
+  `world.generate(graine, réglages)` donne le monde demandé ; la condition du cycle (gisement
+  conseillé) se calcule sur l'état généré et les réglages, sans le code testé ;
 - un trajet de d sauts accepté au tick T arrive au tick T + d × `jump_ticks` − 1 ; un minage
   accepté au tick T extrait dès ce tick (Technical Plan, point 7 bis, durées affichées).
 """
 
 import importlib
 from dataclasses import dataclass, field
+from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
@@ -114,6 +116,7 @@ class Serveur:
     fin: dict[str, int] = field(default_factory=dict)
     derniers_ordres: dict[str, Any] = field(default_factory=dict)
     refus: str = ""
+    touches: list[tuple[str, ...]] = field(default_factory=list)
 
     def creer(self, nom: str, kind: str) -> int:
         actors = importer("fourx.schema.actors")
@@ -230,7 +233,99 @@ def reglages_de(nom: str) -> Any:
     return msgspec.structs.replace(reels, **changements)
 
 
-def monde_convient(etat: Any, condition: str) -> bool:
+def plafond(a: int, b: int) -> int:
+    return -(-a // b)
+
+
+def meilleure_vente(
+    etat: Any, depuis: dict[int, int], ore_id: int, quantite: int, jump_ticks: int
+) -> tuple[int, int, int]:
+    """`best_sale` (Technical Plan, point 7 ter) pour une cargaison d'un seul minerai : la station
+    de plus grand V ÷ (t + 1), puis la plus proche, puis le plus petit identifiant ; rend
+    (station, V, t). `depuis` : les distances en sauts depuis le système de départ."""
+    candidats = [
+        (s.id, quantite * s.ore_prices[ore_id - 1], depuis[s.system_id] * jump_ticks)
+        for s in etat.stations
+        if s.system_id in depuis
+    ]
+    return min(candidats, key=lambda c: (-Fraction(c[1], c[2] + 1), c[2], c[0]))
+
+
+def conseil_du_plan(etat: Any, x: int, tunables: Any) -> int:
+    """Le gisement conseillé depuis le système x, cargaison vide, selon la formule du plan
+    détaillé, point 23 octies : le couple (gisement g, station s) de plus grand G ÷ T, puis de
+    plus petit T, puis de plus petit identifiant de gisement, puis de station."""
+    cap, saut = tunables.cargo_capacity, tunables.jump_ticks
+    depuis_x = distances(etat.systems, x)
+    couples = []
+    for g in etat.deposits:
+        if g.system_id not in depuis_x:
+            continue
+        depuis_g = distances(etat.systems, g.system_id)
+        for s in etat.stations:
+            if s.system_id not in depuis_g:
+                continue
+            gain = cap * s.ore_prices[g.ore_id - 1]
+            duree = saut * (depuis_x[g.system_id] + depuis_g[s.system_id]) + plafond(
+                cap, tunables.mining_rate
+            )
+            couples.append((-Fraction(gain, duree), duree, g.id, s.id))
+    return int(min(couples)[2])
+
+
+def conseil_de_la_regle_6(etat: Any, x: int, tunables: Any) -> int:
+    """Le gisement conseillé depuis le système x, cargaison vide, selon la règle 6 du Technical
+    Plan, point 7 ter : la station de chaque gisement est celle de `best_sale` depuis son système ;
+    plus grand G ÷ T, puis plus petit T, puis plus petit identifiant de gisement."""
+    cap, saut = tunables.cargo_capacity, tunables.jump_ticks
+    depuis_x = distances(etat.systems, x)
+    candidats = []
+    for g in etat.deposits:
+        if g.system_id not in depuis_x:
+            continue
+        depuis_g = distances(etat.systems, g.system_id)
+        _, gain, trajet = meilleure_vente(etat, depuis_g, g.ore_id, cap, saut)
+        duree = saut * depuis_x[g.system_id] + plafond(cap, tunables.mining_rate) + trajet
+        candidats.append((-Fraction(gain, duree), duree, g.id))
+    return int(min(candidats)[2])
+
+
+def cycle_convient(etat: Any, tunables: Any) -> bool:
+    """Condition de graine du scénario du cycle (plan détaillé, point 23 octies). Avec les réglages
+    de test, le stock initial de chaque gisement dépasse la capacité et aucun autre vaisseau ne
+    mine : la quantité minée est `cargo_capacity` pour tout gisement. Par prudence, la graine doit
+    aussi donner le même gisement par la règle 6 telle quelle, depuis les deux systèmes : la
+    formule du plan prend la station du meilleur cycle, la règle 6 celle de `best_sale`, et les
+    deux peuvent différer."""
+    assert all(d.stock >= tunables.cargo_capacity for d in etat.deposits), "stock trop petit"
+    depart = next(s for s in etat.stations if s.id == 1).system_id
+    g0 = conseil_du_plan(etat, depart, tunables)
+    if conseil_de_la_regle_6(etat, depart, tunables) != g0:
+        return False
+    gisement = next(d for d in etat.deposits if d.id == g0)
+    if gisement.system_id in {s.system_id for s in etat.stations}:
+        return False
+    if not (
+        conseil_du_plan(etat, gisement.system_id, tunables) == g0
+        and conseil_de_la_regle_6(etat, gisement.system_id, tunables) == g0
+    ):
+        return False
+    # La vente finale (« v ») : la station retenue depuis le gisement l'emporte encore une fois
+    # sur place, ce que les prix de tunables.toml donnent, mais que rien d'autre ne vérifie.
+    cap, saut = tunables.cargo_capacity, tunables.jump_ticks
+    depuis_g0 = distances(etat.systems, gisement.system_id)
+    station, _, _ = meilleure_vente(etat, depuis_g0, gisement.ore_id, cap, saut)
+    ici = next(s for s in etat.stations if s.id == station).system_id
+    depuis_ici = distances(etat.systems, ici)
+    return meilleure_vente(etat, depuis_ici, gisement.ore_id, cap, saut)[0] == station
+
+
+def monde_convient(etat: Any, condition: str, tunables: Any) -> bool:
+    if condition == (
+        "le gisement conseillé depuis la station 1 n'est pas dans le système d'une station,"
+        " et le reste depuis son propre système"
+    ):
+        return cycle_convient(etat, tunables)
     if condition == "une station et un gisement partagent un système":
         return bool({s.system_id for s in etat.stations} & {d.system_id for d in etat.deposits})
     station_1 = next(s for s in etat.stations if s.id == 1)
@@ -279,7 +374,7 @@ def partie_serveur(
         trouvees = (
             g
             for g in range(1, LIMITE_DE_GRAINES + 1)
-            if monde_convient(world.generate(g, serveur.tunables), condition)
+            if monde_convient(world.generate(g, serveur.tunables), condition, serveur.tunables)
         )
         choisie = next(trouvees, None)
         assert choisie is not None, f"aucune graine de 1 à {LIMITE_DE_GRAINES} : {condition}"

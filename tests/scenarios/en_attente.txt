@@ -1,1 +1,6 @@
 # Une entrée par ligne : <fichier>.feature::<titre du scénario>. Voir docs/designs/niveau-2-m0-garde-fous.md, Technical Plan, point 10.
+ecrans.feature::Un refus faute de gisement du minerai demandé est traduit et dit où aller
+ecrans.feature::Un refus sur un gisement vide nomme le plus proche gisement du même minerai qui n'est pas connu comme vide
+ecrans.feature::La disposition de la carte place chaque système une fois, dans le carré, sans recouvrement, et la même à chaque appel
+ecrans.feature::La prochaine étape suit un cycle joué : aller miner, miner, aller vendre, vendre
+ecrans.feature::L'aide donne les durées lues dans l'observation
