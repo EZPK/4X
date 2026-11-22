@@ -180,17 +180,19 @@ def _centre_du_cadre(view: View, position: Position) -> Position:
 
 
 def _points(a: Position, b: Position) -> list[tuple[int, int]]:
-    """Les points Braille d'un trait de a à b, dans l'ordre (tracé de Bresenham)."""
+    """Les points Braille d'un trait de a à b, dans l'ordre (tracé de Bresenham). La boucle est
+    bornée par |dx| + |dy| + 1 points, le plus long tracé possible : aucune erreur ne peut la
+    faire tourner sans fin."""
     x0, y0 = math.floor(a[0]), math.floor(a[1])
     x1, y1 = math.floor(b[0]), math.floor(b[1])
     dx, dy = abs(x1 - x0), -abs(y1 - y0)
     sx, sy = (1 if x0 < x1 else -1), (1 if y0 < y1 else -1)
     erreur = dx + dy
     points = []
-    while True:
+    for _ in range(dx - dy + 1):
         points.append((x0, y0))
         if (x0, y0) == (x1, y1):
-            return points
+            break
         double = 2 * erreur
         if double >= dy:
             erreur += dy
@@ -198,6 +200,7 @@ def _points(a: Position, b: Position) -> list[tuple[int, int]]:
         if double <= dx:
             erreur += dx
             y0 += sy
+    return points
 
 
 def case_du_point(point: tuple[int, int]) -> tuple[int, int]:
@@ -274,9 +277,9 @@ def _etiquette(grille: _Grille, colonne: int, ligne: int, mots: list[tuple[str, 
     curseur = colonne
     for mot, fg in mots:
         debut = curseur - 1 if curseur > colonne else curseur  # l'espace qui le sépare compris
-        limite = debut
-        while not grille.occupee(limite, ligne):
-            limite += 1
+        # La première case occupée ; hors de la carte, toute case l'est.
+        cases = range(debut, grille.view.width + 1)
+        limite = next((c for c in cases if grille.occupee(c, ligne)), debut)
         if curseur + len(mot) <= limite:
             if debut < curseur:
                 grille.ecrire(debut, ligne, " ", "texte")
