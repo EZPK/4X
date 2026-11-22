@@ -13,7 +13,7 @@ Les titres de niveau 2, le statut, les mots Given / When / Then et les intitulé
 
 Ce document fixe l'architecture commune aux trois systèmes du projet :
 
-1. **le jeu**, c'est-à-dire la simulation, le serveur et le client ASCII ;
+1. **le jeu**, c'est-à-dire la simulation, le serveur et le client en mode texte (Textual), au style rétro 8 bits ([ADR 0006](../adr/0006-client-retro-8-bits.md)) ;
 2. **l'entraînement des joueurs IA** ;
 3. **l'observabilité et le pilotage**.
 

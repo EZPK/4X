@@ -1,0 +1,21 @@
+# ADR 0006 — Un client en mode texte au style rétro 8 bits, plutôt qu'un client ASCII
+
+- **Numéro :** 0006
+- **Titre :** Un client en mode texte au style rétro 8 bits, plutôt qu'un client ASCII
+- **Statut :** proposée
+- **Date :** 2026-11-22
+- **Décideur :** le propriétaire
+- **Contexte :** le niveau 1 décrit le jeu comme « la simulation, le serveur et le client ASCII » (Overview), et retient « Textual en terminal » (alternatives rejetées : la même porte au niveau des données permet de changer de client plus tard). Après la partie d'essai du 2026-11-22 (plan détaillé du niveau 2 de M1, point 23 sexies), le propriétaire juge l'écran « visible, mais vraiment pas clair » : l'information n'est pas hiérarchisée, l'aide est mince, les mécaniques ne sont pas expliquées. Il estime que l'ASCII était « une mauvaise idée au final », et demande une esthétique rétro, « 4 bits, 8 bits ou quelque chose comme ça », avec un graphe de l'univers « clair et joli », qu'on puisse zoomer, avec « une forme de gravité entre les nodes », comme le graphe d'Obsidian. Il a vu des maquettes de cet écran dans le terminal, et choisi la palette 8 bits (16 couleurs).
+- **Options :**
+  - **(a) Garder l'ASCII et le soigner :** aucune décision du niveau 1 ne change, mais un terminal en caractères seuls ne donne ni graphe disposé par forces lisible, ni zoom, ni la hiérarchie demandée.
+  - **(b) Textual dans le terminal, en style rétro 8 bits :** couleurs vraies, caractères demi-blocs (deux pixels de couleur par case), souris et molette (Textual 8.2.8 : `MouseScrollUp`, `MouseScrollDown`, `MouseMove`, clics). Le terminal, Textual, le protocole et l'observation ne changent pas ; seul le dessin du client change.
+  - **(c) Un client graphique natif en Python (bibliothèque de jeu) :** pixel art libre, mais panneaux, listes et texte à construire soi-même, et une seconde boîte à outils à tester.
+  - **(d) Un client dans le navigateur (TypeScript) :** le plus souple pour le graphe, mais un second langage, ses outils et ses tests, et le transport WebSocket avancé de M3 à M1.
+- **Décision :** (b). Le client reste un client Textual dans le terminal, mais n'est plus un client ASCII : il dessine en couleurs et en demi-blocs, au style rétro 8 bits (palette fixe de 16 couleurs), et se pilote au clavier et à la souris. Le clavier suffit toujours à tout faire.
+- **Conséquences :**
+  - le niveau 1, Overview, écrit « le client en mode texte (Textual), au style rétro 8 bits » au lieu de « le client ASCII » ; l'alternative « Textual en terminal » reste retenue, avec sa raison ;
+  - le niveau 2 de M1 reçoit un amendement 2 (l'écran rétro) : carte disposée par forces et zoomable, hiérarchie des panneaux, aide au premier lancement ; la souris et une palette de couleurs, rangées dans ses Non-Goals pour M3, entrent dès M1 ; le tutoriel complet reste à M3 ;
+  - le rendu dépend du terminal du joueur (couleurs vraies, police) : Textual dégrade les couleurs sur un terminal qui n'en a que 256 ; la police est celle du terminal, que le jeu ne choisit pas ;
+  - les tests du client passent toujours par le pilote de Textual, qui joue aussi la souris.
+- **Condition de révision :** si la partie d'essai qui suit l'amendement 2 juge encore l'écran illisible pour une raison propre au terminal (rendu, taille, police), les options (c) et (d) sont réexaminées, au plus tard au niveau 2 de M3, qui prévoit déjà un client relié par WebSocket.
+- **Section du niveau 1 modifiée :** Overview (point 1 de la liste des trois systèmes).
