@@ -26,4 +26,4 @@ Fichier `docs/adr/NNNN-titre-court.md` :
 0004 — Fourchettes de la tranche 0 — acceptée
 0005 — Visibilité par proximité — acceptée
 0006 — Un client en mode texte au style rétro 8 bits, plutôt qu'un client ASCII — acceptée
-0007 — Les liens de la carte en caractères Braille — proposée
+0007 — Les liens de la carte en caractères Braille — acceptée

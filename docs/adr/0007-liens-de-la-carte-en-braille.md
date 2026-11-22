@@ -2,7 +2,7 @@
 
 - **Numéro :** 0007
 - **Titre :** Les liens de la carte en caractères Braille
-- **Statut :** proposée
+- **Statut :** acceptée
 - **Date :** 2026-11-22
 - **Décideur :** le propriétaire
 - **Contexte :**
