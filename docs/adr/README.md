@@ -25,3 +25,4 @@ Fichier `docs/adr/NNNN-titre-court.md` :
 0003 — `observe` reçoit les réglages — acceptée
 0004 — Fourchettes de la tranche 0 — acceptée
 0005 — Visibilité par proximité — acceptée
+0006 — Un client en mode texte au style rétro 8 bits, plutôt qu'un client ASCII — proposée

@@ -1,11 +1,11 @@
 # M1 : noyau déterministe et tranche 0 (document de niveau 2)
 
 *   **Auteur :** Thomas (thom.bruyer)
-*   **Statut :** Approved (amendement 1 approuvé par le propriétaire le 2026-11-21 ; le document était Approved depuis le 2026-11-08)
-*   **Date :** 2026-11-02 ; mis à jour le 2026-11-06 (décisions du propriétaire sur le contenu du jeu ; corrections de la revue EGM, étapes 5 à 9) ; approuvé par le propriétaire le 2026-11-08 ; amendement 1 rédigé le 2026-11-12, mis à jour pendant sa revue, approuvé par le propriétaire le 2026-11-21
+*   **Statut :** Proposed (amendement 2 en revue ; le document est Approved depuis le 2026-11-08, et l'amendement 1 depuis le 2026-11-21)
+*   **Date :** 2026-11-02 ; mis à jour le 2026-11-06 (décisions du propriétaire sur le contenu du jeu ; corrections de la revue EGM, étapes 5 à 9) ; approuvé par le propriétaire le 2026-11-08 ; amendement 1 rédigé le 2026-11-12, mis à jour pendant sa revue, approuvé par le propriétaire le 2026-11-21 ; amendement 2 rédigé le 2026-11-22, en revue
 *   **Niveau 1 :** [architecture-niveau-1.md](./architecture-niveau-1.md) (CUJ 1, CUJ 4, §1 à §7, §10, §11 ligne M1)
 *   **Intentions reprises :** [RFC du brainstorm](./mmo-gestion-spatiale-ia.md), jalon « M1 – Tranche 0 ». Le niveau 1 fait foi en cas d'écart.
-*   **Amendements :** amendement 1 du 2026-11-12 (un monde plus grand, un écran lisible, le temps comme ressource, la visibilité par proximité), voir le tableau ci-dessous. ADR liées : [0003](../adr/0003-observe-recoit-les-reglages.md), [0004](../adr/0004-fourchettes-de-la-tranche-0.md) et [0005](../adr/0005-visibilite-par-proximite.md).
+*   **Amendements :** amendement 1 du 2026-11-12 (un monde plus grand, un écran lisible, le temps comme ressource, la visibilité par proximité), voir le tableau ci-dessous. ADR liées : [0003](../adr/0003-observe-recoit-les-reglages.md), [0004](../adr/0004-fourchettes-de-la-tranche-0.md) et [0005](../adr/0005-visibilite-par-proximite.md). Amendement 2 du 2026-11-22 (l'écran rétro), ADR liée : [0006](../adr/0006-client-retro-8-bits.md).
 
 Les titres de section (`##`), le statut et les intitulés du gabarit du plan (sous-titres, Type / Scope, Proposed Changes, Create / Modify / Delete) suivent le gabarit de conception d'EGM, en anglais, pour que les outils de revue s'y retrouvent. Tout le reste est en français, sauf les étiquettes Given / When / Then des CUJ (amendement 1, réécrit).
 
@@ -22,7 +22,7 @@ Les titres de section (`##`), le statut et les intitulés du gabarit du plan (so
 
 **(amendement 1)**
 
-**Amendements.** Un amendement ne renumérote jamais les passages existants, qu'une trentaine de fichiers du dépôt citent. Un point inséré entre deux points existants prend le numéro du point qui le précède, suivi de « bis », « ter »… Un CUJ ou une alternative nouveaux prennent une lettre, à la suite des lettres existantes (CUJ A ; alternatives J à AA).
+**Amendements.** Un amendement ne renumérote jamais les passages existants, qu'une trentaine de fichiers du dépôt citent. Un point inséré entre deux points existants prend le numéro du point qui le précède, suivi de « bis », « ter »… Un CUJ ou une alternative nouveaux prennent une lettre, à la suite des lettres existantes (CUJ A ; alternatives J à AH (amendement 2, réécrit)).
 
 - **Préséance.** En cas de conflit dans ce document, un passage ajouté, réécrit ou donné comme texte en vigueur par l'amendement N, sous l'une des formes de la légende ci-dessous, l'emporte sur le texte d'origine, que celui-ci soit marqué ou non, et un amendement plus récent l'emporte sur un plus ancien.
 - **Légende des marques :**
@@ -33,7 +33,7 @@ Les titres de section (`##`), le statut et les intitulés du gabarit du plan (so
   - « **Ajoutés par l'amendement N :** » : liste d'éléments ajoutés à la suite d'une liste d'origine ;
   - « **Risques ajoutés par l'amendement N :** » : tableau de risques ajouté à la suite du tableau d'origine ;
   - « (amendement N) » à la fin d'une ligne de bloc de code : ligne ajoutée ou récrite ; elle ne couvre que cette ligne ;
-  - dans le plan détaillé seulement, où le texte d'origine des points déjà rédigés ou livrés est gardé : « **Proposed Changes (amendement N, ajout) :** » ou « **Proposed Changes (amendement N, remplacement) :** », puce ajoutée à un point existant, qui complète ses puces d'origine, ou remplace celles qui portent une marque de remplacement ; « (amendement N : …) », marque en ligne qui donne la nouvelle valeur ; « *(remplacé par l'amendement N, voir …)* », « *(remplacé par l'amendement N : …)* » et « *(remplacé par l'amendement N, voir … : …)* » : le passage d'origine est gardé mais ne vaut plus, et le renvoi ou le texte qui suit les deux-points donne le texte en vigueur.
+  - dans le plan détaillé seulement, où le texte d'origine des points déjà rédigés ou livrés est gardé : « **Proposed Changes (amendement N, ajout) :** » ou « **Proposed Changes (amendement N, remplacement) :** », puce ajoutée à un point existant, qui complète ses puces d'origine, ou remplace celles qui portent une marque de remplacement ; « (amendement N : …) », marque en ligne qui donne la nouvelle valeur ; « *(remplacé par l'amendement N, voir …)* », « *(remplacé par l'amendement N : …)* » et « *(remplacé par l'amendement N, voir … : …)* » : le passage d'origine est gardé mais ne vaut plus, et le renvoi ou le texte qui suit les deux-points donne le texte en vigueur. **(amendement 2, précisé)** Le Verification Plan fait partie du plan détaillé.
 - **Portée des marques :**
   - une marque placée dans un titre couvre toute la section ;
   - une marque seule sur sa ligne couvre tout ce qui suit, jusqu'au prochain titre, même quand elle suit elle-même un titre ;
@@ -41,11 +41,12 @@ Les titres de section (`##`), le statut et les intitulés du gabarit du plan (so
   - une marque placée après une phrase d'introduction couvre la liste qui suit ;
   - une marque d'ajout (« (amendement N) » ou « (amendement N, précisé) ») placée en tête d'une phrase qui n'ouvre pas son paragraphe couvre cette phrase et la suite, jusqu'à la fin du paragraphe où elle se trouve, dans une puce ou un objectif compris ;
   - placée ailleurs, une marque de réécriture ou de remplacement ne couvre que la phrase ou le membre de phrase qui la précède.
-- **Code livré.** Les volets A et B (plan détaillé, points 15 à 23) sont livrés ; les points 23 bis à 23 sexies, ajoutés par l'amendement, ne le sont pas. Le texte d'origine non marqué des points 15 à 23 décrit le code fusionné, que l'amendement appelle « code d'origine », à une exception près : depuis le correctif de la pull request n° 22, la touche `v` vend le minerai le plus abondant, et non toute la cargaison.
+- **Code livré.** Les volets A et B (plan détaillé, points 15 à 23) sont livrés ; les points 23 bis à 23 sexies, ajoutés par l'amendement 1, sont livrés (pull requests n° 23 à 27, et partie d'essai du 2026-11-22) (amendement 2, réécrit). Le texte d'origine non marqué des points 15 à 23 décrit le code fusionné, que l'amendement appelle « code d'origine », à une exception près : depuis le correctif de la pull request n° 22, la touche `v` vend le minerai le plus abondant, et non toute la cargaison. **(amendement 2, précisé)** Les points 23 septies à 23 undecies, ajoutés par l'amendement 2, ne le sont pas. Le *code de l'amendement 1* est le code de `main` à la fusion du point 23 quinquies.
 
 | N° | Date | Objet | Passages touchés | Dossier de revue |
 | :-- | :-- | :-- | :-- | :-- |
 | 1 | 2026-11-12, mis à jour pendant la revue jusqu'au 2026-11-21 | un monde plus grand, un écran lisible, le temps comme ressource, la visibilité par proximité ; à la suite de la partie de test du 2026-11-11 | conventions ; Overview ; The Problem ; objectifs 1, 5, 6 et 11 à 16 ; Non-Goals ; Open Questions ; introduction des CUJ, CUJ A ; Technical Plan, vue d'ensemble, points 1, 2, 5, 6, 7, 7 bis, 8, 9, 11, 12, 13 ; introduction des alternatives, alternatives J à AA ; Risks & Mitigations ; Additional Resources ; Future Improvements ; plan détaillé, points 5, 17, 20, 22, 23, 23 bis à 23 sexies, 25, 27, 28, 28 bis, 29, 32 bis ; Verification Plan | `docs/revues/2026-11-12-niveau-2-m1-noyau-amendement-1/` |
+| 2 (amendement 2) | 2026-11-22, mis à jour pendant la revue | l'écran rétro : style 8 bits, carte disposée par forces et zoomable, information hiérarchisée, aide au lancement ; à la suite de la partie d'essai du 2026-11-22 | en-tête (statut, date, puce Amendements, numérotation des amendements, légende des marques, code livré) ; Overview ; The Problem ; objectifs 11, 12 et 17 à 19 ; Non-Goals ; Open Questions ; CUJ A ; Technical Plan, vue d'ensemble, points 1, 7 bis, 7 ter, 12 et 13 ; introduction des alternatives, alternatives AB à AH ; Risks & Mitigations ; Additional Resources ; Future Improvements ; plan détaillé, introduction, palier 3, points 23 quater, volet B ter (points 23 septies à 23 undecies), 28 bis ; Verification Plan | `docs/revues/2026-11-22-niveau-2-m1-noyau-amendement-2/` |
 
 
 --------------------------------------------------------------------------------
@@ -88,6 +89,10 @@ L'amendement 1 change quatre choses dans M1, avant le volet C (rejeu, divergence
 
 L'amendement redimensionne aussi le test d'économie du volet C : les fenêtres passent de 1 000 à 10 000 ticks, et ses bornes deviennent larges : au moins une vente par fenêtre, une émission sous un plafond tiré de la carte de la partie de référence (graine 1), et une destruction égale à la somme des taxes.
 
+**(amendement 2)**
+
+L'amendement 2 refait l'écran du client, sans toucher aux règles, au protocole ni à l'observation : un style rétro 8 bits dans le terminal (couleurs et caractères demi-blocs ▀ ▄, ADR 0006) ; une carte de l'univers disposée par forces (les systèmes se repoussent, les liens les retiennent), qu'on zoome et qu'on déplace à la souris ou au clavier ; une information hiérarchisée autour d'un cadre « Prochaine étape » ; une aide, ouverte au lancement de chaque partie, qui explique les mécaniques. Pour la disposition et le rendu, il remplace le point 2 de la liste ci-dessus : l'écran a désormais des couleurs, et ses cadres sont ceux du Technical Plan, point 7 ter.
+
 ## The Problem
 
 Le niveau 1 fixe les interfaces et les invariants, mais aucun code ne les met encore en œuvre. Tant qu'un premier noyau n'existe pas, trois choses restent inconnues :
@@ -118,6 +123,10 @@ Ces changements ont des conséquences, que l'amendement traite :
 - **Le client ne connaît pas les durées.** Il ne voit que l'observation, et le niveau 1 interdit tout autre canal vers le joueur (niveau 1, §5).
 - **Le PNJ doit savoir choisir parmi plusieurs gisements et plusieurs stations.** Sa politique change de version, en restant simple.
 
+**(amendement 2)**
+
+**La partie d'essai du 2026-11-22.** À la partie d'essai du plan détaillé, point 23 sexies, sur l'écran unique de l'amendement 1 (point 23 quinquies), le propriétaire juge que « l'écran est visible, mais l'interface est vraiment pas claire. L'information n'est pas hiérarchisée. C'est très difficile de comprendre ce qui se passe, il n'y a pas beaucoup d'aide, il n'y a pas de tuto, il n'y a pas d'explication sur les mécaniques ». L'objectif 12 n'est donc pas atteint. Il estime que l'ASCII était « une mauvaise idée au final », et demande une esthétique rétro, 4 ou 8 bits, avec un graphe de l'univers « clair et joli », qu'on puisse zoomer, avec « une forme de gravité entre les nodes », comme le graphe d'Obsidian. Il a vu des maquettes de cet écran dans le terminal (hors du dépôt), les a jugées « pas mal du tout », et a choisi la palette 8 bits. Il valide la boucle de jeu actuelle (objectif 11), avec une réserve : elle devra être étoffée par des mécaniques qui interagissent entre elles, attendues des jalons suivants (par exemple les pirates, M6). Pendant la revue, il a retenu une carte fixe, la souris sans mini-carte, deux pull requests de fonctionnalité, un verdict sur l'écran qui ne bloque pas la livraison de M1, et une prochaine étape qui conseille le cycle au meilleur gain par tick (Technical Plan, point 1, décisions du 2026-11-22).
+
 ## Goals
 
 Chaque objectif est vérifiable par un contrôle automatique, ou validé explicitement par le propriétaire quand le document le dit.
@@ -146,7 +155,7 @@ Chaque objectif est vérifiable par un contrôle automatique, ou validé explici
    *Vérification :* la mesure figure dans le compte rendu de M1, avec la commande qui l'a produite.
 10. **Les identifiants du glossaire sont fixés.** Chaque terme marqué « à fixer au niveau 2 de M1 » reçoit son identifiant du code, et le glossaire est mis à jour.
     *Vérification :* plus aucune entrée du glossaire ne porte « à fixer au niveau 2 de M1 ».
-11. **Le propriétaire valide la boucle de jeu.** Après avoir joué, il déclare que la boucle extraire, transporter, vendre lui convient. C'est une validation subjective, assumée par le niveau 1, §11. **(amendement 1, précisé)** Il la valide sur le client et le monde de l'amendement, en mode développement accéléré pour l'enchaînement des étapes du cycle (à la période nominale, un cycle dure par exemple 5 minutes pour un gisement dans le système d'une station, 85 minutes pour un gisement à deux sauts, et davantage plus loin), et sur au moins un saut complet joué à la période nominale (20 minutes avec les valeurs initiales) pour le rythme.
+11. **Le propriétaire valide la boucle de jeu.** Après avoir joué, il déclare que la boucle extraire, transporter, vendre lui convient. C'est une validation subjective, assumée par le niveau 1, §11. **(amendement 1, précisé)** Il la valide sur le client et le monde de l'amendement, en mode développement accéléré pour l'enchaînement des étapes du cycle (à la période nominale, un cycle dure par exemple 5 minutes pour un gisement dans le système d'une station, 85 minutes pour un gisement à deux sauts, et davantage plus loin), et sur au moins un saut complet joué à la période nominale (20 minutes avec les valeurs initiales) pour le rythme. **(amendement 2, précisé)** Le propriétaire l'a validée le 2026-11-22, avec une réserve : les jalons suivants devront l'étoffer de mécaniques qui interagissent entre elles.
 
     *Vérification :* sa décision, consignée dans le compte rendu de M1 avec la graine et les paliers de vitesse joués (amendement 1, réécrit).
 12. **(amendement 1) Le propriétaire lit l'écran sans se perdre.** Après une partie, il déclare savoir à tout moment :
@@ -157,7 +166,8 @@ Chaque objectif est vérifiable par un contrôle automatique, ou validé explici
     - pourquoi un ordre a été refusé.
 
     C'est un jugement subjectif, distinct de l'objectif 11.
-    *Vérification :* sa décision, consignée dans le compte rendu de M1. Pour la part automatique, des tests du pilote de Textual, sur un terminal de 80 × 24 et sur un monde de 12 systèmes, vérifient pour chaque état du vaisseau que ces informations figurent dans leur cadre, au besoin après défilement du cadre Carte : le test lit le contenu du cadre. Des tests avec `Game.advance` vérifient que chaque durée affichée est égale au nombre de ticks observé avant l'événement, quand aucun autre vaisseau ne mine le même gisement.
+
+    *Vérification (amendement 2, réécrit) :* sa décision, rendue après la partie d'essai de l'amendement 2 (plan détaillé, point 23 undecies) et consignée dans le compte rendu de M1 ; elle ne bloque pas la livraison de M1 (point 23 undecies). Pour la part automatique, des tests du pilote de Textual, sur un terminal de 120 colonnes × 36 lignes et sur un monde de 12 systèmes, vérifient pour chaque état du vaisseau que ces informations figurent dans les cadres de texte : la position et l'état dans « Vaisseau » et « Prochaine étape » ; les ticks restants dans les mêmes cadres ; l'emplacement de chaque minerai et les prix dans « Stations » ; les ordres en attente dans « Vaisseau » ; les refus dans « Historique ». La carte n'est pas lue par ces tests : elle a ses propres tests (objectif 17). Des tests avec `Game.advance` vérifient que chaque durée affichée est égale au nombre de ticks observé avant l'événement, quand aucun autre vaisseau ne mine le même gisement.
 13. **(amendement 1) Le temps est une ressource, et les durées sont des règles.** Un saut dure `jump_ticks` ticks (400 dans les valeurs initiales). Remplir une cargaison vide prend `cargo_capacity` ÷ `mining_rate` ticks (100). La vente reste instantanée. Les durées sont en ticks ; les minutes ne sont qu'une estimation d'affichage, à la période nominale de 3 s.
     *Vérification :* un scénario sur les vrais réglages : les durées lues dans `observation.public_tunables` sont celles de `tunables.toml`, un trajet observé dure `jump_ticks` ticks, et la cargaison n'est pleine qu'au bout de `cargo_capacity` ÷ `mining_rate` ticks de minage. Aucun test ne vérifie la valeur 400 : `tunables.toml` fait foi. Un changement de réglage change `rules_version` ; `RULES_REVISION` reste à 0.
 14. **(amendement 1) Le joueur connaît les durées par l'observation seule.** `observe` reçoit les réglages et publie, dans l'observation, une vue des réglages publics : `jump_ticks` et `mining_rate`. La capacité est déjà dans la vue du vaisseau, et la taxe dans l'événement de vente. Aucun autre canal n'apporte d'information du jeu au joueur ; la fonction de rappel de vitesse (objectif 6) commande l'horloge locale sans rien apporter du jeu. L'ADR 0003 change l'interface du niveau 1.
@@ -166,6 +176,12 @@ Chaque objectif est vérifiable par un contrôle automatique, ou validé explici
     *Vérification :* un test rejoue le journal d'une partie jouée en accéléré et retrouve ses empreintes ; `speed.jsonl` garde la période initiale et chaque changement.
 16. **(amendement 1) Le monde est plus grand, et sa taille vient de la graine.** `world.generate` tire, de façon déterministe, 8 à 12 systèmes reliés en un graphe connexe, 4 à 6 gisements (au moins deux par minerai), 2 à 3 stations, et `__main__.py` crée 3 à 5 PNJ (nombre tiré par `core.world.npc_count`). Une station et un gisement peuvent partager un système. Chaque station rachète chaque minerai à son prix fixe, lu dans les réglages. L'ADR 0004 élargit les fourchettes du CUJ 1.
     *Vérification :* des tests de propriétés sur de nombreuses graines (tailles dans les fourchettes, graphe connexe, au moins deux gisements de chaque minerai, même monde pour la même graine sous deux `PYTHONHASHSEED`, comparé par un test qui lance la génération dans deux sous-processus) ; le scénario du CUJ 1 joue sur un monde généré, sans supposer sa forme.
+17. **(amendement 2) La carte montre tous les systèmes à la fois.** Au zoom 1, la carte montre tous les systèmes sans déplacement de la vue. Ils sont disposés par forces : ils se repoussent, les liens les retiennent ; la disposition est calculée une fois par partie, et la carte ne bouge pas quand les vaisseaux bougent. La carte se zoome et se déplace à la souris et au clavier ; le survol d'un système affiche une bulle d'information (sites, stock, distance) ; un clic sur un système ouvre la liste des destinations sur ce système. Les systèmes à portée se distinguent des autres, et la route et la position du vaisseau se voient, même pendant un saut.
+    *Vérification :* des tests de la disposition (même résultat à chaque appel, chaque système placé une fois dans le carré, aucun recouvrement des boîtes ni des cases de la grille, sur de nombreuses graines) ; des tests de la vue (projection, zoom, déplacement, système sous le pointeur, grille dessinée) ; des tests du pilote de Textual pour le zoom, le déplacement, le clic et la bulle ; le verdict du propriétaire (plan détaillé, point 23 undecies).
+18. **(amendement 2) L'écran dit quoi faire ensuite.** Un cadre « Prochaine étape », en tête de la colonne de droite, donne l'action utile suivante, sa durée et sa touche, à partir de l'observation et de l'état du client (alertes, ordres envoyés, gisements vus vides), sans autre source d'information du jeu. À l'arrêt, il conseille le cycle (aller miner, miner, aller vendre) qui rapporte le plus par tick. L'information est hiérarchisée : à droite, prochaine étape, puis vaisseau, puis stations ; à gauche, la carte ; en bas, l'historique.
+    *Vérification :* des tests de la fonction qui calcule la prochaine étape, règle par règle ; un scénario qui la suit au long d'un cycle joué ; le verdict du propriétaire (point 23 undecies).
+19. **(amendement 2) Les mécaniques sont expliquées dans le jeu.** Une aide « Comment jouer » s'ouvre au lancement de chaque partie et sur la touche `h` : les trois étapes de la boucle (miner, transporter, vendre) avec leurs touches et leurs durées, lues dans l'observation ; ce que l'on voit et ne voit pas ; la durée d'un tick ; un premier objectif, vendre une première cargaison ; les touches.
+    *Vérification :* des tests des textes de l'aide, comparés en entier ; des tests du pilote de Textual (ouverture au lancement, touche `h`, fermeture par Entrée, Échap et `h`) ; un scénario qui vérifie que les durées de l'aide sont celles de l'observation ; le verdict du propriétaire (point 23 undecies).
 
 ## Non-Goals
 
@@ -186,8 +202,9 @@ Chaque objectif est vérifiable par un contrôle automatique, ou validé explici
 
 *   **Le « fun ».** Il est attendu des mécaniques des jalons suivants.
 *   **Un monde au-delà des fourchettes, ou un troisième minerai.** Le monde reste petit : 12 systèmes au plus, deux minerais.
-*   **La disposition définitive de l'écran.** L'amendement fixe une première disposition simple, faite de cadres indépendants. Elle n'est pas figée.
-*   **La souris, les thèmes de couleur, le tutoriel et le mode rejeu du client** (M3).
+*   **(amendement 2, réécrit) La disposition définitive de l'écran.** L'amendement 2 fixe la disposition du Technical Plan, point 7 ter, faite de cadres indépendants. Elle n'est pas figée.
+*   **(amendement 2, réécrit) Le tutoriel complet, le choix entre plusieurs thèmes de couleur et le mode rejeu du client** (M3). L'amendement 2 apporte la souris, une seule palette 8 bits et une aide ouverte au lancement de chaque partie.
+*   **(amendement 2) Une carte animée et une mini-carte.** La disposition est calculée une fois (décision du propriétaire, 2026-11-22, alternative AF) ; la mini-carte sert peu sur 8 à 12 systèmes (Future Improvements).
 *   **Une flotte : plusieurs vaisseaux pour un même personnage.** Chaque personnage, humain ou PNJ, a un vaisseau. Il n'y a pas non plus de types de vaisseaux, de lasers de minage ni de distances variables. Plus tard, la durée d'un minage dépendra du laser du vaisseau et de la capacité de sa cargaison, et celle d'un saut de sa vitesse et de la distance. À M1, tous les sauts entre voisins ont la même durée.
 *   **Les dommages.** Il n'y en a pas à M1. Les alertes de dommages viendront avec eux.
 *   **D'autres alertes que la fin du minage et l'arrivée à destination.** La table des alertes sera retravaillée plus tard (ventes, refus, dommages).
@@ -206,6 +223,8 @@ Aucune question ouverte. Le propriétaire a confirmé, le 2026-11-08, toutes les
 
 **(amendement 1)** L'amendement n'ouvre aucune question. La mise en veille de l'ordinateur portable, qui n'a d'effet ni sur les règles ni sur le rejeu, est un risque, que mesure un essai au plan détaillé, point 23 quater.
 
+**(amendement 2)** L'amendement 2 n'ouvre aucune question : les cinq décisions posées pendant sa revue ont été prises par le propriétaire le 2026-11-22, et rejoignent le tableau du Technical Plan, point 1.
+
 ## Critical User Journeys (CUJs)
 
 **(amendement 1)**
@@ -214,7 +233,7 @@ Cette section est ajoutée par l'amendement 1. Le CUJ 1 et le CUJ 4 du niveau 1 
 
 ### CUJ A : un cycle complet, lu sur l'écran (amendement 1)
 
-*   **Given :** une partie locale vient de démarrer. Le vaisseau du propriétaire est dans le système d'une station, cargaison vide. L'écran montre la carte en graphe, les gisements de chaque minerai (stock connu pour les seuls gisements proches), les prix de chaque station, les vaisseaux proches (dans son système et les systèmes voisins) et la barre d'état (tick, solde ; en mode développement, la vitesse demandée).
+*   **Given :** une partie locale vient de démarrer. Le vaisseau du propriétaire est dans le système d'une station, cargaison vide. L'écran montre la carte en graphe, les gisements de chaque minerai (stock connu pour les seuls gisements proches), les prix de chaque station, les vaisseaux proches (dans son système et les systèmes voisins) et la barre d'état (tick, solde ; en mode développement, la vitesse demandée). **(amendement 2, précisé)** L'aide « Comment jouer » est ouverte au démarrage ; il la ferme par Entrée. L'écran est celui du Technical Plan, point 7 ter.
 *   **When :** il choisit dans la liste des destinations le système d'un gisement, confirme, puis (en mode développement) accélère l'univers. À l'arrivée, il mine ; à la fin du minage, il va à la station de son choix et vend.
 *   **Then :**
     - avant de confirmer un déplacement, il voit son coût : nombre de sauts, ticks, et une estimation en minutes à la période nominale ;
@@ -231,7 +250,7 @@ Cette section est ajoutée par l'amendement 1. Le CUJ 1 et le CUJ 4 du niveau 1 
 
 **(amendement 1)**
 
-**Vue d'ensemble.** Les passages de l'amendement s'insèrent dans les points existants du Technical Plan, sous les formes de la légende des marques (en-tête) ; le texte d'origine qu'ils remplacent est récrit sur place, avec la marque « (amendement 1, réécrit) ». Rien n'est renuméroté : le point 7 bis est nouveau.
+**Vue d'ensemble.** Les passages de l'amendement s'insèrent dans les points existants du Technical Plan, sous les formes de la légende des marques (en-tête) ; le texte d'origine qu'ils remplacent est récrit sur place, avec la marque « (amendement 1, réécrit) ». Rien n'est renuméroté : le point 7 bis est nouveau. **(amendement 2, précisé)** L'amendement 2 ajoute de même le point 7 ter.
 
 ```text
              graine + réglages
@@ -258,7 +277,7 @@ Cette section est ajoutée par l'amendement 1. Le CUJ 1 et le CUJ 4 du niveau 1 
 
 ### 1. Décisions prises pour M1
 
-**Règle de rédaction (propriétaire, 2026-11-02).** M1 fait le minimum possible **dans le cadre déjà fixé** par le niveau 1. Ce document ne réduit aucune exigence du niveau 1, n'en ajoute aucune sauf le seuil de mutation ci-dessous et les objectifs 12 à 16, et ne le change que par les ADR 0003 à 0005 (amendement 1, réécrit) : chaque contrôle obligatoire de M1 est livré. Quand une question de contenu du jeu a plusieurs réponses, la plus petite qui respecte le niveau 1 est retenue. **(amendement 1, précisé)** Les décisions du propriétaire prises pour l'amendement 1, du 2026-11-12 au 2026-11-21, priment aussi sur cette règle du minimum : elles vont au-delà (objectifs 12 à 16).
+**Règle de rédaction (propriétaire, 2026-11-02).** M1 fait le minimum possible **dans le cadre déjà fixé** par le niveau 1. Ce document ne réduit aucune exigence du niveau 1, n'en ajoute aucune sauf le seuil de mutation ci-dessous et les objectifs 12 à 19, et ne le change que par les ADR 0003 à 0006 (amendement 2, réécrit) : chaque contrôle obligatoire de M1 est livré. Quand une question de contenu du jeu a plusieurs réponses, la plus petite qui respecte le niveau 1 est retenue. **(amendement 1, précisé)** Les décisions du propriétaire prises pour l'amendement 1, du 2026-11-12 au 2026-11-21, priment aussi sur cette règle du minimum : elles vont au-delà (objectifs 12 à 16). **(amendement 2, précisé)** Les décisions du propriétaire du 2026-11-22 (écran rétro, objectifs 17 à 19, et les lignes datées du 2026-11-22 du tableau ci-dessous) priment de même. Le critère de sortie de M1 (niveau 1, §11, « client Textual minimal ») ne change pas : le verdict sur l'écran rétro ne bloque pas la livraison (plan détaillé, point 23 undecies).
 
 **Décisions sur le contenu du jeu (propriétaire, 2026-11-06).** Après la rédaction, pendant la revue de l'univers et de la conception du jeu (documents hors de `main`), le propriétaire a tranché quatre points du contenu de la tranche 0. Ils priment sur la règle du minimum et figurent dans le tableau ci-dessous (lignes datées du 2026-11-06, sans autre mention). Aucun ne change le niveau 1.
 
@@ -279,7 +298,7 @@ Cette section est ajoutée par l'amendement 1. Le CUJ 1 et le CUJ 4 du niveau 1 
 | Visibilité de la vente (2026-11-06) | le vendeur voit sa vente, son paiement et sa taxe dans un événement privé ; les écritures du registre et les compteurs d'émission et de destruction relèvent de l'administration ; aucun acteur ne voit le portefeuille d'un autre | décision du propriétaire (personne ne voit le compte en banque d'un autre, ni l'argent créé par le jeu) ; le niveau 1, CUJ 1, exige que le client affiche le paiement |
 | Argent de départ (2026-11-06) | aucun : tout portefeuille commence à zéro ; le vaisseau de départ est une dotation, sans écriture | décision du propriétaire |
 | Arrondi de la taxe | vers le haut, au profit du compte de destruction | proposition de l'agent de code, confirmée par le propriétaire le 2026-11-08 : arrondie vers zéro, une taxe s'annulerait sur des ventes découpées en petits lots |
-| Seuil de mutation | le contrôle `mutation` échoue si un fichier nouveau de `core` ou de `schema` a moins de 80 % de mutants tués ; la mutation complète du noyau, de nuit, aussi ; le seuil est revu au plan détaillé, point 28 bis | proposition de l'agent de code, confirmée par le propriétaire le 2026-11-08, exigence ajoutée au niveau 1, comme les objectifs 12 à 16 de l'amendement (amendement 1, réécrit) : à M1, tous les fichiers sont nouveaux, donc la règle du niveau 1 (« jamais inférieur au score de `main` ») ne vérifie rien sans plancher ; il est limité à `core` et `schema`, où les mutants équivalents sont rares, et non au code d'entrées et de sorties |
+| Seuil de mutation | le contrôle `mutation` échoue si un fichier nouveau de `core` ou de `schema` a moins de 80 % de mutants tués ; la mutation complète du noyau, de nuit, aussi ; le seuil est revu au plan détaillé, point 28 bis | proposition de l'agent de code, confirmée par le propriétaire le 2026-11-08, exigence ajoutée au niveau 1, comme les objectifs 12 à 19 des amendements (amendement 2, réécrit) : à M1, tous les fichiers sont nouveaux, donc la règle du niveau 1 (« jamais inférieur au score de `main` ») ne vérifie rien sans plancher ; il est limité à `core` et `schema`, où les mutants équivalents sont rares, et non au code d'entrées et de sorties |
 | Résultats d'ordre | `State` garde les événements et les résultats d'ordre du dernier tick ; la réception applique la validation sans état (niveau 1, §2) ; un ordre qu'elle refuse est quand même journalisé, avec son code de refus, et `step` le refuse avec ce code, sans autre contrôle | proposition de l'agent de code, confirmée par le propriétaire le 2026-11-08, dans le cadre du niveau 1, §2 (la réception fait les contrôles sans état, `step` ceux qui dépendent de l'état) : `observe` ne lit que l'état et le joueur n'a pas d'autre canal que l'observation (niveau 1, §5) ; le refus de la réception doit donc passer par le journal, puis par `step`, pour arriver dans l'observation et être reproduit au rejeu |
 | Ordres d'un même tick | un seul ordre examiné par vaisseau et par tick, celui de plus petit numéro, comme pour le quota ; les autres sont refusés (« ordre remplacé ») ; tout ordre sur un vaisseau en route est refusé | proposition de l'agent de code, confirmée par le propriétaire le 2026-11-08 : sinon deux ventes validées contre le même état pourraient vendre plus que la cargaison (invariant 3) |
 | Partie de référence | jouée une fois par ses `npc_count(1, réglages)` PNJ (amendement 1, réécrit) à la régénération des références ; son journal des ordres soumis est exporté en JSONL versionné, avec ses empreintes, dans `tests/references/` ; le contrôle `rejeu` l'importe et le rejoue par `step` seul, avec l'outil de rejeu de `tools` | proposition de l'agent de code, confirmée par le propriétaire le 2026-11-08 : sinon un changement du PNJ ou du serveur, sans changement de règle, changerait les empreintes et ferait monter `rules_version`, que M4 enregistre et que M5 compare au déploiement |
@@ -296,6 +315,11 @@ Cette section est ajoutée par l'amendement 1. Le CUJ 1 et le CUJ 4 du niveau 1 
 | PNJ (amendement 1) | `scripted_miner` version 2 (règle au point 7), qui retient les gisements vus vides ; en mode avec horloge, la tâche de relais lui transmet les mises à jour | décisions du propriétaire (2026-11-12 et 2026-11-21) ; la politique reste simple : elle choisit le minerai et la station par le prix, sans peser la durée du trajet ; exception : un vaisseau déjà dans le système d'une station y vend (règle 1) |
 | Colocalisation (amendement 1) | une station et un gisement peuvent partager un système | décision du propriétaire (2026-11-12) : un gisement dans le système d'une station peut s'épuiser vite, et l'épuisement oblige joueurs et PNJ à aller miner ailleurs ; voir l'alternative AA |
 | Prix des stations (amendement 1) | `station_ore_prices` = [[10, 15], [12, 12], [8, 18]] | proposition de l'agent de code, confirmée par le propriétaire le 2026-11-12 ; la station 1 garde les prix d'origine |
+| (amendement 2) Carte de l'écran rétro | disposition calculée une fois par partie, sans animation (alternative AF) | décision du propriétaire, 2026-11-22 |
+| (amendement 2) Souris | molette, glisser, survol et clic ; pas de mini-carte (Future Improvements) | décision du propriétaire, 2026-11-22 |
+| (amendement 2) Découpage du code de l'écran | deux pull requests de fonctionnalité : cadres, prochaine étape, aide et palette (plan détaillé, point 23 nonies), puis la carte (point 23 decies) | décision du propriétaire, 2026-11-22 |
+| (amendement 2) Verdict sur l'écran rétro | il ne bloque pas la livraison de M1 ; le volet C avance en parallèle (plan détaillé, volet B ter et point 23 undecies) | décision du propriétaire, 2026-11-22 |
+| (amendement 2) Conseil de la prochaine étape, à l'arrêt | le cycle qui rapporte le plus par tick (Technical Plan, point 7 ter ; alternative AH) | décision du propriétaire, 2026-11-22 |
 
 ### 2. Les règles de la tranche 0
 
@@ -509,41 +533,17 @@ Le décodage de `tunables.toml` en `Tunables` vérifie en plus : chaque minimum 
 2. **Cargaison pleine, ailleurs :** aller à la station qui paie le mieux le minerai le plus abondant de la cargaison (à prix égal, la plus proche en sauts, puis le plus petit identifiant).
 3. **Sinon :** viser le minerai qui a le meilleur prix, toutes stations confondues (à prix égal, le plus petit identifiant de minerai). Aller au plus proche des gisements de ce minerai qui ne sont pas dans la liste des gisements vus vides, en sauts puis par identifiant, puis miner. Si tous les gisements de ce minerai sont dans la liste, faire de même avec l'autre minerai ; si aucun gisement ne convient, rester à l'arrêt. Un vaisseau qui trouve un gisement vide va donc miner ailleurs, plus loin s'il le faut ; il ne pèse ni le temps de trajet ni la rentabilité (Non-Goals, « Un PNJ plus habile »).
 
-La distance en sauts se calcule par une seule fonction publique, `distances(systems, start)` de `policies/geometry.py` (parcours en largeur sur les voisins de l'observation, par identifiant croissant). Le client la réutilise pour la carte, le coût d'un déplacement et les messages de refus, sans dupliquer le parcours, et `most_abundant(cargo)` de `policies/cargo.py` pour l'ordre des ventes. Ces deux modules n'ont aucune logique de décision : changer la politique ne les touche pas. Les contrats d'imports permettent à `clients` d'importer `policies`. Le PNJ n'émet un ordre que si l'activité voulue diffère de l'activité observée. Avec les prix proposés, tous les PNJ visent `ore_b`. Après leur première vente, tous ceux qui ne bouclent pas sur un gisement situé dans le système d'une autre station (règle 1) se retrouvent à la station qui paie le mieux `ore_b`, et minent donc le même gisement, le plus proche de cette station : dans l'essai cité dans Additional Resources, tous les PNJ minent un seul gisement dans environ 78 % des mondes, et deux gisements dans environ 22 %. Miné par cinq PNJ, un gisement dans le système d'une station se vide en environ 4 040 ticks. Le propriétaire accepte cet entassement, la référence scriptée devant rester simple.
+La distance en sauts se calcule par une seule fonction publique, `distances(systems, start)` de `policies/geometry.py` (parcours en largeur sur les voisins de l'observation, par identifiant croissant). Le client la réutilise pour la carte, le coût d'un déplacement et les messages de refus, sans dupliquer le parcours, et `most_abundant(cargo)` de `policies/cargo.py` pour l'ordre des ventes. Ces deux modules n'ont aucune logique de décision : changer la politique ne les touche pas. **(amendement 2, précisé)** Le client importe aussi `scripted_miner.mettre_a_jour`, pour tenir l'ensemble des gisements vus vides que la prochaine étape écarte (point 7 ter) ; il n'appelle pas `decide`. Les contrats d'imports permettent à `clients` d'importer `policies`. Le PNJ n'émet un ordre que si l'activité voulue diffère de l'activité observée. Avec les prix proposés, tous les PNJ visent `ore_b`. Après leur première vente, tous ceux qui ne bouclent pas sur un gisement situé dans le système d'une autre station (règle 1) se retrouvent à la station qui paie le mieux `ore_b`, et minent donc le même gisement, le plus proche de cette station : dans l'essai cité dans Additional Resources, tous les PNJ minent un seul gisement dans environ 78 % des mondes, et deux gisements dans environ 22 %. Miné par cinq PNJ, un gisement dans le système d'une station se vide en environ 4 040 ticks. Le propriétaire accepte cet entassement, la référence scriptée devant rester simple.
 
 ### 7 bis. L'écran unique (amendement 1)
 
 **Architecture du client.** `FourxApp` ne garde que l'affichage et les touches. La logique vit dans des modules purs, testés sans Textual et mutés sans plancher (le plancher de 80 % ne vaut que pour `core` et `schema`, Technical Plan, point 1) :
 - `clients/model.py` : `ClientModel`, l'état du client. Il garde la dernière observation, les ordres envoyés sans résultat (numéro → commande), la file de vente, les alertes non acquittées et l'historique. Il reçoit une mise à jour et rend les messages à envoyer (par exemple la vente suivante de la file).
-- `clients/map_layout.py` : la mise en page de la carte.
+- **(amendement 2, réécrit)** `clients/force_layout.py`, `clients/map_view.py`, `clients/guide.py` et `clients/palette.py` : la disposition, la vue de la carte, la prochaine étape et la palette du Technical Plan, point 7 ter. Ils remplacent `clients/map_layout.py`, la mise en page en colonnes de l'amendement 1.
 - `clients/texts.py` : les messages de refus en français, et la mise en forme des durées.
 - `clients/frames.py` : un widget Textual par cadre. Chaque cadre lit `ClientModel` et ne connaît pas les autres. On peut en ajouter, en retirer ou les réarranger sans toucher au reste : c'est la modularité demandée par le propriétaire.
 
-**Première disposition (80 × 24), à titre de maquette :**
-
-```text
-┌ Carte ────────────────────────────────────────────┐┌ Vaisseau ──────────────┐
-│ [1]S1───[2]─────[4]b────[6]S2b──[9]─────[12]      ││ system_5  en minage    │
-│         [3]─────[5]a────[7]a────[10]              ││ ore_a 38/100           │
-│                         [8]─────[11]S3            ││ plein dans 62 ticks    │
-│ liens : 1–3, 4–8, 10–11                           ││ (≈ 3 min 6 s à 3 s)    │
-│                                                   ││ ordre envoyé : aucun   │
-│ @ joueur : [5]   o vaisseaux proches : [3] [7]    │└────────────────────────┘
-└───────────────────────────────────────────────────┘┌ Stations ──────────────┐
-┌ Historique ───────────────────────────────────────┐│ S1 sys 1  a 10  b 15   │
-│ t3 ordre « déplacer vers system_5 » : accepté     ││ S2 sys 6  a 12  b 12   │
-│ t802 arrivée : system_5                           ││ S3 sys 11 a  8  b 18   │
-│ t803 ordre « miner ore_a » : accepté              │└────────────────────────┘
-│                                                   │
-│                                                   │
-│                                                   │
-└───────────────────────────────────────────────────┘
- Tick 840 │ Solde 0 │ dev ×1 │ d m v q · dev : p a r ␣
-```
-
-Maquette calculée par un script avec la règle de mise en page ci-dessous, sur un graphe d'exemple de 12 systèmes et 12 liens, dont le lien en plus 10–11. `S1`… marquent les stations (libellés courts de `station_1`…), `a` et `b` les gisements de `ore_a` et `ore_b` (`[6]S2b` : une station et un gisement dans le même système), `@` le vaisseau du joueur, `o` les vaisseaux proches. Le cadre d'alerte, quand il y en a une, s'affiche en vidéo inverse au-dessus de l'historique. La liste des destinations donne le stock des gisements proches, et « ? » pour les autres.
-
-**Mise en page de la carte (`clients/map_layout.py`, fonction pure).** Les systèmes sont rangés en colonnes de 8 caractères selon leur distance en sauts depuis le système 1 (fonction `distances`). Le parent d'un système est son voisin de plus petit identifiant dans la colonne précédente. Les colonnes sont traitées de gauche à droite et, dans une colonne, les systèmes par identifiant croissant : chacun prend le rang de son parent s'il est libre, sinon le premier rang libre en dessous ; le système 1 prend le rang 0. Un lien entre deux systèmes de colonnes voisines et de même rang est tracé en traits horizontaux : c'est le cas attendu des liens de l'arbre (part mesurée au compte rendu de M1). Tout autre lien (colonnes voisines et rangs différents, même colonne, ou colonne sautée) est écrit en texte sous la carte (« liens : 1–3, 4–8 »). Aucun trait vertical ni oblique. Comme les colonnes ne dépendent que du système 1, la carte ne bouge pas quand le vaisseau se déplace. Une chaîne de 12 systèmes donne 12 colonnes, soit 96 caractères : au-delà de la largeur du cadre (6 colonnes), la carte passe sur deux bandes, coupées après la sixième colonne ; un lien qui traverse la coupe est écrit en texte. Si la carte dépasse la hauteur du cadre, le cadre Carte défile verticalement. **Sortie de `layout` :** une ligne par rang, puis, pour une seconde bande, une ligne vide et ses rangs ; chaque case fait 8 caractères : `[id]`, les marques du système (`S<k>` pour la station k, `a` ou `b` pour le gisement), puis `─` (U+2500) jusqu'au bout de la case si un lien tracé part vers la droite, des espaces sinon ; enfin une ligne « liens : a–b, c–d » (tiret U+2013, paires (a, b) avec a < b, triées par a puis par b), coupée à la largeur du cadre, la suite sur les lignes suivantes, ou rien s'il n'y a aucun lien écrit. La ligne des vaisseaux (« @ joueur… ») n'en fait pas partie : `frames.py` l'ajoute sous la carte. Les tests de propriétés vérifient, sur de nombreuses graines, que chaque système et chaque lien apparaissent une fois, dessinés ou écrits ; la part des liens tracés et la hauteur de la carte sont mesurées et publiées au compte rendu de M1.
+**Disposition et carte (amendement 2, réécrit).** La disposition de l'écran, la carte et leur style sont ceux du point 7 ter. Les touches, les ordres envoyés, les refus, les alertes et les durées du présent point (7 bis) restent en vigueur, avec les ajouts du point 7 ter ; l'alerte s'affiche désormais dans le cadre « Prochaine étape ».
 
 **Touches (clavier AZERTY, aucune Majuscule).**
 
@@ -582,6 +582,126 @@ Une alerte reste affichée jusqu'à Entrée. Plusieurs alertes forment une file 
 - coût d'un déplacement = nombre de sauts × `jump_ticks`.
 
 Les minutes sont une estimation à `NOMINAL_TICK_PERIOD_S`, précédées de « ≈ » et suivies de « à 3 s » : lancée avec un autre `--periode`, la partie ne suit plus l'estimation, et le libellé le rappelle. Le montant net d'une vente n'est connu qu'après la vente (événement `Sale`). Le client ne connaît pas la vitesse jouée ; en mode développement, il affiche celle qu'il a demandée.
+
+### 7 ter. L'écran rétro (amendement 2)
+
+**Principe.** Le client reste un client Textual dans le terminal (ADR 0006). Il dessine en couleurs et en caractères demi-blocs (▀ ▄ : deux pixels de couleur par case de caractère), au style rétro 8 bits : l'esthétique des consoles 8 bits (palette réduite, gros pixels), et non une profondeur de couleur. Il se pilote au clavier et à la souris ; le clavier suffit à tout faire. Rien ne change dans le protocole, l'observation ou les règles : tout ce que l'écran montre se calcule à partir de l'observation et de l'état du client (`ClientModel`), sans autre canal ; la graine et le dossier de la partie restent hors de l'écran de jeu (point 6). Les invariants de déterminisme ne valent que pour `core` : la disposition calcule en flottants, et n'entre dans aucune empreinte. Aucune dépendance nouvelle : le dessin passe par les segments de Rich, déjà fournis par Textual. Les maquettes vues par le propriétaire sont hors du dépôt (canevas privé) ; ce point les décrit et fait foi.
+
+**Modules.** Les modules purs sont testés sans Textual et mutés sans plancher, comme ceux du point 7 bis ; `frames.py` (exclu de la mutation) ne fait que peindre ce qu'ils calculent.
+- `clients/palette.py` (Create) : la palette et les couples testés.
+- `clients/force_layout.py` (Create) : la disposition par forces.
+- `clients/map_view.py` (Create) : la vue de la carte : projection, zoom, déplacement, système sous le pointeur, grille de cases à peindre.
+- `clients/guide.py` (Create) : la prochaine étape.
+- `clients/texts.py` (Modify) : les textes de l'aide.
+- `clients/model.py` (Modify) : l'historique typé, et les gisements vus vides.
+
+**Palette (`clients/palette.py`).** `PALETTE` donne seize couleurs, une par rôle, toutes distinctes. Ce sont des valeurs RGB rendues en couleurs 24 bits (*true color*), et non les seize couleurs ANSI du terminal. Valeurs initiales, retouchables sans amendement (les tests de contraste font foi) : `fond` `#0B0E1A`, `cadre` `#121830`, `cadre_clair` `#1B2444`, `trait` `#2B3557`, `trait_fort` `#7B89C2`, `trait_faible` `#5E6A99`, `texte_attenue` `#8B97C3`, `texte` `#E8ECF8`, `accent` `#3FD0E0`, `ore_a` `#F2A33A`, `ore_b` `#5AA0FF`, `succes` `#5BD46A`, `alerte` `#F0506E`, `vaisseau` `#F5E14A`, `station` `#A98BFF`, `ombre` `#000000` (ombre portée de l'aide et de la bulle).
+- **Fonds.** La carte et la barre d'état sont sur `fond` ; les cadres, l'aide et la bulle, sur `cadre` ; les pastilles à portée, sur `cadre_clair`.
+- **Texte.** `CONTRAST_PAIRS` liste les couples (couleur du texte, couleur du fond) employés : les neuf couleurs de texte (`texte`, `texte_attenue`, `accent`, `ore_a`, `ore_b`, `succes`, `alerte`, `vaisseau`, `station`) sur `fond` et sur `cadre` ; `texte` et `texte_attenue` sur `cadre_clair` ; `fond` sur `station`, `alerte`, `accent`, `succes` et `vaisseau` (étiquettes). Chaque couple a un rapport de contraste d'au moins 4,5 pour 1 (formule WCAG 2.1, niveau AA).
+- **Traits.** `GRAPHIC_PAIRS` liste `trait_fort` et `trait_faible` sur `fond`, et les deux couleurs des barres de progression, `accent` (fait) et `trait_faible` (à faire), sur `cadre` : au moins 3 pour 1 (WCAG 2.1, critère 1.4.11). `trait`, qui borde les cadres, est décoratif : les cadres se distinguent aussi par leur fond.
+- `tests/clients/test_palette.py` calcule ces rapports. Le minerai n'est jamais porté par la seule couleur : la lettre `a` ou `b` l'accompagne. La portée non plus : les liens à portée sont pleins, les autres pointillés.
+
+**Disposition de l'écran (120 colonnes × 36 lignes).** Les places comprennent les bordures.
+
+| Cadre (`id`) | Place | Contenu |
+| :-- | :-- | :-- |
+| barre d'état (`#barre`) | lignes 1 et 2 | ligne 1 : tick, durée de jeu estimée (`duration_text` du tick, qui donne « ≈ … à 3 s »), solde ; en mode développement, la vitesse demandée ; ligne 2 : la ligne d'aide d'une touche sans effet et les invites (quitter, déjà ici) |
+| carte (`#carte`) | lignes 3 à 29, colonnes 1 à 72, sans bordure : 72 × 27 cases (52 × 21 en 100 × 30) | la carte (`MapCanvas`) |
+| prochaine étape (`#etape`) | lignes 3 à 9, colonnes 74 à 120 | la prochaine étape ; une alerte non acquittée s'y affiche, en couleur `vaisseau` |
+| vaisseau (`#vaisseau`) | lignes 10 à 17, colonnes 74 à 120 | état, route, ordre envoyé, deux barres de progression |
+| stations (`#stations`) | lignes 18 à 29, colonnes 74 à 120 | prix des stations, puis emplacement et stock des gisements, avec retour à la ligne ; le cadre défile ; la liste des destinations s'ouvre à sa place, et défile aussi |
+| historique (`#historique`) | lignes 30 à 35 | les quatre dernières entrées de l'historique |
+| barre des touches (`#touches`) | ligne 36 | les touches utiles dans la saisie en cours (« d déplacer · m miner · v vendre · h aide · q quitter » hors saisie ; « ↑↓ choisir · Entrée confirmer · Échap annuler » dans la liste) |
+| aide (`#aide`) | fenêtre de 90 × 28 centrée, avec une ombre | l'aide « Comment jouer » |
+| bulle (`#bulle`) | 40 × 7, deux cases à droite et en dessous du pointeur ; à gauche ou au-dessus près des bords | la bulle d'information |
+
+Entre 100 × 30 et 120 × 36, la carte et le cadre « Stations » rétrécissent ; les autres cadres gardent leur taille, et les cadres de droite leurs 47 colonnes. En dessous de 100 × 30, le client n'affiche qu'un message : « Agrandis la fenêtre : 100 colonnes × 30 lignes au moins (actuellement C × L). » ; seule la touche `q` agit, et l'univers continue de tourner.
+
+**Disposition de la carte (`clients/force_layout.py`, fonctions pures).** `force_layout(systems)` rend la position de chaque système dans le carré [0, 1] × [0, 1], axe des y vers le bas. Elle ne fait aucun tirage aléatoire : les mêmes systèmes donnent les mêmes positions. La disposition ne dépend que du graphe, qui ne change pas pendant la partie : elle est calculée une fois, et la carte ne bouge pas quand les vaisseaux bougent. Ses quatre étapes sont des fonctions du module, testées une à une sur de petits graphes :
+1. **Départ en couches (`initial_layers`).** Les systèmes sont rangés par distance en sauts depuis le système de plus petit identifiant (fonction `distances`) ; ceux qu'elle n'atteint pas forment une dernière couche. La couche k est répartie régulièrement sur un cercle de rayon k, centré à l'origine, par identifiants croissants, à partir de l'angle 0,5 × k radian, dans le sens trigonométrique ; la couche 0 est à l'origine.
+2. **300 itérations (`relax`).** À chaque itération, la force sur chaque système est la somme d'une répulsion 1 ÷ d² de chacun des autres (d, leur distance, bornée en dessous à 0,01 ; direction (1, 0) si les deux points sont confondus), d'un ressort (d − 1) vers chacun de ses voisins, et d'un rappel −0,05 × p vers l'origine (p, sa position). Chaque système se déplace dans la direction de sa force, d'une longueur égale au minimum de la norme de la force et du pas ; le pas vaut 0,1 × (1 − i ÷ 300) à l'itération i (de 0 à 299). Tous les systèmes se déplacent ensemble, à partir des positions de l'itération précédente.
+3. **Normalisation (`normalize`).** Une échelle uniforme, la même sur les deux axes, place la boîte englobante des positions au centre du rectangle utile R = [0,05 ; 0,95 − 0,135] × [0,05 + 0,16 ; 0,95] ; si la boîte est réduite à un point, l'échelle vaut 1.
+4. **Séparation (`separate`).** Chaque système occupe une boîte de 0,135 de large et de 0,16 de haut, à partir de sa position vers la droite et vers le haut : sa pastille et son gisement (4 colonnes), sa ligne de vaisseaux (une ligne au-dessus), et une case de marge. Ces dimensions viennent du cas le plus serré, la carte de 52 × 21 cases du terminal de 100 × 30, soit 42 pixels de haut au zoom 1 : 5 colonnes valent 0,119 et 3 lignes 0,143, plus une réserve pour l'arrondi. Le rectangle utile R garde toute la boîte dans le carré. Deux boîtes ne doivent pas se recouvrir. Au plus 100 passes : chaque paire en recouvrement, prise par identifiants croissants, est écartée tout de suite, symétriquement, sur l'axe qui demande le plus petit déplacement (l'axe horizontal à égalité ; à positions égales sur cet axe, le plus petit identifiant va à gauche, ou en haut), puis les deux positions sont ramenées dans R. Une passe sans recouvrement arrête la séparation ; au-delà de 100 passes, les positions sont rendues telles quelles (risque résiduel accepté : seules les graines 1 à 2 000 sont vérifiées).
+
+Les tests vérifient, sur 50 graines (marque `proprietes`), puis sur les graines 1 à 2 000 (marque `lent` seule, hors de la mutation, lancée par la tâche `rejeu`), que chaque système est placé une fois, dans le carré, sans recouvrement des boîtes, et que la grille de la carte au zoom 1, sur 72 × 27 et sur 52 × 21 cases : pose chaque case d'un système (pastille, gisement, vaisseaux) dans la grille ; ne pose aucune case d'un système sur celle d'un autre ; laisse au moins une case libre entre deux systèmes. Une graine qui échoue rend la pull request rouge. Les systèmes passent par `observe(generate(graine, réglages), 1, réglages).systems` ; pour dessiner la ligne des vaisseaux, le test ajoute à l'observation, par `msgspec.structs.replace`, un vaisseau du joueur et deux autres vaisseaux dans chaque système (« ▲2 »), et la donne au modèle par `on_update`. Les tests écrivent aussi, dans leur sortie (`-s`), le nombre de croisements de liens par monde (deux liens qui se coupent, extrémités communes exclues) : sa moyenne, son maximum, la part des mondes qui en ont, et le nombre de liens qui traversent la pastille d'un autre système ; ces chiffres sont cités au compte rendu de M1, et au-delà d'un croisement par monde en moyenne, l'agent de code le signale au propriétaire.
+
+**Vue de la carte (`clients/map_view.py`, fonctions pures).**
+- **Zoom.** Cinq niveaux, `ZOOMS = (1.0, 1.5, 2.0, 3.0, 4.0)`. La molette, ou `z` (avant) et `x` (arrière), passe au niveau suivant ou précédent ; aux bornes, la touche est sans effet et la barre d'état affiche la ligne d'aide. La molette zoome autour du pointeur (le point sous le pointeur y reste) ; le clavier, autour du centre de la vue.
+- **Projection.** Échelle uniforme : au zoom 1, le carré occupe toute la hauteur de la carte, à deux pixels par ligne, et il est centré en largeur ; au zoom z, l'échelle est multipliée par z. La case d'ancrage d'un système est la colonne arrondie de son x en pixels, et la ligne ⌊y en pixels ÷ 2⌋.
+- **Déplacement.** La vue initiale est au zoom 1, centrée. `pan(view, dx, dy)` déplace la vue de `dx` colonnes et `dy` lignes. Les flèches déplacent la vue d'un dixième de la zone visible ; le glisser, bouton gauche enfoncé, fait suivre le pointeur au contenu, dès que le pointeur a bougé d'une case entre l'appui et le relâchement. Le centre de la vue reste dans le carré. `c` recentre la vue sur le vaisseau. Les flèches, `z`, `x` et `c` n'agissent que quand aucune saisie n'est ouverte ; dans une saisie, elles sont sans effet, avec la ligne d'aide de la saisie.
+- **Portée.** Les systèmes à portée sont le système du vaisseau du joueur et ses voisins (`distances` ≤ 1), recalculés par le client, qui n'importe pas `core`.
+- **Système sous le pointeur.** `system_at` rend le système dont la pastille couvre une case, ou aucun.
+- **Grille.** `render` rend la grille de cases que `MapCanvas` peint. Chaque `Cell` porte un caractère et deux noms de rôle de `PALETTE` (avant-plan, fond) ; pour un caractère `▀`, l'avant-plan est le pixel du haut et le fond celui du bas. Ordre de dessin : liens, route, systèmes, vaisseaux, étiquettes.
+  - Liens : tracés de pixel en pixel entre les cases d'ancrage ; pleins en `trait_fort` quand les deux systèmes sont à portée ; un pixel sur deux, en `trait_faible`, dans les autres cas. La route du vaisseau suit ses liens (`system_id`, puis chaque système de `route`) : trois pixels sur quatre, en `vaisseau`.
+  - Systèmes : une pastille de deux caractères, à partir de la case d'ancrage (le numéro, aligné à droite : « ␣5 », « 12 »), en `texte` sur `cadre_clair` à portée, en `texte_attenue` sur `fond` hors de portée ; un système qui a une station a une pastille en `fond` sur `station` ; le système survolé, une pastille en `fond` sur `accent`. Un gisement : `◆` suivi de la lettre du minerai, dans la couleur du minerai, juste après la pastille.
+  - Vaisseaux, sur la ligne au-dessus de la pastille : le vaisseau du joueur, `▲` en `vaisseau`, à la colonne d'ancrage ; puis les vaisseaux proches, `▲` en `texte_attenue`, suivi de leur nombre s'ils sont plusieurs (`▲3`). Pendant un saut, le vaisseau du joueur est dessiné sur le lien de `system_id` à `route[0]`, à la fraction 1 − `ticks_to_next_jump` ÷ `jump_ticks`.
+  - Étiquettes, à partir du zoom 2 : à droite du gisement (ou de la pastille, s'il n'y a pas de gisement), sur la ligne de la pastille et les deux lignes en dessous : le libellé (`system_5`), la station et ses prix (`S1 a10 b15`), le stock (`20000`, ou `?` hors de portée). Une ligne n'écrit que des mots entiers (`system_5`, `S1`, `a10`, `b15`, `20000`) ; un mot qui ne tient pas avant la première case déjà occupée est remplacé par « … », et les suivants ne sont pas écrits. Aucun nombre n'est donc coupé.
+- **Bulle.** Au survol d'un système : son libellé, ses sites, le stock ou « ? », et la distance en sauts, en ticks et en ≈ minutes depuis le vaisseau (pendant un saut, depuis `route[0]`, plus `ticks_to_next_jump`) ; « déjà ici » sur le système du vaisseau.
+- **Clic.** Un clic sur un système (relâché sans glisser) a l'effet de `d` suivi du choix de ce système : la liste des destinations s'ouvre sur sa ligne ; Entrée envoie l'ordre, Échap annule. Sur le système du vaisseau, la barre d'état affiche « déjà dans system_k ». Le clic est ignoré pendant une saisie ou quand l'aide est ouverte.
+- **Redessin.** La grille n'est recalculée que si l'une de ses entrées change : vue, taille, position du vaisseau en pixels, systèmes à portée, vaisseaux visibles, survol, et les stocks visibles à partir du zoom 2. L'affichage de la carte est plafonné à 10 rafraîchissements par seconde, et seule la dernière mise à jour est dessinée ; les autres cadres sont redessinés à chaque mise à jour. Le temps de rendu est mesuré au plan détaillé, point 28 bis.
+
+**Prochaine étape (`clients/guide.py`, fonction pure).** `next_step(model)` rend un `Step` : un titre, un détail, des touches (noms de touches de Textual : `"enter"`, `"d"`), et la commande conseillée, s'il y en a une. La première règle qui s'applique donne l'étape :
+
+| Règle | Condition | Titre | Détail | Touches | Commande |
+| :-- | :-- | :-- | :-- | :-- | :-- |
+| 0 | aucune observation encore | « En attente du premier tick » | « » | () | aucune |
+| 0 bis | l'observation n'a aucun vaisseau du joueur | « Aucun vaisseau » | « » | () | aucune |
+| 1 | une alerte attend | le texte de l'alerte la plus ancienne, sans son tick, suivi de « ␣(+n) » (une espace, puis le nombre entre parenthèses) s'il en attend n autres | « Entrée : acquitter » | ("enter",) | aucune |
+| 2 | des ordres envoyés attendent leur résultat | « Ordre envoyé : [ordres] » | « résultat au prochain tick » | () | aucune |
+| 3 | en route | « En route vers [system_k] » (destination finale) | « arrivée dans [durée] » | () | aucune |
+| 4 | en minage | « Minage de [ore] » | « fin du minage dans [durée] : cargaison pleine ou gisement vide » ; si un autre vaisseau visible est dans le même système, « fin du minage dans au plus [durée] : cargaison pleine ou gisement vide » (l'indication suit l'observation du tick) | () | aucune |
+| 5 | à l'arrêt, cargaison pleine, ou non vide dans le système d'une station | la vente, ci-dessous | | | |
+| 6 | à l'arrêt, sinon | le cycle, ci-dessous (la cargaison peut être vide ou partielle) | | | |
+
+[ordres] est le contenu des ordres, comme dans l'historique, joints par « ; » ; [durée] est écrite par `duration_text` ; [sauts] par `sauts`. Toutes les comparaisons de gains par tick se font en entiers, par produits croisés (a ÷ b > c ÷ d si a × d > c × b).
+- **Stations et gisements pris en compte.** Ceux qu'atteint `distances` depuis le vaisseau ; les autres sont ignorés, comme par le PNJ. À M1, chaque station rachète chaque minerai à un prix positif (Technical Plan, point 2) : aucune garde n'est nécessaire.
+- **Vente depuis un système x, avec une cargaison c (`best_sale`).** Pour chaque station s : la valeur V(c, s) de la cargaison au prix brut de s (somme des quantités × prix), et la durée t(x, s) du trajet (nombre de sauts × `jump_ticks`). La station retenue a le plus grand V(c, s) ÷ (t(x, s) + 1) ; à égalité, la plus proche, puis le plus petit identifiant. La taxe, proportionnelle et la même partout, ne change pas ce classement, à l'arrondi près. Avec les prix initiaux, une station du système x l'emporte toujours (un écart de prix d'au plus 2,25 ne compense pas un trajet d'au moins 400 ticks) : la comparaison ne joue qu'hors du système d'une station.
+- **Règle 5, la vente.** La station retenue par `best_sale` depuis le système du vaisseau, avec sa cargaison. Si elle est ici : « Vendre la cargaison ici » ; « valeur avant taxe : [V] » ; ("v",) ; aucune commande (la vente passe par `sell_all`). Sinon : « Aller vendre à [station] » ; « [sauts], [durée] ; valeur avant taxe : [V] » ; ("d",) ; `Move` vers son système.
+- **Règle 6, le cycle.** Les candidats sont :
+  - chaque gisement g qui n'est pas connu comme vide (stock visible nul, ou présent dans `seen_empty`) : la quantité q = la capacité libre, bornée par le stock de g s'il est visible ; la cargaison prévue c′ = la cargaison plus q unités du minerai de g ; la station s = celle que retient `best_sale` depuis le système de g avec c′ ; le gain G = V(c′, s) ; la durée T = trajet jusqu'à g + ⌈q ÷ `mining_rate`⌉ + t(g, s) ;
+  - si la cargaison n'est pas vide, la vente directe : la station s retenue par `best_sale` depuis le système du vaisseau ; G = V(cargaison, s) ; T = t(ici, s) + 1.
+
+  Le candidat retenu a le plus grand G ÷ T ; à égalité, le plus petit T, puis la vente directe avant les gisements, puis le plus petit identifiant de gisement. Textes :
+  - gisement ici : « Miner [ore] ici » ; « fin du minage dans [durée] (ou « dans au plus [durée] » si un autre vaisseau visible est dans le système) ; puis vendre à [station] ([sauts]) », ou « ; puis vendre ici » si la station est dans le système ; ("m",) ; `Mine` de ce minerai ;
+  - gisement ailleurs : « Aller miner [ore] à [system_k] » ; « [sauts], [durée] ; cycle complet estimé : [durée de T] », suivi de « (stock inconnu) » si le stock de g n'est pas visible ; ("d",) ; `Move` vers le système de g ;
+  - vente directe : les textes de la règle 5 (« Aller vendre à [station] ») ;
+  - aucun candidat (cargaison vide, aucun gisement qui convienne) : « Aucun gisement connu disponible » ; « tous les gisements connus sont vides : attendre leur régénération » ; () ; aucune commande. Comme `seen_empty` se vide quand il contient tous les gisements, ce cas n'arrive que si tous les gisements sont à portée et vides.
+
+T est une estimation : il ne compte pas le tick que met chaque ordre à entrer en vigueur, et n'entre pas dans les durées que vérifie l'objectif 12. Le stock d'un gisement hors de portée est inconnu, et la règle suppose qu'il suffit : le conseil est optimiste pour ces gisements, et le détail le signale. Comme la station d'un cycle est celle que la règle 5 retiendra une fois la cargaison pleine, la station annoncée ne change pas au fil du cycle, sauf si le stock révélé change la quantité. Le gisement, lui, peut changer à l'arrivée : la durée d'approche, comptée au départ, ne compte plus une fois sur place, et un cycle plus court depuis ce point peut l'emporter. Ce changement est accepté (alternative AH) ; à information fixe, il ne peut pas faire d'aller-retour entre deux gisements.
+
+Ce conseil est propre au joueur (alternative AH) : il pèse la durée, à la différence de la règle du PNJ, qui ne change pas. `ClientModel` garde l'ensemble des gisements vus vides (`seen_empty`), mis à jour à chaque observation par `scripted_miner.mettre_a_jour`, comme l'hôte des PNJ. Quand la prochaine étape conseille un `Move`, `d` ouvre la liste des destinations sur sa destination. La prochaine étape ne fait que guider : elle n'envoie jamais d'ordre. Dans le cadre, les touches s'affichent par leur nom français (`"enter"` : « Entrée »).
+
+**Cadres.**
+- **Vaisseau :** état, route, ordre envoyé ; deux barres de progression de 20 cases (`█` fait, `░` à faire) : le saut ou le minage en cours, et le remplissage de la cargaison.
+- **Stations :** une ligne par station (« S1 system_2  a 10  b 15★ ») ; le meilleur prix de chaque minerai est marqué ★, en `succes` (toutes les stations à égalité le sont) ; puis une ligne par minerai, qui donne les systèmes de ses gisements et leur stock, ou « ? » hors de portée (« ore_b : system_3 (20000), system_7 (?) »), avec retour à la ligne ; le cadre défile quand son contenu dépasse sa hauteur.
+- **Historique :** ses quatre dernières entrées, chacune écrite « t[tick] [texte] », l'étiquette colorée selon son type. `ClientModel.history` devient un tuple de `HistoryEntry(tick, kind, text)`, où `text` n'a plus le préfixe du tick ; `kind` vaut `ORDER`, `SALE`, `ALERT` ou `REFUSAL`, et donne la couleur (`accent`, `succes`, `vaisseau`, `alerte`). Le rouge (`alerte`) est réservé aux refus.
+
+**Aide (`clients/texts.py`).** `help_pages(observation, dev)` rend les lignes de l'aide, une seule page qui défile. L'observation peut manquer (aide ouverte avant le premier tick), ou n'avoir aucun vaisseau du joueur : chaque durée qui en dépend est alors remplacée par « (connue au premier tick) ». `dev` dit si la partie est en mode développement. Texte, ligne par ligne :
+- « COMMENT JOUER »
+- « Tu pilotes un vaisseau minier. Tu gagnes ta vie en trois étapes, qui prennent du temps : »
+- « 1. Miner (m), dans un système qui a un gisement : remplir une cargaison vide prend [durée]. » (⌈`capacity` ÷ `mining_rate`⌉ ticks, `capacity` du vaisseau du joueur)
+- « 2. Transporter (d, ou un clic sur la carte) : un saut entre deux systèmes voisins dure [durée]. » (`jump_ticks`)
+- « 3. Vendre (v), dans le système d'une station : au prix de cette station, moins une taxe. La vente est immédiate. »
+- « Ce que tu vois : toute la carte, les gisements et les prix des stations. Les autres vaisseaux et le stock d'un gisement, seulement dans ton système et les systèmes voisins ; ailleurs, « ? ». »
+- « Le temps : un tick dure environ 3 secondes à la vitesse normale, et le monde avance même si tu ne fais rien. Une alerte te prévient à l'arrivée et à la fin du minage. »
+- « Premier objectif : vendre une première cargaison. Le cadre « Prochaine étape » te guide. »
+- « Les touches : »
+- « d : déplacer (liste des destinations ; Entrée envoie, Échap annule) »
+- « m : miner le gisement du système »
+- « v : vendre toute la cargaison »
+- « h : ouvrir ou fermer cette aide »
+- « z / x : zoomer, dézoomer la carte »
+- « c : recentrer la carte sur ton vaisseau »
+- « flèches : déplacer la carte »
+- « Entrée : confirmer, ou acquitter une alerte »
+- « Échap : annuler »
+- « q : quitter »
+- si `dev` : « Mode développement : p pause, a / r accélérer / ralentir, Espace avancer jusqu'à la prochaine alerte »
+- « Entrée, Échap ou h : fermer »
+
+L'aide s'ouvre au lancement de chaque partie (aucune mémoire d'une partie à l'autre) et sur la touche `h`. C'est une saisie : un widget superposé, et non un écran modal de Textual, pour que `FourxApp` reçoive toujours les touches. `h` pendant une autre saisie annule celle-ci et ouvre l'aide. Tant qu'elle est ouverte : Entrée, Échap et `h` la ferment, avant toute alerte, qui s'affiche ensuite ; ↑ et ↓ la font défiler ; `q` la ferme et ouvre la confirmation de quitter ; les touches du mode développement restent actives ; toute autre touche affiche la ligne d'aide. L'univers continue de tourner. Les tests du pilote ferment l'aide avant d'agir.
+
+**Touches ajoutées (AZERTY, aucune Majuscule).** `h` : aide ; `z` et `x` : zoom avant et arrière ; `c` : recentrer la vue sur le vaisseau ; ← → ↑ ↓ : déplacer la vue. Hors de l'aide, toutes n'agissent que quand aucune saisie n'est ouverte, sauf `h`. Les touches du point 7 bis ne changent pas.
 
 ### 8. Le rejeu, la divergence et les empreintes de référence
 
@@ -672,6 +792,8 @@ Ils remplacent « à fixer au niveau 2 de M1 » dans le glossaire.
 M1 ajoute aussi au glossaire le terme **gisement** (`Deposit`), et le terme **ordre soumis** (`SubmittedOrder`).
 
 **(amendement 1)** Termes du glossaire ajoutés, seulement ceux qu'un autre paquet ou document emploie : réglages publics (`public_tunables`), proximité (`NEARBY`), période nominale (`NOMINAL_TICK_PERIOD_S`), mode développement (`--dev`). Les termes internes du client (cadre, historique, ordre envoyé, alerte, file de vente) restent propres au Technical Plan, point 7 bis, qui les emploie. L'argent s'affiche « Solde », comme `wallet_balance`.
+
+**(amendement 2)** Les termes de l'écran rétro (prochaine étape, disposition par forces, vue de la carte, aide, palette) ne servent qu'au client : ils restent au point 7 ter, et le glossaire ne change pas. La portée est la proximité du glossaire (`NEARBY`).
 
 ### 13. Les interfaces
 
@@ -831,6 +953,7 @@ server/game.py     Game(runs_dir, world_seed, tunables, period_s=NOMINAL_TICK_PE
 policies/geometry.py   distances(systems: tuple[SystemView, ...], start: int) -> dict[int, int]
 policies/cargo.py      most_abundant(cargo: tuple[int, ...]) -> tuple[int, int] | None   (identifiant de minerai à partir de 1, quantité ; None si la cargaison est vide)
 policies/scripted_miner.py  POLICY_VERSION = 2
+                       mettre_a_jour(observation: Observation, seen_empty: frozenset[int]) -> frozenset[int]   (amendement 2)
                             decide(observation: Observation, seen_empty: frozenset[int])
                                 -> tuple[tuple[Order, ...], frozenset[int]]
 clients/npc_host.py    NpcHost garde la liste rendue par decide, et la lui repasse
@@ -843,15 +966,29 @@ clients/model.py       ClientModel(actor_id: int)                implémente Syn
                        remaining_ticks() -> int | None            trajet ou minage en cours
                        observation: Observation | None ; pending: tuple[tuple[int, Command], ...]
                        (numéros d'ordre attribués par le modèle, à partir de 1) ; alerts: tuple[Alert, ...] ;
-                       history: tuple[str, ...] (« t803 ordre « miner ore_a » : accepté », « t802 arrivée : system_5 »,
-                       « t900 vente : 100 ore_b à 15, paiement 1500, taxe 150 », alertes et refus traduits)
+                       history: tuple[HistoryEntry, ...] (textes : « ordre « miner ore_a » : accepté », « arrivée : system_5 »,   (amendement 2)
+                       « vente : 100 ore_b à 15, paiement 1500, taxe 150 », alertes et refus traduits) ; seen_empty: frozenset[int]   (amendement 2)
                        Alert(kind: AlertKind, tick: int, text: str) ; AlertKind : ARRIVED, MINING_ENDED ;
                        text : « arrivée : system_5 », « fin de minage : ore_a 100/100 »
-clients/map_layout.py  layout(observation: Observation) -> list[str]
+clients/force_layout.py  force_layout(systems: tuple[SystemView, ...]) -> dict[int, tuple[float, float]] ;   (amendement 2)
+                       initial_layers(systems) -> dict[int, tuple[float, float]] ; relax(systems, positions) ;   (amendement 2)
+                       normalize(positions) ; separate(positions) : chacune rend dict[int, tuple[float, float]]   (amendement 2)
+clients/map_view.py    View(zoom_index: int, center: tuple[float, float], width: int, height: int), gelée ;   (amendement 2)
+                       Cell(char: str, fg: str, bg: str), gelée (fg et bg : rôles de PALETTE) ; ZOOMS ;   (amendement 2)
+                       zoom(view, step: int, anchor: tuple[int, int] | None) -> View ; pan(view, dx: int, dy: int) -> View ;   (amendement 2)
+                       system_at(view, positions, x: int, y: int) -> int | None ;   (amendement 2)
+                       render(view, positions, model: ClientModel, hovered: int | None) -> tuple[tuple[Cell, ...], ...]   (amendement 2)
+clients/guide.py       Step(title: str, detail: str, keys: tuple[str, ...], command: Command | None), gelée ;   (amendement 2)
+                       next_step(model: ClientModel) -> Step ;   (amendement 2)
+                       best_sale(observation, system_id: int, cargo: tuple[int, ...]) -> tuple[int, int, int] | None   (amendement 2)
+                       (station retenue, valeur V, durée du trajet ; None si aucune station n'est atteinte)   (amendement 2)
+clients/palette.py     PALETTE : dict[str, str] (seize rôles) ; CONTRAST_PAIRS, GRAPHIC_PAIRS : tuple[tuple[str, str], ...]   (amendement 2)
+clients/texts.py       help_pages(observation: Observation | None, dev: bool) -> tuple[str, ...]   (amendement 2)
+clients/model.py       HistoryEntry(tick: int, kind: HistoryKind, text: str) ; HistoryKind : ORDER, SALE, ALERT, REFUSAL ;   (amendement 2)
 clients/texts.py       refusal_text(result: OrderResult, command: Command, observation: Observation) -> str
                        duration_text(ticks: int) -> str           « 400 ticks (≈ 20 min à 3 s) » ; « 62 ticks (≈ 3 min 6 s à 3 s) »
                                                                   (ticks × 3 s, écrits en h, min et s, sans les unités nulles)
-clients/frames.py      un widget Textual par cadre (carte, vaisseau, stations, historique, barre d'état, alerte)
+clients/frames.py      un widget Textual par cadre (carte MapCanvas, prochaine étape, vaisseau, stations, historique, barre d'état, barre des touches, aide, bulle)   (amendement 2)
 ```
 
 Autres changements de types (ADR 0005) : `DepositView.stock: Int64 | None` (`None` hors de portée) ; les champs de `OtherShipView` sont de classe `NEARBY`. `Observation.public_tunables` est le dernier champ de `Observation`.
@@ -860,7 +997,7 @@ Autres changements de types (ADR 0005) : `DepositView.stock: Int64 | None` (`Non
 
 Ces alternatives ont été pesées pendant la rédaction et la revue de ce document. Les alternatives d'architecture sont dans le niveau 1, et celles qui portent sur les règles du jeu dans la [RFC du brainstorm](./mmo-gestion-spatiale-ia.md).
 
-**(amendement 1)** Les alternatives A à I du document restent. Les alternatives J à AA, plus bas, s'y ajoutent, avec la marque « (amendement 1) ». Chacune prend l'une de deux formes : les avantages et les inconvénients de l'option rejetée, ou la liste des options pesées, chacune avec son défaut ; la dernière puce de chaque alternative, « Retenu », donne l'option choisie. L'alternative C (« des ticks avancés à la demande du joueur ») reste rejetée : l'accélération de l'amendement n'existe qu'en mode développement d'une partie locale, ne passe ni par le protocole ni par le journal, et ne change que la période de l'horloge (alternative S).
+**(amendement 1)** Les alternatives A à I du document restent. Les alternatives J à AA, plus bas, s'y ajoutent, avec la marque « (amendement 1) ». Chacune prend l'une de deux formes : les avantages et les inconvénients de l'option rejetée, ou la liste des options pesées, chacune avec son défaut ; la dernière puce de chaque alternative, « Retenu », donne l'option choisie. L'alternative C (« des ticks avancés à la demande du joueur ») reste rejetée : l'accélération de l'amendement n'existe qu'en mode développement d'une partie locale, ne passe ni par le protocole ni par le journal, et ne change que la période de l'horloge (alternative S). **(amendement 2)** Les alternatives AB à AH s'y ajoutent, avec la marque « (amendement 2) ».
 
 ### Alternative A : une perte de vaisseau dès M1 (accident en transit, ou usure et réparation)
 
@@ -1034,6 +1171,54 @@ Ces alternatives ont été pesées pendant la rédaction et la revue de ce docum
 *   **Inconvénients :** il faudrait au moins 9 systèmes (`stations_max` + `deposits_max`), donc une fourchette de 9 à 12 ; la carte perdrait une situation de jeu, le gisement dans le système d'une station, qui rapporte vite puis s'épuise.
 *   **Retenu :** décision du propriétaire (2026-11-12) : la colocalisation est voulue ; dans le pire des cas, le gisement s'épuise, et joueurs et PNJ doivent aller miner ailleurs. Une station et un gisement peuvent donc partager un système (Technical Plan, point 2). Au moins une station partage son système avec un gisement dans 84 % des mondes générés, et avec un gisement de `ore_b`, le seul minerai que visent les PNJ avec les prix proposés, dans 52 % (calculs du 2026-11-12 et du 2026-11-13, nombres de systèmes, de stations et de gisements supposés équiprobables).
 
+### Alternative AB : garder le rendu en caractères seuls, sans couleur, et le soigner (amendement 2)
+
+*   **Avantages :** aucune décision du niveau 1 ne change.
+*   **Inconvénients :** sans couleur ni pixels, le graphe reste pauvre et l'information se hiérarchise mal ; c'est le choix « sans thème de couleur » de l'amendement 1 que le propriétaire remet en cause, après l'avoir jugé « pas clair ». Cette alternative porte sur le style ; l'alternative AE, sur la disposition de la carte.
+*   **Retenu :** l'écran rétro en couleurs et demi-blocs (ADR 0006).
+
+### Alternative AC : un client graphique natif en Python (amendement 2)
+
+*   **Avantages :** pixel art libre, police choisie par le jeu.
+*   **Inconvénients :** cadres, listes et texte à construire soi-même ; une seconde boîte à outils à tester ; le propriétaire a jugé suffisantes des maquettes de l'écran dans le terminal.
+*   **Retenu :** Textual dans le terminal ; option réexaminée si la partie d'essai de l'amendement 2 échoue pour une raison propre au terminal (ADR 0006).
+
+### Alternative AD : un client dans le navigateur (amendement 2)
+
+*   **Avantages :** le plus souple pour le graphe et la mise en page.
+*   **Inconvénients :** un second langage et ses outils, et le transport WebSocket, prévu à M3, à avancer à M1.
+*   **Retenu :** pas à M1 ; à réexaminer au niveau 2 de M3, qui prévoit déjà un client relié par WebSocket.
+
+### Alternative AE : garder la mise en page en colonnes de l'amendement 1 (amendement 2)
+
+*   **Avantages :** déjà livrée et testée.
+*   **Inconvénients :** des liens écrits en texte, aucune vue d'ensemble ni zoom ; elle ne répond pas à la demande d'un graphe « clair et joli ».
+*   **Retenu :** la disposition par forces ; `clients/map_layout.py` est supprimé.
+
+### Alternative AF : une carte animée, comme le graphe d'Obsidian (amendement 2)
+
+*   **Avantages :** au plus près de la demande (« une forme de gravité entre les nodes ») ; les systèmes bougent et se tirent.
+*   **Inconvénients :** un rendu à chaque image, y compris au palier ×100 ; une carte qui bouge sous le pointeur ; des tests du pilote plus fragiles.
+*   **Retenu :** une disposition calculée une fois par partie (décision du propriétaire, 2026-11-22). L'animation reste possible plus tard (Future Improvements).
+
+### Alternative AG : la méthode de disposition (amendement 2)
+
+*   **Options pesées :**
+    - des coordonnées tirées par `world.generate` : elles entreraient dans l'état et les empreintes, pour une donnée d'affichage ;
+    - des couches par distance seules : lisibles, mais sans « gravité » entre voisins ;
+    - les forces, en partant d'un cercle : plus de croisements de liens pour un arbre ;
+    - les forces, en partant des couches, avec une passe de séparation.
+*   **Retenu :** la dernière (Technical Plan, point 7 ter).
+
+### Alternative AH : le conseil de la prochaine étape, à l'arrêt (amendement 2)
+
+*   **Options pesées :**
+    - la décision du PNJ (`scripted_miner.decide`) : une seule règle de décision dans le dépôt, mais elle vise toujours le minerai le mieux payé sans peser la durée ; avec les prix proposés, elle envoie le joueur vers `ore_b`, parfois à une heure de route alors qu'un cycle local de 5 minutes existe, là où les PNJ s'entassent ;
+    - la même, avec la durée du cycle affichée : le joueur voit le prix en temps, mais reste mal conseillé ;
+    - deux options affichées, la mieux payée et la plus proche : enseigne le compromis, mais charge le cadre ;
+    - le cycle au meilleur gain par tick : colle à l'objectif 13 (le temps est une ressource), au prix d'une petite règle de plus, testée règle par règle.
+*   **Retenu :** le gain par tick (décision du propriétaire, 2026-11-22 ; Technical Plan, point 7 ter). La station d'un cycle est celle que la règle de vente retiendra, pour que le plan annoncé ne change pas en route. Le gisement conseillé peut changer à l'arrivée ; garder en mémoire le gisement prévu éviterait ce changement, mais ajouterait un état au client et un cas à chaque règle : ce n'est pas retenu à M1.
+
 
 --------------------------------------------------------------------------------
 
@@ -1077,10 +1262,21 @@ Ces alternatives ont été pesées pendant la rédaction et la revue de ce docum
 | Écritures disque à vitesse élevée | à ×100, un commit SQLite par tick | mesure du plan détaillé, point 28 bis | le palier ×100 (0,03 s par tick) borne le débit |
 | Mises à jour accumulées | au palier ×100, la file des mises à jour du client grossit | débordement mesuré au plan détaillé, point 28 bis | le modèle client traite toutes les mises à jour, et l'écran ne redessine que la dernière ; la longueur des files, celle du propriétaire et celles de relais des PNJ, et les refus d'ordres qu'elles causent sont mesurés au plan détaillé, point 28 bis ; une contre-pression ne s'ajoute que si la mesure le demande |
 | Peu de PNJ visibles | avec la visibilité par proximité, la plupart des 3 à 5 PNJ, et le stock des gisements lointains, sont hors de vue sur 8 à 12 systèmes, d'autant que les PNJ se regroupent autour d'un ou deux gisements (Technical Plan, point 7) | verdict de la partie d'essai | accepté par le propriétaire (décision de jeu, ADR 0005) ; à revoir à la partie d'essai, qui dira si l'écran paraît vide |
-| Carte illisible pour certaines graines | une chaîne longue ou beaucoup de liens hors de l'arbre | part des liens tracés, mesurée sur de nombreuses graines | rang du parent pour les liens de l'arbre ; deux bandes au-delà de la largeur ; autres liens écrits en texte |
+| (amendement 2, réécrit) Carte illisible pour certaines graines | voir le risque « Disposition illisible pour certaines graines », ajouté par l'amendement 2 | | |
 | PNJ décalés au palier rapide | avec la tâche de relais, une décision peut entrer au deuxième tick suivant, ou plus tard, au lieu du tick suivant ; si plusieurs décisions d'un PNJ en retard entrent dans le même tick, la plus ancienne gagne (un ordre par vaisseau et par tick, celui de plus petit numéro ; Technical Plan, point 2) | rejeu d'une partie accélérée | accepté par le propriétaire, qui a gardé la tâche de relais (alternative X) ; le rejeu suit le journal, il reste exact |
 | Épuisement par colocalisation | des PNJ bouclent sur un gisement dans le système d'une station et le vident avant sa régénération | stock à 0 relevé par l'outil de régénération après la partie | accepté (alternative AA) : le PNJ retient le gisement vide et va miner ailleurs (Technical Plan, point 7) ; les bornes d'économie, larges, ne dépendent pas de l'épuisement (plan détaillé, point 27) |
 | Gisement vide découvert à l'arrivée | hors de portée, le stock est inconnu : un vaisseau peut faire un trajet vers un gisement vide | tests de la politique du PNJ | accepté (ADR 0005) : le trajet est perdu, mais le PNJ retient le gisement vide et va au plus proche gisement qu'il n'a pas vu vide, plus loin s'il le faut (décision du propriétaire, 2026-11-21 ; Technical Plan, point 7) |
+
+**Risques ajoutés par l'amendement 2 :**
+
+| Risque | Effet | Signal | Parade |
+| :-- | :-- | :-- | :-- |
+| Rendu différent selon le terminal | couleurs dégradées, demi-blocs mal dessinés, police peu lisible | partie d'essai de l'amendement 2 | contraste testé sur les couples de `CONTRAST_PAIRS` et `GRAPHIC_PAIRS` ; rendu en 256 couleurs essayé à la partie d'essai (point 23 undecies), avec le nom du terminal et `COLORTERM` consignés ; condition de révision de l'ADR 0006 |
+| Terminal trop petit | carte et cadres tronqués | taille de la fenêtre | cible 120 × 36 ; carte qui rétrécit jusqu'à 100 × 30 ; en dessous, un message qui demande d'agrandir la fenêtre |
+| Souris absente ou mal transmise par le terminal | zoom et clic impossibles | essai du propriétaire | toutes les actions ont une touche (`z`, `x`, `c`, flèches, `d`) |
+| Rendu trop lent aux paliers rapides | écran qui saccade, mises à jour accumulées | temps de rendu mesuré au plan détaillé, point 28 bis | grille recalculée seulement quand ses entrées changent ; au plus 10 rafraîchissements par seconde ; seule la dernière mise à jour est dessinée |
+| Disposition illisible pour certaines graines | systèmes trop proches, liens qui se croisent | aucun recouvrement dans la grille, vérifié sur les graines 1 à 2 000 en 120 × 36 et en 100 × 30 ; croisements mesurés et publiés | départ en couches ; séparation par boîtes, calculée pour le cas le plus serré ; étiquettes seulement à partir du zoom 2 ; bulle d'information |
+| Prochaine étape trompeuse | le joueur suit un conseil inadapté : un gisement qui se vide, que les PNJ minent sans que le joueur voie leur activité ; un gisement hors de portée au stock supposé suffisant ; un gisement qui cède la place à un autre une fois arrivé | tests règle par règle ; partie d'essai, avec la durée du premier cycle consignée au compte rendu | conseil au meilleur gain par tick, qui écarte les gisements connus vides ; il ne fait que guider ; le joueur garde toutes les touches |
 
 ## Additional Resources
 
@@ -1089,6 +1285,7 @@ Ces alternatives ont été pesées pendant la rédaction et la revue de ce docum
 *   Essais du 2026-11-06, hors du dépôt, sous Python 3.15.2 : lecture du code de `mutmut` 3.8.0 (clés `source_paths`, `only_mutate`, `do_not_mutate`, `also_copy`, `pytest_add_cli_args` ; filtrage de `mutmut run` par motifs de noms de mutants ; `export-cicd-stats` ne donne que des totaux ; sortie de `mutmut results --all true`) et une mutation d'un petit projet ; métadonnées `msgspec.Meta(extra=...)` relues par `msgspec.inspect.type_info` sur `msgspec` 0.22.0 ; route `GET /repos/EZPK/4X/branches/main` lue sans jeton.
 *   Rapports de la revue EGM de ce document : `docs/revues/2026-11-06-niveau-2-m1-noyau/`.
 *   **(amendement 1)** Brief du brainstorm et rapports de revue de l'amendement : `docs/revues/2026-11-12-niveau-2-m1-noyau-amendement-1/`. Simulation du 2026-11-12, hors du dépôt : cycle de 1 701 ticks et 10 à 12 ventes par fenêtre de 10 000 ticks pour les deux PNJ ensemble (carte d'origine, `jump_ticks` = 400, `mining_rate` = 1, deux PNJ). Calculs du 2026-11-12 et du 2026-11-13 : une station partage son système avec un gisement dans 84 % des mondes générés, et avec un gisement de `ore_b` dans 52 % (nombres de systèmes, de stations et de gisements supposés équiprobables). Essai du 2026-11-21, hors du dépôt, sur la génération du Technical Plan, point 2, écrite d'après ce document avec `keyed_below` du noyau : la graine 1 donne 11 systèmes, 2 stations, 6 gisements et 5 PNJ ; la borne haute de l'émission du plan détaillé, point 27, y vaut 757 500 par fenêtre, pour une émission de 287 100 à 294 000 calculée d'après le cycle de chaque PNJ ; sur les graines 1 à 10 000, le cycle de tous les PNJ passe par un seul gisement dans 78 % des mondes, et par deux gisements dans 22 %. Ces chiffres sont à refaire sur le code livré.
+*   **(amendement 2)** Rapports de revue de l'amendement 2 : `docs/revues/2026-11-22-niveau-2-m1-noyau-amendement-2/`. Maquettes de l'écran rétro, vues par le propriétaire le 2026-11-22, hors du dépôt (canevas privé) : poste de pilotage, carte zoomée, aide.
 
 ## Future Improvements
 
@@ -1099,6 +1296,8 @@ Ces alternatives ont été pesées pendant la rédaction et la revue de ce docum
 *   **(amendement 1) La vitesse propre à chaque vaisseau et la distance entre systèmes :** la durée d'un saut en dépendra, comme celle d'un minage dépendra du laser et de la capacité de la cargaison.
 *   **(amendement 1) Des scanners** pour voir plus loin que les systèmes voisins (ADR 0005).
 *   **(amendement 1) Des PNJ qui décident seuls ou en groupe**, par exemple pour leur corporation (M6).
+*   **(amendement 2) Une carte animée et une mini-carte** (alternative AF ; décision du propriétaire, 2026-11-22).
+*   **(amendement 2) Un client graphique natif ou dans le navigateur**, à réexaminer au niveau 2 de M3 (alternatives AC et AD, ADR 0006).
 
 
 --------------------------------------------------------------------------------
@@ -1108,7 +1307,7 @@ Ces alternatives ont été pesées pendant la rédaction et la revue de ce docum
 **Ordre des pull requests.** `CLAUDE.md` impose une pull request de scénarios fusionnée avant chaque pull request de fonctionnalité, et une seule pull request de chaque type ouverte à la fois. M1 avance donc en cinq paliers :
 1. décision et documents (pull request protégée) ;
 2. outillage de M1 (pull request protégée) : les nouvelles tâches de CI tournent, sans être encore obligatoires ;
-3. trois volets de jeu, chacun en deux pull requests : scénarios, puis fonctionnalité ;
+3. trois volets de jeu, chacun en deux pull requests : scénarios, puis fonctionnalité ; **(amendement 2, précisé)** les volets B bis (amendement 1) et B ter (amendement 2) s'y insèrent ;
 4. contrôles obligatoires, contrôles de nuit et suite canari (pull request protégée), puis la commande de protection, lancée par le propriétaire ;
 5. compte rendu et livraison.
 
@@ -1232,6 +1431,8 @@ Entre les paliers 2 et 4, les nouvelles tâches ne bloquent pas la fusion : le p
 *   **Proposed Changes :** dépendances d'exécution `msgspec` et `textual` ; dépendances de développement `hypothesis` et `mutmut` ; pytest plafonné ; un groupe à part, `notebooks`, pour `marimo` et `duckdb`, que la CI n'installe pas (`uv sync` installe le groupe `dev` par défaut ; le propriétaire lance `uv sync --group notebooks`). `duckdb` 1.5.6 n'a pas de paquet précompilé pour Python 3.15 : il se compile depuis ses sources, en plusieurs minutes (constaté le 2026-11-02), ce qui ralentirait chaque tâche de CI pour un outil qu'aucun contrôle n'utilise. Versions et `exclude-newer` : en-tête de ce plan. Aucun greffon asynchrone : les tests asynchrones sont des tests synchrones qui appellent `asyncio.run(...)`.
 
 ### Palier 3 : les trois volets de jeu
+
+**(amendement 2, précisé)** Les volets B bis et B ter s'insèrent entre les volets B et C.
 
 Chaque volet a sa pull request de scénarios (fichiers `.feature` en français et définitions d'étapes, scénarios ajoutés à `tests/scenarios/en_attente.txt`), fusionnée par le propriétaire, puis sa pull request de fonctionnalité, qui écrit le code et retire les entrées de `en_attente.txt`.
 
@@ -1398,7 +1599,7 @@ Chaque volet a sa pull request de scénarios (fichiers `.feature` en français e
     - `src/fourx/clients/npc_host.py` (Modify) : `NpcHost` garde la liste rendue par `decide` et la lui repasse à la décision suivante.
     - `src/fourx/policies/geometry.py` et `src/fourx/policies/cargo.py` (Create) : `distances(systems, start)` et `most_abundant(cargo)`, sans logique de décision, réutilisées par le PNJ et par le client.
     - `src/fourx/clients/textual_app.py` (Modify) : adaptation minimale à l'observation nouvelle (prix de la station du système, stock `None` affiché « ? »), pour que le client d'origine reste jouable jusqu'au point 23 quinquies.
-    - Tests non protégés (Modify) : `tests/aide_monde.py` (nouveaux champs de `REGLAGES`, plusieurs stations) ; `tests/aide_observation.py` (`public_tunables`) ; `tests/core/test_step.py` (vente à plusieurs stations, système de départ, colocalisation) ; `tests/core/test_observe.py` (proximité des vaisseaux, des événements et du stock ; réglages publics ; aucun champ caché ; tout type qui porte un champ `NEARBY` a un système de référence) ; `tests/core/test_monde_version_empreintes.py` (génération : fourchettes, connexité, plafond de voisins, déterminisme) ; `tests/core/test_versions.py` (`PROTOCOL_VERSION` 2) ; `tests/schema/test_schema.py` ; `tests/proprietes/test_proprietes.py` (marque `proprietes` : génération sur de nombreuses graines, proximité ; la carte, avec la part des liens tracés et la hauteur écrites dans la sortie du test, `-s`, et citées au compte rendu de M1) ; `tests/core/test_monde_version_empreintes.py` (aussi : même monde sous `PYTHONHASHSEED=0` et `1`, par deux `subprocess.run`) ; `tests/policies/test_scripted_miner.py` (règle version 2 et liste des gisements vus vides : un vaisseau qui trouve un gisement vide va miner ailleurs, y compris quand les deux gisements les plus proches sont vides ; un gisement revu plein sort de la liste ; la liste se vide quand elle contient tous les gisements) ; `tests/clients/test_npc_host.py` (l'hôte repasse la liste rendue par `decide`) ; `tests/policies/test_geometry.py` et `tests/policies/test_cargo.py` (Create) ; `tests/server/test_partie.py` (période nominale, premier tick) ; `tests/test_point_d_entree.py` (plusieurs PNJ, par une fonction d'assemblage testable de `__main__.py`, `creer_pnj(game, graine, tunables) -> tuple[int, ...]`, qui crée les PNJ et rend leurs identifiants, sans lancer Textual).
+    - Tests non protégés (Modify) : `tests/aide_monde.py` (nouveaux champs de `REGLAGES`, plusieurs stations) ; `tests/aide_observation.py` (`public_tunables`) ; `tests/core/test_step.py` (vente à plusieurs stations, système de départ, colocalisation) ; `tests/core/test_observe.py` (proximité des vaisseaux, des événements et du stock ; réglages publics ; aucun champ caché ; tout type qui porte un champ `NEARBY` a un système de référence) ; `tests/core/test_monde_version_empreintes.py` (génération : fourchettes, connexité, plafond de voisins, déterminisme) ; `tests/core/test_versions.py` (`PROTOCOL_VERSION` 2) ; `tests/schema/test_schema.py` ; `tests/proprietes/test_proprietes.py` (marque `proprietes` : génération sur de nombreuses graines, proximité ; la carte, avec la part des liens tracés et la hauteur écrites dans la sortie du test, `-s`, et citées au compte rendu de M1 *(remplacé par l'amendement 2, voir le plan détaillé, point 23 decies : le recouvrement et les croisements de la disposition par forces)*) ; `tests/core/test_monde_version_empreintes.py` (aussi : même monde sous `PYTHONHASHSEED=0` et `1`, par deux `subprocess.run`) ; `tests/policies/test_scripted_miner.py` (règle version 2 et liste des gisements vus vides : un vaisseau qui trouve un gisement vide va miner ailleurs, y compris quand les deux gisements les plus proches sont vides ; un gisement revu plein sort de la liste ; la liste se vide quand elle contient tous les gisements) ; `tests/clients/test_npc_host.py` (l'hôte repasse la liste rendue par `decide`) ; `tests/policies/test_geometry.py` et `tests/policies/test_cargo.py` (Create) ; `tests/server/test_partie.py` (période nominale, premier tick) ; `tests/test_point_d_entree.py` (plusieurs PNJ, par une fonction d'assemblage testable de `__main__.py`, `creer_pnj(game, graine, tunables) -> tuple[int, ...]`, qui crée les PNJ et rend leurs identifiants, sans lancer Textual).
     - **Essai de la veille** (risque) : une partie lancée, l'ordinateur portable mis en veille cinq minutes ; le tick avant et après est relevé et cité dans la description de la pull request, puis dans le compte rendu de M1. Si l'univers rattrape au réveil les ticks de la veille au lieu de se figer, l'agent de code le signale au propriétaire avant la partie d'essai : ces ticks seraient joués sans que le joueur les voie.
 
 #### 23 quinquies. Pull request de fonctionnalité : l'écran unique et la vitesse du mode développement (amendement 1)
@@ -1441,6 +1642,63 @@ Chaque volet a sa pull request de scénarios (fichiers `.feature` en français e
 
 *   **Type / Scope :** action du propriétaire, après la fusion du point 23 quinquies, **avant la pull request de scénarios du volet C**. Après le volet C, toute retouche de `tunables.toml` impose de régénérer les références et d'augmenter `RULES_REVISION`.
 *   **Proposed Changes :** le propriétaire joue au moins un cycle complet en mode développement accéléré (`--dev`), et au moins un saut complet à la période nominale (20 minutes avec les valeurs initiales), qui juge le rythme. Il rend deux verdicts, consignés dans le compte rendu de M1 avec la graine et les vitesses jouées : l'écran est lisible (objectif 12) ; la boucle et son rythme lui conviennent (objectif 11). Un réglage à changer passe par une seule pull request de fonctionnalité sur `tunables.toml` (chemin non protégé), qui fait foi, sauf les fourchettes du monde (`systems_min` à `npc_max`) : elles viennent du CUJ 1 du niveau 1, élargi par l'ADR 0004, et les changer demande une nouvelle ADR et un amendement ; les scénarios lisent les réglages, et le tableau du Technical Plan, point 2, ne donne que les valeurs initiales.
+
+**Volet B ter : l'écran rétro (amendement 2)**
+
+**Règles d'intégration (amendement 2).** Les points 23 septies à 23 undecies suivent le point 23 sexies, indépendamment du volet C : le volet C peut démarrer depuis `main` dès le 2026-11-22 (décision du propriétaire), à condition qu'une seule pull request de chaque type (protégée, de scénarios, de fonctionnalité) soit ouverte à la fois. Dans `src/`, ils ne touchent que `clients`.
+
+#### 23 septies. Pull request protégée de l'amendement 2 (amendement 2)
+
+*   **Type / Scope :** pull request protégée, avec une revue EGM sans contexte (étapes 5 à 9), dont le résumé en français ouvre la description.
+*   **Proposed Changes :**
+    - `docs/designs/niveau-2-m1-noyau.md` (Modify) : l'amendement 2. Le statut passe à Proposed sur la branche seulement, puis revient à Approved, sur demande explicite du propriétaire, avant la fusion.
+    - `docs/feuille-de-route.md` (Modify) : M1 passe à « en revue » sur la branche seulement, puis revient à « approuvé » avant la fusion.
+    - `docs/adr/0006-client-retro-8-bits.md` (Create) : statut « proposée » ; le propriétaire l'accepte avant la fusion. `docs/adr/README.md` (Modify) : la ligne d'index.
+    - `docs/designs/architecture-niveau-1.md` (Modify) : Overview, « le client en mode texte (Textual), au style rétro 8 bits » au lieu de « le client ASCII ».
+    - `docs/revues/2026-11-22-niveau-2-m1-noyau-amendement-2/` (Create) : les rapports de la revue EGM.
+    - `pytest.ini` (Modify) : la description de la marque `lent` devient « tests longs, hors de la mutation : fourchettes économiques sur 100 000 ticks, disposition de la carte sur 2 000 graines (tâche rejeu) ».
+    - Le glossaire ne change pas (Technical Plan, point 12).
+    - Si le propriétaire refuse l'ADR 0006, la modification du niveau 1 et l'amendement 2 sont retirés de la pull request avant la fusion.
+
+#### 23 octies. Pull request de scénarios (amendement 2)
+
+*   **Type / Scope :** pull request de scénarios, chemins protégés, après la fusion du point 23 septies. Elle couvre les deux pull requests de fonctionnalité qui suivent.
+*   **Proposed Changes :**
+    - `tests/scenarios/ecrans.feature` (Modify) :
+      - le scénario « La carte d'un monde de 12 systèmes contient chaque système et chaque lien une fois » devient « La disposition de la carte place chaque système une fois, dans le carré, sans recouvrement, et la même à chaque appel » (réglages de test à 12 systèmes, graine 1) : aucune paire de boîtes de 0,135 × 0,16 ne se recouvre ; la comparaison porte sur deux appels dans le même processus, jamais sur des positions écrites en dur ;
+      - « La prochaine étape suit un cycle joué : aller miner, miner, aller vendre, vendre » :
+        - *Étant donné :* « sur la première graine dont le gisement conseillé depuis la station 1 n'est pas dans le système d'une station, et le reste depuis son propre système ». `monde_convient` le calcule sur l'état généré, sans le code testé : avec les réglages de test, le stock initial dépasse la capacité et aucun autre vaisseau ne mine, donc q = `cargo_capacity` pour tout gisement. Depuis un système x, le gisement conseillé est celui qui maximise G ÷ T, où, pour chaque gisement g et chaque station s, G = `cargo_capacity` × le prix de s pour le minerai de g, et T = `jump_ticks` × (d(x, g) + d(g, s)) + ⌈`cargo_capacity` ÷ `mining_rate`⌉ (départages : plus petit T, puis plus petit identifiant de gisement, puis de station). La graine convient si g₀, conseillé depuis le système de la station 1, n'est pas dans le système d'une station, et si g₀ est encore conseillé depuis son propre système. Le vaisseau du joueur part à l'arrêt, cargaison vide, dans le système de la station 1 ;
+        - *procédure :* à chaque tick après le premier, (1) relever les touches de `next_step(model)` ; (2) faire un seul geste : pour ("enter",), `acknowledge()` ; pour ("d",) ou ("m",), envoyer la commande du `Step` (`model.send`, puis `Serveur.envoyer`) ; pour ("v",), `model.sell_all()` ; (3) jouer un tick ; s'arrêter juste après avoir relevé ("v",) ;
+        - *alors :* la suite des touches relevées, répétitions consécutives fondues, est exactement : ("d",), (), ("enter",), ("m",), (), ("enter",), ("d",), (), ("enter",), ("v",) ;
+      - « L'aide donne les durées lues dans l'observation » (réglages de test, graine 1) : les lignes de l'aide sur le minage et sur le transport contiennent `duration_text` de ⌈`capacity` ÷ `mining_rate`⌉ et de `jump_ticks`, lus dans l'observation.
+    - `tests/scenarios/steps/steps_ecrans.py` (Modify) : les étapes correspondantes, avec `force_layout`, `next_step` et `help_pages` ; l'étape `carte_complete` et sa lecture de la sortie de `map_layout.layout` sont retirées ; l'étape qui lit l'historique lit le texte des `HistoryEntry` ; la condition de graine du scénario du cycle s'ajoute à `monde_convient`. `tests/scenarios/steps/steps_partie.py` (Modify) : cette condition.
+    - `tests/scenarios/en_attente.txt` (Modify) : chaque scénario qui échoue sur le code de l'amendement 1, et lui seul : les trois scénarios nouveaux ou réécrits, et les deux scénarios de refus d'`ecrans.feature`, dont l'étape lit désormais le texte des `HistoryEntry`. Le scénario de la disposition y reste jusqu'au point 23 decies.
+
+#### 23 nonies. Pull request de fonctionnalité : cadres, prochaine étape, aide et palette (amendement 2)
+
+*   **Type / Scope :** pull request de fonctionnalité, après la fusion du point 23 octies. Elle retire de `en_attente.txt` les scénarios qu'elle fait passer. L'ancienne carte en colonnes reste en place jusqu'au point 23 decies.
+*   **Proposed Changes :**
+    - `src/fourx/clients/palette.py` et `src/fourx/clients/guide.py` (Create) : la palette et la prochaine étape du Technical Plan, point 7 ter.
+    - `src/fourx/clients/texts.py` (Modify) : `help_pages`.
+    - `src/fourx/clients/model.py` (Modify) : `HistoryEntry`, `seen_empty`.
+    - `src/fourx/clients/frames.py` (Modify) : les cadres « Prochaine étape » (avec l'alerte), « Vaisseau », « Stations », « Historique », la barre d'état, la barre des touches, l'aide, en couleurs.
+    - `src/fourx/clients/textual_app.py` (Modify) : la disposition 120 × 36 (la carte en colonnes dans le cadre de la carte), le message de petite fenêtre, la touche `h`, l'aide au lancement.
+    - Tests : `tests/clients/test_palette.py` (Create : contrastes de `CONTRAST_PAIRS` à 4,5 pour 1 et de `GRAPHIC_PAIRS` à 3 pour 1, seize valeurs distinctes) ; `tests/clients/test_guide.py` (Create : chaque règle ; `best_sale` ; les gains par tick et leurs départages ; le stock qui borne la quantité ; la durée « au plus » ; une cargaison mêlée ; une cargaison à 99 sur 100 ; une cargaison non vide sans gisement candidat ; un système inaccessible ; la station d'un cycle égale à celle de la règle 5 une fois la cargaison pleine ; un gisement qui cède la place à l'arrivée) ; `tests/clients/test_texts.py` (Modify : l'aide, comparée ligne par ligne, avec et sans observation, avec et sans mode développement) ; `tests/clients/test_model.py` (Modify : historique typé, gisements vus vides) ; `tests/clients/test_textual_app.py` (Modify : pilote en 120 × 36, chaque cadre, l'aide et ses touches, la petite fenêtre).
+
+#### 23 decies. Pull request de fonctionnalité : la carte rétro (amendement 2)
+
+*   **Type / Scope :** pull request de fonctionnalité, après la fusion du point 23 nonies. Elle retire de `en_attente.txt` le scénario de la disposition.
+*   **Proposed Changes :**
+    - `src/fourx/clients/force_layout.py` et `src/fourx/clients/map_view.py` (Create) : la disposition et la vue de la carte du Technical Plan, point 7 ter.
+    - `src/fourx/clients/frames.py` (Modify) : `MapCanvas` (peinture de la grille, molette, glisser, survol, clic) et la bulle ; l'import de `map_layout` est retiré.
+    - `src/fourx/clients/textual_app.py` (Modify) : les touches `z`, `x`, `c` et les flèches ; `d` ouvre la liste sur la destination conseillée.
+    - `src/fourx/clients/map_layout.py` et `tests/clients/test_map_layout.py` (Delete).
+    - Tests : `tests/clients/test_force_layout.py` et `tests/clients/test_map_view.py` (Create : même résultat à chaque appel, positions dans le carré, aucun recouvrement des boîtes, projection, zoom autour d'un point, déplacement borné, système sous le pointeur, ordre de dessin, étiquettes coupées par mots entiers avec « … », position du vaisseau pendant un saut) ; `tests/clients/test_textual_app.py` (Modify : zoom, déplacement, survol, clic ; le pilote n'ayant ni molette ni glisser, les tests postent eux-mêmes `MouseScrollUp`, `MouseScrollDown` et des `MouseMove` bouton enfoncé ; la touche sans effet des tests existants, `x`, devient `y`) ; `tests/proprietes/test_proprietes.py` (Modify : disposition et grille sur 50 graines) ; `tests/clients/test_force_layout.py` (aussi : les graines 1 à 2 000, sous la marque `lent` seule, avec les croisements écrits dans la sortie) ; les tests des quatre étapes de `force_layout` sur de petits graphes, comparés par `pytest.approx`.
+
+#### 23 undecies. Action : partie d'essai de l'écran rétro (amendement 2)
+
+*   **Type / Scope :** action du propriétaire, après la fusion du point 23 decies (ou dès le point 23 nonies, s'il le souhaite, pour juger les cadres et l'aide).
+*   **Proposed Changes :** le propriétaire joue au moins un cycle complet (`--dev` permis), en suivant la prochaine étape ; s'il le peut, il essaie aussi un terminal limité à 256 couleurs. La durée de son premier cycle est consignée. Il rend son verdict sur la lisibilité (objectif 12) et sur les objectifs 17 à 19, consigné dans le compte rendu de M1 avec la graine, la taille du terminal (colonnes × lignes), son nom et `COLORTERM`. Le verdict ne bloque pas la livraison de M1 (décision du propriétaire, 2026-11-22) : s'il est défavorable, au plus une pull request de fonctionnalité de correction suit dans M1 ; au-delà, la condition de révision de l'ADR 0006 s'applique, au niveau 2 de M3.
 
 **Volet C : le rejeu, la divergence et l'économie**
 
@@ -1503,6 +1761,8 @@ Chaque volet a sa pull request de scénarios (fichiers `.feature` en français e
 *   **Proposed Changes :** relever la durée des tâches `rejeu`, `mutation` et `tests-outillage` (qui lance toute la suite jusqu'au palier 4) dans la description de la pull request ; la mutation la plus longue est celle d'une pull request de scénarios, qui mute tout `core`. Au premier dépassement de 30 minutes, l'agent de code s'arrête et le signale au propriétaire. Sur la pull request de fonctionnalité du volet C, relever aussi la taille de `tests/references/rules-1/`, et les scores de mutation de `core` et `schema` : si l'un d'eux est sous 80 % malgré des tests complets (mutants équivalents), l'agent de code le signale au propriétaire, qui décide du seuil.
 
 *   **Proposed Changes (amendement 1, ajout) :** à partir de la pull request du point 23 quinquies, qui apporte la vitesse, mesurer aussi le débordement de « avancer jusqu'à la prochaine alerte » au palier ×100, sur la graine 1 pendant 20 000 ticks, par un script hors du dépôt dont la sortie est citée dans la description de la pull request ; au-delà de 2 ticks, l'agent de code le signale au propriétaire, qui décide d'une contre-pression. Remesurer la durée des tâches `tests`, `rejeu` et `mutation` après les points 23 ter à 23 quinquies (scénarios plus longs, mutation des étapes), et le débit d'écriture à ×100. Au palier ×100, mesurer aussi la longueur de la file du propriétaire et des files de relais des PNJ, et le nombre d'ordres de PNJ refusés (`SHIP_EN_ROUTE`, `QUOTA_EXCEEDED`) ; au-delà d'un refus par PNJ et par cycle en moyenne, l'agent de code le signale au propriétaire.
+
+*   **Proposed Changes (amendement 2, ajout) :** sur la pull request du point 23 decies, mesurer le temps de calcul de la grille et de peinture de la carte pour une mise à jour, au palier ×100, sur la graine 1, en 120 × 36, pendant 2 000 ticks, par un script hors du dépôt dont la sortie est citée dans la description de la pull request ; au-delà de 30 ms en moyenne, ou de 100 ms au plus, l'agent de code le signale au propriétaire. Relever aussi la durée du test de la disposition sur 2 000 graines, dans la tâche `rejeu`.
 
 ### Palier 4 : contrôles obligatoires, contrôles de nuit et suite canari (pull request protégée)
 
@@ -1600,10 +1860,20 @@ Chaque volet a sa pull request de scénarios (fichiers `.feature` en français e
 Les commandes ci-dessus restent valables. S'y ajoutent :
 
 *   **Tests :** aucun scénario de `partie.feature` ni de `ecrans.feature` dans `en_attente.txt` à la fin du point 23 quinquies ; `clients` n'importe toujours ni `core` ni `server` (`lint-imports`).
-*   **Mutation :** l'amendement ne crée aucun fichier dans `core` ni dans `schema` ; `clients/model.py`, `map_layout.py` et `texts.py` sont mutés sans plancher.
+*   **Mutation :** l'amendement ne crée aucun fichier dans `core` ni dans `schema` ; `clients/model.py`, `map_layout.py` et `texts.py` sont mutés sans plancher *(remplacé par l'amendement 2, voir le bloc « (amendement 2) » ci-dessous)*.
 *   **Déterminisme :** la génération du monde donne le même monde sous `PYTHONHASHSEED=0` et `1` (test de propriétés du point 23 quater, par deux sous-processus) ; le rejeu de 100 000 ticks sous deux valeurs vient au volet C.
-*   **Carte :** part des liens tracés et hauteur de la carte, mesurées par les tests de propriétés sur de nombreuses graines, publiées au compte rendu de M1.
+*   **Carte :** part des liens tracés et hauteur de la carte, mesurées par les tests de propriétés sur de nombreuses graines, publiées au compte rendu de M1 *(remplacé par l'amendement 2, voir le bloc « (amendement 2) » ci-dessous)*.
 *   **Manuel :** la partie d'essai du point 23 sexies, et l'essai de la veille du point 23 quater.
 *   **CI :** chaque pull request cite les liens des contrôles verts.
+
+**(amendement 2)**
+
+S'y ajoutent :
+
+*   **Tests :** aucun scénario de `ecrans.feature` dans `en_attente.txt` à la fin du point 23 decies ; `clients` n'importe toujours ni `core` ni `server` (`lint-imports`).
+*   **Mutation :** `clients/model.py`, `texts.py`, `palette.py`, `guide.py`, `force_layout.py` et `map_view.py` sont mutés sans plancher ; le score de `model.py` et de `texts.py` ne baisse pas ; `frames.py` et `textual_app.py` restent exclus.
+*   **Carte :** aucun recouvrement dans la grille, et les croisements de liens, sur les graines 1 à 2 000, publiés au compte rendu de M1 ; le temps de rendu du point 28 bis.
+*   **Manuel :** la partie d'essai du point 23 undecies.
+*   **Critère de sortie :** pour les objectifs 12 et 17 à 19, la preuve est le verdict consigné, favorable ou non (point 23 undecies) ; le critère de sortie du niveau 1, §11, ne change pas.
 
 *Drafted with EGM*
