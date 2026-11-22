@@ -336,9 +336,8 @@ def render(
     # fraction 1 − ticks_to_next_jump ÷ jump_ticks) gardent le tracé du lien.
     if navire is not None and navire.route:
         etapes = [navire.system_id, *navire.route]
-        fait = 0.0
-        if navire.activity is Activity.EN_ROUTE:
-            fait = 1 - navire.ticks_to_next_jump / obs.public_tunables.jump_ticks
+        # Un vaisseau qui a une route est en route : la fraction du saut en cours.
+        fait = 1 - navire.ticks_to_next_jump / obs.public_tunables.jump_ticks
         for rang, (a, b) in enumerate(zip(etapes, etapes[1:], strict=False)):
             if a in centres and b in centres:
                 depuis = fait if rang == 0 else 0.0

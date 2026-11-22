@@ -309,3 +309,22 @@ def test_tracer_a_partir_d_une_fraction_du_trait() -> None:
     entier = _Grille(View(0, (0.5, 0.5), 10, 1))
     entier.tracer((0.0, 0.0), (10.0, 0.0), True, "vaisseau")
     assert entier.braille[(0, 0)] == (0x09, "vaisseau")  # x = 0 et 1 : tout le trait
+
+
+def test_la_grille_sans_vaisseau_du_joueur() -> None:
+    grille = render(VUE, POSITIONS, modele_de(observation(())), None)
+    assert texte(grille, 9, 49, 53) == "┌┄┄┐"  # aucun système à portée sans vaisseau
+    assert not any(c.char == "▲" for ligne in grille for c in ligne)
+
+
+def test_positions_manquantes_ou_inconnues() -> None:
+    # system_3 n'a pas de position, et une position désigne un système inconnu (99) : ni l'un ni
+    # l'autre n'est dessiné, et la route vers system_3 s'arrête à system_2.
+    positions = {1: (0.1, 0.4), 2: (0.4, 0.4), 99: (0.7, 0.1)}
+    en_route = msgspec.structs.replace(
+        navire(system=1, activity=Activity.EN_ROUTE, route=(2, 3)), ticks_to_next_jump=2
+    )
+    grille = render(VUE, positions, modele_de(observation((en_route,))), None)
+    assert grille[2][49] == VIDE  # là où serait le cadre de 99
+    assert grille[10][25] == Cell("⠤", "vaisseau", "fond")
+    assert grille[10][40] == VIDE  # plus de lien ni de route vers system_3
