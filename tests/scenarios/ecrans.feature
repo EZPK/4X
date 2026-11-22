@@ -1,6 +1,8 @@
 # language: fr
 # Amendement 1 de M1 : l'écran unique, lu à travers le modèle client et la mise en page, sans Textual
 # (docs/designs/niveau-2-m1-noyau.md, plan détaillé, point 23 ter ; Technical Plan, points 7 bis et 13).
+# Amendement 2 : la disposition de la carte, la prochaine étape et l'aide de l'écran rétro
+# (plan détaillé, point 23 octies ; Technical Plan, points 7 ter et 13).
 # Le propriétaire est joué par ClientModel, attaché au serveur en mémoire comme client synchrone ;
 # ses ordres partent par le modèle. Réglages de test : ceux de tunables.toml, sauf jump_ticks = 5
 # et mining_rate = 10 ; « aux gisements vides » : de plus deposit_stock = 0.
@@ -94,8 +96,21 @@ Fonctionnalité: L'écran unique, lu à travers le modèle client
     Et le serveur joue 2 ticks
     Alors le modèle client n'a aucune alerte de fin de minage
 
-  Scénario: La carte d'un monde de 12 systèmes contient chaque système et chaque lien une fois
+  Scénario: La disposition de la carte place chaque système une fois, dans le carré, sans recouvrement, et la même à chaque appel
     Étant donné une partie du serveur en mémoire sur les réglages de test à 12 systèmes, graine 1, sans horloge
     Et le propriétaire joué par le modèle client
     Quand le serveur joue 1 tick
-    Alors la carte du modèle client contient chaque système une fois, et chaque lien une fois, tracé ou écrit
+    Alors la disposition des systèmes de l'observation place chaque système une fois, dans le carré, sans recouvrement des boîtes, et deux appels donnent la même
+
+  Scénario: La prochaine étape suit un cycle joué : aller miner, miner, aller vendre, vendre
+    Étant donné une partie du serveur en mémoire sur les réglages de test, sur la première graine dont le gisement conseillé depuis la station 1 n'est pas dans le système d'une station, et le reste depuis son propre système, sans horloge
+    Et le propriétaire joué par le modèle client
+    Quand le serveur joue 1 tick
+    Et le propriétaire suit la prochaine étape, un geste par tick, jusqu'à ce qu'elle conseille de vendre
+    Alors les touches conseillées, répétitions consécutives fondues, sont : d, aucune, Entrée, m, aucune, Entrée, d, aucune, Entrée, v
+
+  Scénario: L'aide donne les durées lues dans l'observation
+    Étant donné une partie du serveur en mémoire sur les réglages de test, graine 1, sans horloge
+    Et le propriétaire joué par le modèle client
+    Quand le serveur joue 1 tick
+    Alors les lignes de l'aide sur le minage et sur le transport donnent les durées lues dans l'observation

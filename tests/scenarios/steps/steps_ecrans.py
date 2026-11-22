@@ -1,8 +1,9 @@
-"""Définitions d'étapes de l'écran unique (amendement 1 de M1).
+"""Définitions d'étapes de l'écran unique (amendement 1 de M1) et de l'écran rétro (amendement 2).
 
-Document : docs/designs/niveau-2-m1-noyau.md, plan détaillé, point 23 ter ; Technical Plan,
-point 7 bis (modèle client, mise en page de la carte, refus en français, alertes, durées) et
-point 13 (interfaces de `clients/model.py`, `clients/map_layout.py`, `clients/texts.py`).
+Document : docs/designs/niveau-2-m1-noyau.md, plan détaillé, points 23 ter et 23 octies ;
+Technical Plan, point 7 bis (modèle client, refus en français, alertes, durées), point 7 ter
+(disposition de la carte, prochaine étape, aide, historique typé) et point 13 (interfaces de
+`clients/model.py`, `clients/texts.py`, `clients/force_layout.py`, `clients/guide.py`).
 
 Chemin protégé. Les étapes sont écrites avant le code : elles n'importent le code de `fourx`
 qu'à l'intérieur des fonctions. Elles réutilisent le serveur en mémoire et les étapes de
@@ -22,13 +23,23 @@ Conventions que ces étapes figent :
   et, à distance égale, c'est le système de plus petit identifiant ; l'historique du modèle
   contient ce texte ;
 - `Alert.text` vaut « arrivée : system_k » ou « fin de minage : ore_x q/capacité » ;
-- `layout(observation)` suit la « sortie de `layout` » du Technical Plan, point 7 bis ; la ligne
-  « liens : » peut être coupée n'importe où, et ses suites sont lues bout à bout ;
+- `history` est un tuple de `HistoryEntry(tick, kind, text)` ; un refus traduit y entre avec le
+  type `HistoryKind.REFUSAL`, et son texte contient celui de `refusal_text` ;
+- `force_layout(observation.systems)` rend un dictionnaire {système : (x, y)}, axe des y vers le
+  bas ; la boîte d'un système va de sa position vers la droite (0,135) et vers le haut (0,16) ;
+  deux boîtes se recouvrent si leurs écarts sur les deux axes sont tous deux inférieurs à leurs
+  dimensions, moins 1e-9 (deux boîtes qui se touchent, à l'arrondi des flottants près, ne se
+  recouvrent pas) ; la même tolérance vaut pour « dans le carré » ;
+- `next_step(model).keys` est un tuple de noms de touches de Textual (`"d"`, `"m"`, `"v"`,
+  `"enter"`, ou aucun) ; le scénario du cycle fait un seul geste par tick : `acknowledge()` pour
+  Entrée, l'envoi de `Step.command` par le modèle pour `d` et `m`, rien sinon ; il s'arrête dès
+  que la prochaine étape conseille `v` ;
+- `help_pages(observation, dev)` rend des lignes ; celle du minage commence par « 1. Miner », celle
+  du transport par « 2. Transporter » ;
 - le refus sur un gisement vide se joue sur les réglages de test « aux gisements vides »
   (`deposit_stock` = 0), faute de pouvoir vider un gisement de 20 000 unités dans un scénario.
 """
 
-import re
 from typing import Any
 
 from pytest_bdd import given, parsers, then, when
@@ -147,8 +158,12 @@ def refus_gisement_vide(serveur: Serveur) -> None:
 
 @then("l'historique du modèle client contient ce refus traduit")
 def historique_refus(serveur: Serveur) -> None:
+    model = importer("fourx.clients.model")
     assert serveur.refus
-    assert any(serveur.refus in ligne for ligne in serveur.modeles["propriétaire"].history)
+    assert any(
+        entree.kind == model.HistoryKind.REFUSAL and serveur.refus in entree.text
+        for entree in serveur.modeles["propriétaire"].history
+    )
 
 
 @then(
@@ -242,34 +257,93 @@ def aucune_alerte_de_minage(serveur: Serveur) -> None:
     assert alertes(serveur, "MINING_ENDED") == []
 
 
-@then(
-    "la carte du modèle client contient chaque système une fois, "
-    "et chaque lien une fois, tracé ou écrit"
+LARGEUR_BOITE = 0.135
+HAUTEUR_BOITE = 0.16
+TOLERANCE = 1e-9
+LIMITE_DU_CYCLE = 2_000
+
+
+# --- Quand (amendement 2)
+
+
+@when(
+    "le propriétaire suit la prochaine étape, un geste par tick, "
+    "jusqu'à ce qu'elle conseille de vendre"
 )
-def carte_complete(serveur: Serveur) -> None:
-    map_layout = importer("fourx.clients.map_layout")
+def suivre_la_prochaine_etape(serveur: Serveur) -> None:
+    guide = importer("fourx.clients.guide")
+    modele = serveur.modeles["propriétaire"]
+    serveur.touches = []
+    for _ in range(LIMITE_DU_CYCLE):
+        etape = guide.next_step(modele)
+        touches = tuple(etape.keys)
+        serveur.touches.append(touches)
+        if touches == ("v",):
+            return
+        if touches == ("enter",):
+            modele.acknowledge()
+        elif touches in (("d",), ("m",)):
+            assert etape.command is not None, etape
+            serveur.envoyer("propriétaire", etape.command)
+        else:
+            assert touches == (), etape
+        serveur.jeu.advance(1)
+    raise AssertionError(f"la vente n'est pas conseillée en {LIMITE_DU_CYCLE} ticks")
+
+
+# --- Alors (amendement 2)
+
+
+@then(
+    "la disposition des systèmes de l'observation place chaque système une fois, dans le carré, "
+    "sans recouvrement des boîtes, et deux appels donnent la même"
+)
+def disposition(serveur: Serveur) -> None:
+    force_layout = importer("fourx.clients.force_layout")
+    systemes = serveur.derniere("propriétaire").systems
+    assert len(systemes) == 12, len(systemes)
+    positions = force_layout.force_layout(systemes)
+    assert positions == force_layout.force_layout(systemes)
+    assert sorted(positions) == sorted(s.id for s in systemes), sorted(positions)
+    for ident, (x, y) in positions.items():
+        assert -TOLERANCE <= x and x + LARGEUR_BOITE <= 1 + TOLERANCE, (ident, x, y)
+        assert -TOLERANCE <= y - HAUTEUR_BOITE and y <= 1 + TOLERANCE, (ident, x, y)
+    idents = sorted(positions)
+    for rang, a in enumerate(idents):
+        for b in idents[rang + 1 :]:
+            (xa, ya), (xb, yb) = positions[a], positions[b]
+            recouvrement = (
+                abs(xa - xb) < LARGEUR_BOITE - TOLERANCE
+                and abs(ya - yb) < HAUTEUR_BOITE - TOLERANCE
+            )
+            assert not recouvrement, (a, positions[a], b, positions[b])
+
+
+@then(
+    parsers.re(r"les touches conseillées, répétitions consécutives fondues, sont : (?P<liste>.+)")
+)
+def touches_conseillees(serveur: Serveur, liste: str) -> None:
+    noms: dict[str, tuple[str, ...]] = {"aucune": (), "Entrée": ("enter",)}
+    attendues = [noms.get(nom, (nom,)) for nom in liste.split(", ")]
+    releves = serveur.touches
+    fondues = [t for rang, t in enumerate(releves) if rang == 0 or t != releves[rang - 1]]
+    assert fondues == attendues, releves
+
+
+@then(
+    "les lignes de l'aide sur le minage et sur le transport donnent les durées lues "
+    "dans l'observation"
+)
+def aide_et_durees(serveur: Serveur) -> None:
+    texts = importer("fourx.clients.texts")
     observation = serveur.derniere("propriétaire")
-    lignes = list(map_layout.layout(observation))
-    debut_liens = next(
-        (i for i, ligne in enumerate(lignes) if ligne.startswith("liens : ")), len(lignes)
-    )
-    cases: list[int] = []
-    traces: list[tuple[int, int]] = []
-    for ligne in lignes[:debut_liens]:
-        trouves = list(re.finditer(r"\[(\d+)\][^\[]*", ligne))
-        cases += [int(t.group(1)) for t in trouves]
-        for gauche, droite in zip(trouves, trouves[1:], strict=False):
-            if gauche.group(0).endswith("─") and gauche.end() == droite.start():
-                a, b = int(gauche.group(1)), int(droite.group(1))
-                traces.append((min(a, b), max(a, b)))
-    texte_liens = "".join(ligne.strip() for ligne in lignes[debut_liens:])[len("liens :") :]
-    ecrits = [
-        (min(int(a), int(b)), max(int(a), int(b)))
-        for a, b in re.findall(r"(\d+)–(\d+)", texte_liens)
-    ]
-    attendus = {(min(s.id, v), max(s.id, v)) for s in observation.systems for v in s.neighbors}
-    assert len(observation.systems) == 12, len(observation.systems)
-    assert sorted(cases) == sorted(s.id for s in observation.systems), cases
-    tous = traces + ecrits
-    assert len(tous) == len(set(tous)), tous
-    assert set(tous) == attendus, (sorted(set(tous) ^ attendus), traces, ecrits)
+    navire = serveur.vaisseau("propriétaire")
+    publics = observation.public_tunables
+    lignes = list(texts.help_pages(observation, False))
+    minage = [ligne for ligne in lignes if ligne.startswith("1. Miner")]
+    transport = [ligne for ligne in lignes if ligne.startswith("2. Transporter")]
+    assert len(minage) == 1 and len(transport) == 1, lignes
+    duree_minage = texts.duration_text(-(-navire.capacity // publics.mining_rate))
+    assert duree_minage in minage[0], (duree_minage, minage[0])
+    duree_saut = texts.duration_text(publics.jump_ticks)
+    assert duree_saut in transport[0], (duree_saut, transport[0])
