@@ -55,3 +55,16 @@ Les détails des six rapports (typographie, unités, renvois, formulations) sont
 
 Toutes les corrections ci-dessus sont appliquées au document et à l'ADR, avec les réponses E1 à E4 : point 7 ter réécrit (palette avec `ore_b` en `#5AA0FF`, contrastes calculés : le plus faible des couples retenus vaut 5,07 pour 1 ; tableau des cadres ; disposition en quatre étapes, constantes fixées ; vue de la carte ; prochaine étape fondée sur la décision du PNJ ; aide ligne par ligne) ; objectifs 12 et 17 à 19 ; plan détaillé, volet B ter (points 23 septies à 23 undecies, deux pull requests de fonctionnalité) ; points 1, 12, 13, 23 quater et 28 bis ; alternatives AB à AG ; risques ; Verification Plan ; ADR 0006 (options (a) et (b′), critère du §11, condition de révision).
 
+## Tour 2
+
+*   **Rapports :** `critic_report_design_tour2.md`, `implementation_readiness_report_tour2.md`, `critic_report_structure_tour2.md`. Aucun bloquant ; 13 majeurs, 41 détails. Tous les bloquants et majeurs du tour 1 sont corrigés, deux en partie (disposition, prochaine étape).
+*   **Décision du propriétaire (E5, 2026-11-22) :** à l'arrêt, la prochaine étape conseille le cycle au meilleur gain par tick, et non la décision du PNJ (alternative AH).
+*   **Corrections :**
+    - disposition : séparation par boîtes (0,125 × 0,15, calculées pour 100 × 30), test de non-recouvrement dans la grille, en 120 × 36 et en 100 × 30 ; 50 graines sous `proprietes`, 2 000 sous `lent`, hors de la mutation ; quatre étapes exposées et testées sur de petits graphes ; cas dégénérés ;
+    - traits : `trait_faible` `#5E6A99` (3,66 pour 1 sur le fond), `trait_fort` `#7B89C2` (5,68), `GRAPHIC_PAIRS` à 3 pour 1 ; fonds fixés ;
+    - prochaine étape : règles 5 (vente, V ÷ (t + 1)) et 6 (cycle, G ÷ T, en entiers) ; règle 4 observable (un autre vaisseau visible dans le système) ; `Step.command` ; règle 0 bis ; textes de l'alerte et des ordres ;
+    - aide : lignes des touches fixées, paramètre `dev` ;
+    - touches `z`, `x`, `c` hors saisie, sans effet aux bornes ; `x` des tests existants remplacé par `y` ;
+    - scénario du cycle : condition de graine, procédure, arrêt ; `steps_partie.py` ajouté ;
+    - structure : décisions du 2026-11-22 en lignes du tableau du point 1 (le libellé « E1 à E4 » sort du document) ; critère de sortie ; point 13 (`history`, `mettre_a_jour`) ; marques ; CUJ A ; palier 3 ; clause de refus de l'ADR ; ADR au passé.
+

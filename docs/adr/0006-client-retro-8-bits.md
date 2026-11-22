@@ -6,7 +6,7 @@
 - **Date :** 2026-11-22
 - **Décideur :** le propriétaire
 - **Contexte :**
-  - *Le cadre.* Le niveau 1 décrit le jeu comme « la simulation, le serveur et le client ASCII » (Overview), et retient Textual dans le terminal plutôt qu'une interface web (niveau 1, alternative N : la même porte au niveau des données permet de changer de client plus tard). « ASCII » désigne ici un rendu en caractères seuls, sans couleur.
+  - *Le cadre.* Avant cette ADR, le niveau 1 décrivait le jeu comme « la simulation, le serveur et le client ASCII » (Overview), et retient Textual dans le terminal plutôt qu'une interface web (niveau 1, alternative N : la même porte au niveau des données permet de changer de client plus tard). « ASCII » désigne ici un rendu en caractères seuls, sans couleur.
   - *Le constat.* Après la partie d'essai du 2026-11-22 (niveau 2 de M1, plan détaillé, point 23 sexies), le propriétaire juge l'écran « visible, mais vraiment pas clair » : l'information n'est pas hiérarchisée, l'aide est mince, les mécaniques ne sont pas expliquées.
   - *La demande.* Il estime que l'ASCII était « une mauvaise idée au final », et demande une esthétique rétro, « 4 bits, 8 bits ou quelque chose comme ça », avec un graphe de l'univers « clair et joli », qu'on puisse zoomer, avec « une forme de gravité entre les nodes » (les nœuds), comme le graphe d'Obsidian. Il a vu des maquettes de cet écran dans le terminal, et choisi la palette 8 bits.
 - **Options :**
