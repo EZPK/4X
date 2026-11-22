@@ -258,7 +258,8 @@ def aucune_alerte_de_minage(serveur: Serveur) -> None:
     assert alertes(serveur, "MINING_ENDED") == []
 
 
-# La boîte d'un système : 7,5 × 5,5 cases de la plus petite carte (70 × 23), vers le bas.
+# La boîte d'un système : 7,5 × 5,5 cases de la plus petite carte (70 × 23), vers la droite
+# et vers le bas.
 LARGEUR_BOITE = 7.5 / 70
 HAUTEUR_BOITE = 5.5 / 23
 TOLERANCE = 1e-9
