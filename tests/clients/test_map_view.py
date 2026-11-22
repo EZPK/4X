@@ -175,10 +175,27 @@ def test_route_en_jaune_et_vaisseau_sur_son_lien() -> None:
         navire(system=1, activity=Activity.EN_ROUTE, route=(2, 3)), ticks_to_next_jump=2
     )
     grille = render(VUE, POSITIONS, modele_de(observation((en_route,))), None)
-    assert grille[10][15] == Cell("⠤", "vaisseau", "fond")
+    # Déjà parcouru (de system_1 au vaisseau) : le lien à portée reprend son tracé.
+    assert grille[10][15] == Cell("⠤", "trait_fort", "fond")
+    # Reste à parcourir (du vaisseau à system_2, puis jusqu'à system_3) : en jaune.
+    assert grille[10][25] == Cell("⠤", "vaisseau", "fond")
     assert grille[10][40] == Cell("⠤", "vaisseau", "fond")  # la route couvre le lien lointain
     assert grille[10][21] == Cell("▲", "vaisseau", "fond")  # 8,5 + 0,6 × 21 = 21,1
     assert grille[9][8].char == "─"  # plus de ▲ dans la bordure du cadre
+
+
+def test_les_sauts_suivants_de_la_route_partent_de_leur_systeme() -> None:
+    # system_3 sous system_2 : la route tourne à angle droit en system_2. Le deuxième saut part du
+    # centre du cadre de system_2, (60, 42) en points, et descend jusqu'à (60, 78), et non du
+    # vaisseau : la colonne 30 est jaune entre les deux cadres.
+    positions = {1: (0.1, 0.4), 2: (0.4, 0.4), 3: (0.4, 0.8)}
+    en_route = msgspec.structs.replace(
+        navire(system=1, activity=Activity.EN_ROUTE, route=(2, 3)), ticks_to_next_jump=2
+    )
+    grille = render(VUE, positions, modele_de(observation((en_route,))), None)
+    for ligne in (14, 15, 16):
+        assert grille[ligne][30] == Cell("⡇", "vaisseau", "fond"), ligne
+    assert grille[15][25] == VIDE  # là où passerait un trait parti du vaisseau
 
 
 def test_le_vaisseau_en_route_ne_cache_ni_cadre_ni_etiquette() -> None:
