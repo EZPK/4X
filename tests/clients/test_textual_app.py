@@ -956,7 +956,7 @@ def test_entete_et_legende_de_la_carte() -> None:
         await pilot.press("z")
         assert "zoom ×1,5" in lire(app, "#carte-entete")
         assert lire(app, "#carte-legende") == (
-            " S1 station  ◆ ore_a  ◆ ore_b  ▲ toi  ── à portée  ┄┄ loin, stock ?"
+            " S1 station  ◆ ore_a  ◆ ore_b  ▲ toi  ⠒⠒⠒ à portée  ⠂⠐⠂ loin, stock ?"
         )
 
     jouer(observation((navire(system=1),)), scenario)

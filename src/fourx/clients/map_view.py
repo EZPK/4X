@@ -6,11 +6,12 @@ peindre la grille que rend `render`.
 
 Le rendu suit la maquette validée : chaque système est un petit cadre (┌──┐ │12│ └──┘), plein à
 portée, en tirets hors de portée ; l'étiquette de sa station (S1) en violet à droite du cadre ; son
-gisement et son stock dessous (◆20000, ou ◆? hors de portée). Les liens sont des traits fins
-d'un seul tenant (─ │ ╱ ╲), atténués et en tirets (┄ ┆) hors de portée ; la route du vaisseau est
-en jaune. Au zoom 1,
-le carré [0, 1] × [0, 1] couvre toute la carte ; la position d'un système est le coin en haut à
-gauche de son cadre. Ordre de dessin : liens, route, systèmes, étiquettes, vaisseau en route.
+gisement et son stock dessous (◆20000, ou ◆? hors de portée). Les liens sont tracés point par
+point en caractères Braille (2 × 4 points par case), ce qui permet un trait fin à n'importe quel
+angle : plein à portée, pointillé et atténué hors de portée ; la route du vaisseau est en jaune.
+Au zoom 1, le carré [0, 1] × [0, 1] couvre toute la carte ; la position d'un système est le coin
+en haut à gauche de son cadre. Ordre de dessin : liens, route, systèmes, étiquettes, vaisseau en
+route.
 """
 
 import math
@@ -153,59 +154,64 @@ def ship_position(model: ClientModel, positions: Positions) -> Position | None:
     )
 
 
+# Les points d'une case Braille : (colonne du point, ligne du point) → bit du caractère U+2800.
+BITS_BRAILLE = {
+    (0, 0): 0x01,
+    (0, 1): 0x02,
+    (0, 2): 0x04,
+    (1, 0): 0x08,
+    (1, 1): 0x10,
+    (1, 2): 0x20,
+    (0, 3): 0x40,
+    (1, 3): 0x80,
+}
+POINTS_PAR_CASE = (2, 4)
+PRIORITE = {"trait_faible": 1, "trait_fort": 2, "vaisseau": 3}
+POINTILLE = 3  # hors de portée, un point sur trois
+
+
 def _centre_du_cadre(view: View, position: Position) -> Position:
-    colonne, ligne = to_cells(view, position)
-    return colonne + LARGEUR_CADRE / 2 - 0.5, ligne + HAUTEUR_CADRE / 2 - 0.5
+    """Le centre du cadre d'un système, en points Braille."""
+    colonne, ligne = anchor(view, position)
+    return (
+        (colonne + LARGEUR_CADRE / 2) * POINTS_PAR_CASE[0],
+        (ligne + HAUTEUR_CADRE / 2) * POINTS_PAR_CASE[1],
+    )
 
 
-def _trace(a: Position, b: Position) -> list[tuple[int, int]]:
-    """Les cases d'un trait de a à b, dans l'ordre, sans doublon."""
-    dx, dy = b[0] - a[0], b[1] - a[1]
-    pas = max(math.ceil(max(abs(dx), abs(dy))), 1)
+def _points(a: Position, b: Position) -> list[tuple[int, int]]:
+    """Les points Braille d'un trait de a à b, dans l'ordre (tracé de Bresenham)."""
+    x0, y0 = math.floor(a[0]), math.floor(a[1])
+    x1, y1 = math.floor(b[0]), math.floor(b[1])
+    dx, dy = abs(x1 - x0), -abs(y1 - y0)
+    sx, sy = (1 if x0 < x1 else -1), (1 if y0 < y1 else -1)
+    erreur = dx + dy
+    points = []
+    while True:
+        points.append((x0, y0))
+        if (x0, y0) == (x1, y1):
+            return points
+        double = 2 * erreur
+        if double >= dy:
+            erreur += dy
+            x0 += sx
+        if double <= dx:
+            erreur += dx
+            y0 += sy
+
+
+def case_du_point(point: tuple[int, int]) -> tuple[int, int]:
+    return point[0] // POINTS_PAR_CASE[0], point[1] // POINTS_PAR_CASE[1]
+
+
+def _cases_du_trait(a: Position, b: Position) -> list[tuple[int, int]]:
+    """Les cases que traverse un trait, dans l'ordre, sans doublon."""
     cases: list[tuple[int, int]] = []
-    for i in range(pas + 1):
-        case = (math.floor(a[0] + dx * i / pas + 0.5), math.floor(a[1] + dy * i / pas + 0.5))
+    for point in _points(a, b):
+        case = case_du_point(point)
         if not cases or cases[-1] != case:
             cases.append(case)
     return cases
-
-
-def trait(dx: float, dy: float, gras: bool = False) -> str:
-    """Le caractère d'un trait selon sa pente à l'écran (une case est deux fois plus haute que
-    large) : ─ │ ╲ ╱, ou ━ ┃ pour un trait gras."""
-    pente = math.inf if dx == 0 else 2 * dy / dx
-    if abs(pente) < 0.5:
-        return "━" if gras else "─"
-    if abs(pente) > 2:
-        return "┃" if gras else "│"
-    return "╲" if pente > 0 else "╱"
-
-
-TIRETS = {"─": "┄", "│": "┆"}
-GRAS = {"─": "━", "│": "┃"}
-
-
-def caractere_local(
-    precedente: tuple[int, int] | None,
-    case: tuple[int, int],
-    pente: tuple[float, float],
-    plein: bool = True,
-    gras: bool = False,
-) -> str:
-    """Le caractère d'une case d'un lien. Un lien qui paraît diagonal à l'écran est tracé en ╲ ou
-    ╱ ; un lien plutôt horizontal (ou vertical) en ─ (ou │), avec ╲ ou ╱ sur chaque case où il
-    change de ligne (ou de colonne), d'après son pas depuis la case précédente. Hors de portée, les
-    traits droits passent en tirets (┄ ┆) ; pour la route, en gras (━ ┃)."""
-    char = trait(*pente)
-    if char in "─│" and precedente is not None:
-        dx, dy = case[0] - precedente[0], case[1] - precedente[1]
-        if dx != 0 and dy != 0:
-            char = "╲" if dx * dy > 0 else "╱"
-    if gras:
-        return GRAS.get(char, char)
-    if not plein:
-        return TIRETS.get(char, char)
-    return char
 
 
 class _Grille:
@@ -213,22 +219,26 @@ class _Grille:
 
     def __init__(self, view: View) -> None:
         self.view = view
-        self.traits: dict[tuple[int, int], Cell] = {}
+        self.braille: dict[tuple[int, int], tuple[int, str]] = {}
         self.cases: dict[tuple[int, int], Cell] = {}
 
     def dedans(self, colonne: int, ligne: int) -> bool:
         return 0 <= colonne < self.view.width and 0 <= ligne < self.view.height
 
-    def tracer(self, a: Position, b: Position, plein: bool, role: str, gras: bool = False) -> None:
-        """Un lien d'un seul tenant : chaque case prend le caractère de son pas local (─ │ ╲ ╱),
-        en tirets (┄ ┆) pour un lien hors de portée, en gras (━ ┃) pour la route."""
-        cases = _trace(a, b)
-        pente = (b[0] - a[0], b[1] - a[1])
-        for rang, case in enumerate(cases):
-            if self.dedans(*case):
-                precedente = cases[rang - 1] if rang > 0 else None
-                char = caractere_local(precedente, case, pente, plein, gras)
-                self.traits[case] = Cell(char, role, "fond")
+    def tracer(self, a: Position, b: Position, plein: bool, role: str) -> None:
+        """Un lien, point par point : tous les points s'il est plein, un sur trois sinon. Une case
+        traversée par plusieurs liens prend la couleur du plus important (route, puis lien à
+        portée, puis lien lointain)."""
+        for rang, point in enumerate(_points(a, b)):
+            if not plein and rang % POINTILLE:
+                continue
+            case = case_du_point(point)
+            if not self.dedans(*case):
+                continue
+            bit = BITS_BRAILLE[(point[0] % POINTS_PAR_CASE[0], point[1] % POINTS_PAR_CASE[1])]
+            bits, ancien = self.braille.get(case, (0, role))
+            garde = ancien if PRIORITE[ancien] > PRIORITE[role] else role
+            self.braille[case] = (bits | bit, garde)
 
     def ecrire(self, colonne: int, ligne: int, char: str, fg: str, bg: str = "fond") -> None:
         if self.dedans(colonne, ligne):
@@ -241,10 +251,16 @@ class _Grille:
         for decalage, char in enumerate(mot):
             self.ecrire(colonne + decalage, ligne, char, fg, bg)
 
+    def _braille(self, colonne: int, ligne: int) -> Cell:
+        if (colonne, ligne) not in self.braille:
+            return VIDE
+        bits, role = self.braille[(colonne, ligne)]
+        return Cell(chr(0x2800 + bits), role, "fond")
+
     def rendre(self) -> tuple[tuple[Cell, ...], ...]:
         return tuple(
             tuple(
-                self.cases.get((colonne, ligne)) or self.traits.get((colonne, ligne)) or VIDE
+                self.cases.get((colonne, ligne)) or self._braille(colonne, ligne)
                 for colonne in range(self.view.width)
             )
             for ligne in range(self.view.height)
@@ -299,7 +315,7 @@ def render(
     portee = in_range(obs, navire)
     places = {i: p for i, p in positions.items() if any(s.id == i for s in obs.systems)}
     centres = {i: _centre_du_cadre(view, p) for i, p in places.items()}
-    # Liens : traits fins entre deux systèmes à portée, points sinon.
+    # Liens : pleins entre deux systèmes à portée, pointillés sinon.
     for s in sorted(obs.systems, key=lambda s: s.id):
         for v in sorted(s.neighbors):
             if v > s.id and s.id in centres and v in centres:
@@ -311,7 +327,7 @@ def render(
         etapes = [navire.system_id, *navire.route]
         for a, b in zip(etapes, etapes[1:], strict=False):
             if a in centres and b in centres:
-                grille.tracer(centres[a], centres[b], True, "vaisseau", gras=True)
+                grille.tracer(centres[a], centres[b], True, "vaisseau")
     # Systèmes : cadre, station, gisement et stock, vaisseaux.
     proches: dict[int, int] = {}
     for autre in obs.other_ships:
@@ -359,11 +375,11 @@ def render(
     # qui la suit sur le trait (il ne cache ni un cadre ni une étiquette).
     position = ship_position(model, places)
     if en_route and navire is not None and position is not None:
-        colonne_f, ligne_f = _centre_du_cadre(view, position)
-        ici = (math.floor(colonne_f + 0.5), math.floor(ligne_f + 0.5))
+        x, y = _centre_du_cadre(view, position)
+        ici = case_du_point((math.floor(x), math.floor(y)))
         cases = [ici]
         if navire.system_id in centres and navire.route[0] in centres:
-            trace = _trace(centres[navire.system_id], centres[navire.route[0]])
+            trace = _cases_du_trait(centres[navire.system_id], centres[navire.route[0]])
             rang = min(
                 range(len(trace)),
                 key=lambda k: (trace[k][0] - ici[0]) ** 2 + (trace[k][1] - ici[1]) ** 2,

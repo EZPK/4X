@@ -16,8 +16,9 @@ from fourx.clients.map_view import (
     ZOOMS,
     Cell,
     View,
+    _points,
     anchor,
-    caractere_local,
+    case_du_point,
     center_on,
     in_range,
     initial_view,
@@ -26,7 +27,6 @@ from fourx.clients.map_view import (
     ship_position,
     system_at,
     to_cells,
-    trait,
     zoom,
 )
 from fourx.clients.model import ClientModel
@@ -95,31 +95,11 @@ def test_systeme_sous_le_pointeur_le_cadre_entier() -> None:
     assert system_at(VUE, POSITIONS, 50, 10) == 3
 
 
-def test_un_lien_presque_horizontal_reste_d_un_seul_tenant() -> None:
-    # Pente 2 × 1 ÷ 10 : un trait horizontal, avec ╲ à la case où il descend d'une ligne.
-    pente = (10.0, 1.0)
-    assert caractere_local(None, (0, 0), pente) == "─"
-    assert caractere_local((0, 0), (1, 0), pente) == "─"
-    assert caractere_local((4, 0), (5, 1), pente) == "╲"
-    assert caractere_local((4, 1), (5, 0), (10.0, -1.0)) == "╱"
-    # Pente verticale : │, avec ╲ à la case où il change de colonne.
-    assert caractere_local((0, 0), (0, 1), (1.0, 8.0)) == "│"
-    assert caractere_local((0, 3), (1, 4), (1.0, 8.0)) == "╲"
-    # Un lien qui paraît diagonal : ╲ ou ╱ partout.
-    assert caractere_local((0, 0), (1, 0), (4.0, 2.0)) == "╲"
-    # Hors de portée, les traits droits en tirets ; la route en gras.
-    assert caractere_local((0, 0), (1, 0), pente, plein=False) == "┄"
-    assert caractere_local((0, 0), (0, 1), (1.0, 8.0), plein=False) == "┆"
-    assert caractere_local((4, 0), (5, 1), pente, plein=False) == "╲"
-    assert caractere_local((0, 0), (1, 0), pente, gras=True) == "━"
-
-
-def test_le_caractere_d_un_trait_suit_sa_pente_a_l_ecran() -> None:
-    assert trait(10, 0) == "─" and trait(10, 1) == "─"
-    assert trait(0, 5) == "│" and trait(1, 5) == "│"
-    assert trait(4, 2) == "╲" and trait(-4, -2) == "╲"
-    assert trait(4, -2) == "╱" and trait(-4, 2) == "╱"
-    assert trait(10, 0, gras=True) == "━" and trait(0, 5, gras=True) == "┃"
+def test_les_points_braille_d_un_trait() -> None:
+    # Le trait de (0, 0) à (5, 2), en points : Bresenham, dans l'ordre.
+    assert _points((0.0, 0.0), (5.0, 2.0)) == [(0, 0), (1, 0), (2, 1), (3, 1), (4, 2), (5, 2)]
+    assert _points((3.0, 3.0), (3.0, 3.0)) == [(3, 3)]
+    assert case_du_point((5, 9)) == (2, 2)  # 2 points par colonne, 4 par ligne
 
 
 # --- Portée et position du vaisseau
@@ -180,8 +160,11 @@ def test_le_vaisseau_a_l_arret_dans_la_bordure_de_son_cadre() -> None:
 
 def test_liens_traits_fins_a_portee_points_sinon() -> None:
     grille = render(VUE, POSITIONS, a_l_arret(), None)
-    assert grille[10][20] == Cell("─", "trait_fort", "fond")  # system_1 – system_2
-    assert grille[10][40] == Cell("┄", "trait_faible", "fond")  # system_2 – system_3, en tirets
+    # Centres en points : (18, 42), (60, 42), (102, 42) ; la rangée 42 % 4 = 2 des cases.
+    assert grille[10][20] == Cell("⠤", "trait_fort", "fond")  # system_1 – system_2, plein
+    # system_2 – system_3, un point sur trois depuis (60, 42) : le point 81 est le rang 21.
+    assert grille[10][40] == Cell("⠠", "trait_faible", "fond")
+    assert grille[10][41] == VIDE
     assert grille[10][8].char == " " and grille[10][8].bg == "cadre_clair"  # le cadre couvre
 
 
@@ -190,10 +173,10 @@ def test_route_en_jaune_et_vaisseau_sur_son_lien() -> None:
         navire(system=1, activity=Activity.EN_ROUTE, route=(2, 3)), ticks_to_next_jump=2
     )
     grille = render(VUE, POSITIONS, modele_de(observation((en_route,))), None)
-    assert grille[10][15] == Cell("━", "vaisseau", "fond")
-    assert grille[10][40] == Cell("━", "vaisseau", "fond")  # la route va jusqu'à system_3
+    assert grille[10][15] == Cell("⠤", "vaisseau", "fond")
+    assert grille[10][40] == Cell("⠤", "vaisseau", "fond")  # la route couvre le lien lointain
     assert grille[10][21] == Cell("▲", "vaisseau", "fond")  # 8,5 + 0,6 × 21 = 21,1
-    assert grille[9][8].char == "─"  # plus de ▲ dans la bordure
+    assert grille[9][8].char == "─"  # plus de ▲ dans la bordure du cadre
 
 
 def test_le_vaisseau_en_route_ne_cache_ni_cadre_ni_etiquette() -> None:

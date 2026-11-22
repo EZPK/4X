@@ -28,8 +28,8 @@ from fourx.clients.force_layout import (
 from fourx.clients.map_view import (
     HAUTEUR_CADRE,
     LARGEUR_CADRE,
+    _cases_du_trait,
     _centre_du_cadre,
-    _trace,
     anchor,
     initial_view,
 )
@@ -238,7 +238,9 @@ def traversees(systemes: tuple[SystemView, ...], positions: Positions) -> int:
     liens = sorted({(min(s.id, v), max(s.id, v)) for s in systemes for v in s.neighbors})
     total = 0
     for a, b in liens:
-        trace = _trace(_centre_du_cadre(vue, positions[a]), _centre_du_cadre(vue, positions[b]))
+        trace = _cases_du_trait(
+            _centre_du_cadre(vue, positions[a]), _centre_du_cadre(vue, positions[b])
+        )
         if any(set(trace) & cadres[c] for c in cadres if c not in (a, b)):
             total += 1
     return total
