@@ -26,7 +26,8 @@ Conventions que ces étapes figent :
 - `history` est un tuple de `HistoryEntry(tick, kind, text)` ; un refus traduit y entre avec le
   type `HistoryKind.REFUSAL`, et son texte contient celui de `refusal_text` ;
 - `force_layout(observation.systems)` rend un dictionnaire {système : (x, y)}, axe des y vers le
-  bas ; la boîte d'un système va de sa position vers la droite (0,135) et vers le haut (0,16) ;
+  bas ; la position d'un système est le coin en haut à gauche de son cadre, et sa boîte va de
+  là vers la droite (7,5 cases d'une carte de 70) et vers le bas (5,5 lignes d'une carte de 23) ;
   deux boîtes se recouvrent si leurs écarts sur les deux axes sont tous deux inférieurs à leurs
   dimensions, moins 1e-9 (deux boîtes qui se touchent, à l'arrondi des flottants près, ne se
   recouvrent pas) ; la même tolérance vaut pour « dans le carré » ;
@@ -257,8 +258,10 @@ def aucune_alerte_de_minage(serveur: Serveur) -> None:
     assert alertes(serveur, "MINING_ENDED") == []
 
 
-LARGEUR_BOITE = 0.135
-HAUTEUR_BOITE = 0.16
+# La boîte d'un système : 7,5 × 5,5 cases de la plus petite carte (70 × 23), vers la droite
+# et vers le bas.
+LARGEUR_BOITE = 7.5 / 70
+HAUTEUR_BOITE = 5.5 / 23
 TOLERANCE = 1e-9
 LIMITE_DU_CYCLE = 2_000
 
@@ -307,7 +310,7 @@ def disposition(serveur: Serveur) -> None:
     assert sorted(positions) == sorted(s.id for s in systemes), sorted(positions)
     for ident, (x, y) in positions.items():
         assert -TOLERANCE <= x and x + LARGEUR_BOITE <= 1 + TOLERANCE, (ident, x, y)
-        assert -TOLERANCE <= y - HAUTEUR_BOITE and y <= 1 + TOLERANCE, (ident, x, y)
+        assert -TOLERANCE <= y and y + HAUTEUR_BOITE <= 1 + TOLERANCE, (ident, x, y)
     idents = sorted(positions)
     for rang, a in enumerate(idents):
         for b in idents[rang + 1 :]:
