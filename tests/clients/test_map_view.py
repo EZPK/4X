@@ -175,7 +175,10 @@ def test_route_en_jaune_et_vaisseau_sur_son_lien() -> None:
         navire(system=1, activity=Activity.EN_ROUTE, route=(2, 3)), ticks_to_next_jump=2
     )
     grille = render(VUE, POSITIONS, modele_de(observation((en_route,))), None)
-    assert grille[10][15] == Cell("⠤", "vaisseau", "fond")
+    # Déjà parcouru (de system_1 au vaisseau) : le lien à portée reprend son tracé.
+    assert grille[10][15] == Cell("⠤", "trait_fort", "fond")
+    # Reste à parcourir (du vaisseau à system_2, puis jusqu'à system_3) : en jaune.
+    assert grille[10][25] == Cell("⠤", "vaisseau", "fond")
     assert grille[10][40] == Cell("⠤", "vaisseau", "fond")  # la route couvre le lien lointain
     assert grille[10][21] == Cell("▲", "vaisseau", "fond")  # 8,5 + 0,6 × 21 = 21,1
     assert grille[9][8].char == "─"  # plus de ▲ dans la bordure du cadre
