@@ -433,7 +433,8 @@ def test_chaque_etat_du_vaisseau_se_lit_dans_son_cadre(monde_12: Observation, et
             assert "arrivée dans 62 ticks" in vaisseau
         if etat == "minage":
             taux = obs.public_tunables.mining_rate
-            assert f"fin dans {-(-62 // taux)} ticks" in vaisseau  # 62 unités libres
+            libre = navire_.capacity - 38  # 38 unités à bord
+            assert f"fin dans {-(-libre // taux)} ticks" in vaisseau
         assert "ordre envoyé : déplacer vers system_" in vaisseau
         canevas = app.query_one(MapCanvas)
         for s in obs.systems:
