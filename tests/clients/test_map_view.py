@@ -296,3 +296,16 @@ def test_l_espace_entre_deux_mots_ne_couvre_jamais_une_case_occupee() -> None:
     libre.ecrire(5, 0, "X", "texte")
     _etiquette(libre, 0, 0, [("ab", "texte"), ("cd", "texte")])
     assert "".join(c.char for c in libre.rendre()[0][:6]) == "ab cdX"
+
+
+def test_tracer_a_partir_d_une_fraction_du_trait() -> None:
+    # Un trait horizontal de 11 points, de x = 0 à x = 10, sur la rangée 0 des cases.
+    # À partir de la moitié : le point 5 est le premier tracé (round(0,5 × 10) = 5).
+    grille = _Grille(View(0, (0.5, 0.5), 10, 1))
+    grille.tracer((0.0, 0.0), (10.0, 0.0), True, "vaisseau", 0.5)
+    assert (2, 0) in grille.braille and grille.braille[(2, 0)] == (0x08, "vaisseau")  # x = 5
+    assert (1, 0) not in grille.braille  # x = 2 et 3 : avant la moitié
+    assert grille.braille[(5, 0)] == (0x01, "vaisseau")  # x = 10, le dernier point
+    entier = _Grille(View(0, (0.5, 0.5), 10, 1))
+    entier.tracer((0.0, 0.0), (10.0, 0.0), True, "vaisseau")
+    assert entier.braille[(0, 0)] == (0x09, "vaisseau")  # x = 0 et 1 : tout le trait

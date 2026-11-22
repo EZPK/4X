@@ -234,7 +234,7 @@ class _Grille:
         plusieurs liens prend la couleur du plus important (route, puis lien à portée, puis lien
         lointain)."""
         points = _points(a, b)
-        premier = round(min(max(depuis, 0.0), 1.0) * (len(points) - 1))
+        premier = round(depuis * (len(points) - 1))  # depuis est entre 0 et 1
         for rang, point in enumerate(points):
             if rang < premier or (not plein and rang % POINTILLE):
                 continue
