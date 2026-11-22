@@ -1,8 +1,8 @@
 # M1 : noyau déterministe et tranche 0 (document de niveau 2)
 
 *   **Auteur :** Thomas (thom.bruyer)
-*   **Statut :** Proposed (amendement 2 en revue ; le document est Approved depuis le 2026-11-08, et l'amendement 1 depuis le 2026-11-21)
-*   **Date :** 2026-11-02 ; mis à jour le 2026-11-06 (décisions du propriétaire sur le contenu du jeu ; corrections de la revue EGM, étapes 5 à 9) ; approuvé par le propriétaire le 2026-11-08 ; amendement 1 rédigé le 2026-11-12, mis à jour pendant sa revue, approuvé par le propriétaire le 2026-11-21 ; amendement 2 rédigé le 2026-11-22, en revue
+*   **Statut :** Approved (amendement 2 approuvé par le propriétaire le 2026-11-22 ; le document était Approved depuis le 2026-11-08, et l'amendement 1 depuis le 2026-11-21)
+*   **Date :** 2026-11-02 ; mis à jour le 2026-11-06 (décisions du propriétaire sur le contenu du jeu ; corrections de la revue EGM, étapes 5 à 9) ; approuvé par le propriétaire le 2026-11-08 ; amendement 1 rédigé le 2026-11-12, mis à jour pendant sa revue, approuvé par le propriétaire le 2026-11-21 ; amendement 2 rédigé le 2026-11-22, mis à jour pendant sa revue, approuvé par le propriétaire le 2026-11-22
 *   **Niveau 1 :** [architecture-niveau-1.md](./architecture-niveau-1.md) (CUJ 1, CUJ 4, §1 à §7, §10, §11 ligne M1)
 *   **Intentions reprises :** [RFC du brainstorm](./mmo-gestion-spatiale-ia.md), jalon « M1 – Tranche 0 ». Le niveau 1 fait foi en cas d'écart.
 *   **Amendements :** amendement 1 du 2026-11-12 (un monde plus grand, un écran lisible, le temps comme ressource, la visibilité par proximité), voir le tableau ci-dessous. ADR liées : [0003](../adr/0003-observe-recoit-les-reglages.md), [0004](../adr/0004-fourchettes-de-la-tranche-0.md) et [0005](../adr/0005-visibilite-par-proximite.md). Amendement 2 du 2026-11-22 (l'écran rétro), ADR liée : [0006](../adr/0006-client-retro-8-bits.md).

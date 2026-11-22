@@ -2,7 +2,7 @@
 
 - **Numéro :** 0006
 - **Titre :** Un client en mode texte au style rétro 8 bits, plutôt qu'un client ASCII
-- **Statut :** proposée
+- **Statut :** acceptée
 - **Date :** 2026-11-22
 - **Décideur :** le propriétaire
 - **Contexte :**
