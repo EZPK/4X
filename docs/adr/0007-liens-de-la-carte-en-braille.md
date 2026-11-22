@@ -1,0 +1,25 @@
+# ADR 0007 — Les liens de la carte en caractères Braille
+
+- **Numéro :** 0007
+- **Titre :** Les liens de la carte en caractères Braille
+- **Statut :** acceptée
+- **Date :** 2026-11-22
+- **Décideur :** le propriétaire
+- **Contexte :**
+  - *Le cadre.* L'ADR 0006 retient un client Textual dans le terminal, au style rétro 8 bits, qui « dessine en couleurs et en demi-blocs ». Elle écarte l'option (b′), les graphismes avancés du terminal (caractères Braille, protocoles d'images), parce que « leur prise en charge varie d'un terminal à l'autre, et les demi-blocs suffisent aux maquettes ». Sa condition de révision prévoit de réexaminer (b′) si l'écran reste peu clair pour une raison propre au terminal.
+  - *Le constat.* Sur la carte jouée le 2026-11-22 (niveau 2 de M1, plan détaillé, point 23 decies), le propriétaire a jugé les liens peu clairs : en demi-blocs, des pavés épais ; en caractères de trait (─ │ ╱ ╲), des escaliers et des doubles traits, parce que ces caractères ne donnent que quatre directions. Il a montré, comme exemple de ce qu'il attend, des graphes tracés dans un terminal en caractères Braille.
+  - *L'essai.* Les liens tracés en Braille ont été montrés au propriétaire, qui les a jugés « nettement mieux » (2026-11-22).
+  - *Le moment.* La condition de révision de l'ADR 0006 rattache le réexamen à la partie d'essai qui suit l'amendement 2 (niveau 2 de M1, plan détaillé, point 23 undecies). Le constat ci-dessus a été fait plus tôt, sur la carte de la pull request du point 23 decies, avant sa fusion : la présente ADR anticipe ce réexamen, sur la demande du propriétaire, et seulement pour les liens de la carte.
+- **Options :**
+  - **(a) Garder les demi-blocs (▀ ▄) pour les liens :** deux pixels par case ; un trait oblique y devient une suite de pavés épais.
+  - **(b) Des caractères de trait (─ │ ╱ ╲, ┄ ┆) :** un caractère par case ; quatre directions seulement, d'où des escaliers et des doubles traits sur les pentes intermédiaires.
+  - **(c) Des caractères Braille pour les liens seulement :** 2 × 4 points par case (à partir de U+2800), un trait fin à n'importe quel angle ; les cadres, les étiquettes et le texte restent des caractères ordinaires. Le rendu dépend de la police du terminal, qui doit dessiner les caractères Braille.
+  - **(d) Un protocole d'images (kitty, sixel) :** le plus fin, mais pris en charge par peu de terminaux, et difficile à tester par le pilote de Textual.
+- **Décision :** l'option (c). Les liens de la carte sont tracés point par point en caractères Braille : tous les points pour un lien à portée, un point sur trois pour un lien lointain, la route du vaisseau en jaune. Le reste de l'écran ne change pas : les couleurs, les cadres et le texte en caractères ordinaires, les barres de progression en caractères de bloc (█ ░). La décision de l'ADR 0006, un client Textual dans le terminal au style rétro 8 bits, reste entière ; seul le moyen de tracer les liens change.
+- **Conséquences :**
+  - le niveau 2 de M1, Technical Plan, point 7 ter (vue de la carte), décrit les liens en Braille ;
+  - les tests comparent les caractères Braille attendus, case par case ; le pilote de Textual les rend comme tout autre caractère ;
+  - une police sans caractères Braille afficherait des carrés ou des blancs à la place des liens : la partie d'essai de l'amendement 2 consigne le nom du terminal et sa police ;
+  - aucune dépendance nouvelle : les caractères Braille sont des caractères Unicode ordinaires, peints par les segments de Rich.
+- **Condition de révision :** si une partie d'essai montre que la police du terminal du joueur ne dessine pas les caractères Braille, ou les dessine mal, les liens reviennent aux caractères de trait (option b), en attendant le client relié par WebSocket du niveau 2 de M3, qui réexamine déjà les options (c) et (d) de l'ADR 0006.
+- **Section du niveau 1 modifiée :** aucune. Le niveau 1 dit « le client en mode texte (Textual), au style rétro 8 bits » (Overview), ce qui reste vrai.
