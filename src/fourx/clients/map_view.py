@@ -328,12 +328,17 @@ def render(
                 plein = s.id in portee and v in portee
                 role = "trait_fort" if plein else "trait_faible"
                 grille.tracer(centres[s.id], centres[v], plein, role)
-    # Route du vaisseau, en jaune.
+    # Route du vaisseau, en jaune : seulement ce qui reste à parcourir. Le saut en cours part de
+    # la position du vaisseau ; la part déjà parcourue garde le tracé de son lien.
     if navire is not None and navire.route:
         etapes = [navire.system_id, *navire.route]
-        for a, b in zip(etapes, etapes[1:], strict=False):
+        ici = ship_position(model, places)
+        for rang, (a, b) in enumerate(zip(etapes, etapes[1:], strict=False)):
             if a in centres and b in centres:
-                grille.tracer(centres[a], centres[b], True, "vaisseau")
+                depart = centres[a]
+                if rang == 0 and ici is not None:
+                    depart = _centre_du_cadre(view, ici)
+                grille.tracer(depart, centres[b], True, "vaisseau")
     # Systèmes : cadre, station, gisement et stock, vaisseaux.
     proches: dict[int, int] = {}
     for autre in obs.other_ships:
