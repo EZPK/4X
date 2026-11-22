@@ -80,7 +80,7 @@ def texte_legende_carte() -> Text:
         ("◆", couleur("ore_b"), " ore_b  "),
         ("▲", couleur("vaisseau"), " toi  "),
         ("──", couleur("trait_fort"), " à portée  "),
-        ("···", couleur("trait_faible"), " loin, stock ?"),
+        ("┄┄", couleur("trait_faible"), " loin, stock ?"),
     ]
     for symbole, style, libelle in morceaux:
         texte.append(symbole, style=style)

@@ -7,7 +7,8 @@ peindre la grille que rend `render`.
 Le rendu suit la maquette validée : chaque système est un petit cadre (┌──┐ │12│ └──┘), plein à
 portée, en tirets hors de portée ; l'étiquette de sa station (S1) en violet à droite du cadre ; son
 gisement et son stock dessous (◆20000, ou ◆? hors de portée). Les liens sont des traits fins
-(─ │ ╱ ╲) à portée, des points (·) hors de portée ; la route du vaisseau est en jaune. Au zoom 1,
+d'un seul tenant (─ │ ╱ ╲), atténués et en tirets (┄ ┆) hors de portée ; la route du vaisseau est
+en jaune. Au zoom 1,
 le carré [0, 1] × [0, 1] couvre toute la carte ; la position d'un système est le coin en haut à
 gauche de son cadre. Ordre de dessin : liens, route, systèmes, étiquettes, vaisseau en route.
 """
@@ -180,6 +181,33 @@ def trait(dx: float, dy: float, gras: bool = False) -> str:
     return "╲" if pente > 0 else "╱"
 
 
+TIRETS = {"─": "┄", "│": "┆"}
+GRAS = {"─": "━", "│": "┃"}
+
+
+def caractere_local(
+    precedente: tuple[int, int] | None,
+    case: tuple[int, int],
+    pente: tuple[float, float],
+    plein: bool = True,
+    gras: bool = False,
+) -> str:
+    """Le caractère d'une case d'un lien. Un lien qui paraît diagonal à l'écran est tracé en ╲ ou
+    ╱ ; un lien plutôt horizontal (ou vertical) en ─ (ou │), avec ╲ ou ╱ sur chaque case où il
+    change de ligne (ou de colonne), d'après son pas depuis la case précédente. Hors de portée, les
+    traits droits passent en tirets (┄ ┆) ; pour la route, en gras (━ ┃)."""
+    char = trait(*pente)
+    if char in "─│" and precedente is not None:
+        dx, dy = case[0] - precedente[0], case[1] - precedente[1]
+        if dx != 0 and dy != 0:
+            char = "╲" if dx * dy > 0 else "╱"
+    if gras:
+        return GRAS.get(char, char)
+    if not plein:
+        return TIRETS.get(char, char)
+    return char
+
+
 class _Grille:
     """La grille en cours de dessin : les traits, puis les cases de texte (« occupées »)."""
 
@@ -192,9 +220,14 @@ class _Grille:
         return 0 <= colonne < self.view.width and 0 <= ligne < self.view.height
 
     def tracer(self, a: Position, b: Position, plein: bool, role: str, gras: bool = False) -> None:
-        char = trait(b[0] - a[0], b[1] - a[1], gras) if plein else "·"
-        for case in _trace(a, b):
+        """Un lien d'un seul tenant : chaque case prend le caractère de son pas local (─ │ ╲ ╱),
+        en tirets (┄ ┆) pour un lien hors de portée, en gras (━ ┃) pour la route."""
+        cases = _trace(a, b)
+        pente = (b[0] - a[0], b[1] - a[1])
+        for rang, case in enumerate(cases):
             if self.dedans(*case):
+                precedente = cases[rang - 1] if rang > 0 else None
+                char = caractere_local(precedente, case, pente, plein, gras)
                 self.traits[case] = Cell(char, role, "fond")
 
     def ecrire(self, colonne: int, ligne: int, char: str, fg: str, bg: str = "fond") -> None:
