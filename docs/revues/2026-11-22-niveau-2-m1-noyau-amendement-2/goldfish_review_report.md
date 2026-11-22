@@ -68,3 +68,14 @@ Toutes les corrections ci-dessus sont appliquées au document et à l'ADR, avec 
     - scénario du cycle : condition de graine, procédure, arrêt ; `steps_partie.py` ajouté ;
     - structure : décisions du 2026-11-22 en lignes du tableau du point 1 (le libellé « E1 à E4 » sort du document) ; critère de sortie ; point 13 (`history`, `mettre_a_jour`) ; marques ; CUJ A ; palier 3 ; clause de refus de l'ADR ; ADR au passé.
 
+## Tour 3
+
+*   **Rapports :** `critic_report_design_tour3.md` (0 bloquant, 4 majeurs, 15 détails) et `implementation_readiness_report_tour3.md` (0 bloquant, 1 majeur, 11 détails). Tous les majeurs du tour 2 sont corrigés, un en partie (calibrage des boîtes). Le relecteur de préparation a vérifié à la main que la suite de touches du scénario du cycle est juste avec la règle du gain par tick.
+*   **Corrections :**
+    - règle 6 : la cargaison à bord entre dans le gain ; la vente directe devient un candidat ; le repli « aucun gisement » ne vaut que pour une cargaison vide ;
+    - la station d'un cycle est celle que retiendra la règle de vente (`best_sale`), pour que le plan annoncé ne change pas en route ; le changement de gisement à l'arrivée est accepté et écrit (alternative AH, risque) ;
+    - étiquettes coupées par mots entiers, avec « … » : aucun nombre coupé ;
+    - boîtes recalibrées sur la carte de 52 × 21 cases sans bordure (0,135 × 0,16), rectangle utile qui garde la boîte dans le carré, test de la grille complété (cases dans la grille, une case libre entre deux systèmes) ;
+    - condition de graine du scénario du cycle calculable sur l'état seul, dans `monde_convient` ;
+    - détails : systèmes inaccessibles ignorés, textes exacts des règles 1 et 4, aide sans vaisseau, signatures des quatre étapes et de `best_sale`, `GRAPHIC_PAIRS` (barres comprises) testé, cadre « Stations » qui défile, bulle agrandie, test des 2 000 graines sous la seule marque `lent` (description de `pytest.ini` corrigée), T présenté comme une estimation.
+
