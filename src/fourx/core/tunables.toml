@@ -4,7 +4,7 @@
 # les changer demande une nouvelle ADR et un amendement.
 jump_ticks = 400
 mining_rate = 1
-cargo_capacity = 100
+cargo_capacity = 2000
 station_ore_prices = [[10, 15], [12, 12], [8, 18]]
 tax_rate_bp = 1000
 deposit_stock = 20000

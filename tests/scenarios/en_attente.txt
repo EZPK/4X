@@ -1,2 +1,1 @@
 # Une entrée par ligne : <fichier>.feature::<titre du scénario>. Voir docs/designs/niveau-2-m0-garde-fous.md, Technical Plan, point 10.
-ecrans.feature::La disposition de la carte place chaque système une fois, dans le carré, sans recouvrement, et la même à chaque appel

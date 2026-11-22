@@ -13,15 +13,17 @@ from pathlib import Path
 
 import msgspec
 import pytest
+from textual import events
 from textual.pilot import Pilot
 from textual.widgets import Static
 
 from fourx.clients.frames import (
     ATTENTE,
+    MapCanvas,
     barre,
     destinations,
     texte_barre,
-    texte_carte,
+    texte_bulle,
     texte_destinations,
     texte_etape,
     texte_historique,
@@ -29,6 +31,7 @@ from fourx.clients.frames import (
     texte_touches,
     texte_vaisseau,
 )
+from fourx.clients.map_view import ZOOMS, anchor, ship_position, to_cells
 from fourx.clients.model import ClientModel
 from fourx.clients.palette import PALETTE
 from fourx.clients.textual_app import (
@@ -43,7 +46,7 @@ from fourx.clients.textual_app import (
 from fourx.schema.actors import Activity, ActorKind
 from fourx.schema.events import Arrived, Event, Payload, Sale
 from fourx.schema.ids import OrderId
-from fourx.schema.observation import Observation, OtherShipView, StationView, SystemView
+from fourx.schema.observation import Observation, StationView, SystemView
 from fourx.schema.orders import Command, Mine, Move, OrderCategory, Sell
 from fourx.schema.protocol import PROTOCOL_VERSION, SubmitOrders, TickUpdate
 from fourx.schema.results import OrderResult, RefusalCode
@@ -158,7 +161,8 @@ def test_d_ouvre_la_liste_des_destinations_et_entree_confirme() -> None:
         await pilot.press("d")
         assert app.query_one("#destinations").display
         assert not app.query_one("#stations").display
-        assert lire(app, "#destinations").startswith("system_1 : 0 sauts")
+        # La prochaine étape conseille d'aller miner à system_2 : la liste s'ouvre sur sa ligne.
+        assert lire(app, "#destinations").startswith("system_2 : 1 saut")
         assert AIDE_LISTE in lire(app, "#barre")
         await pilot.press("down", "down", "down", "up")
         assert lire(app, "#destinations").splitlines()[0] == (
@@ -181,7 +185,7 @@ def test_echap_annule_la_liste_et_les_bornes_de_la_liste() -> None:
         assert "> [1] system_1" in lire(app, "#destinations")
         await pilot.press("down", "down", "down", "down")
         assert "> [3] system_3" in lire(app, "#destinations")
-        await pilot.press("x")
+        await pilot.press("y")
         assert AIDE_LISTE in lire(app, "#barre")
         await pilot.press("escape")
         assert not app.query_one("#destinations").display
@@ -193,7 +197,7 @@ def test_m_avec_un_gisement_demande_confirmation() -> None:
     async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
         await pilot.press("m")
         assert "miner ore_b dans system_3 ? Entrée confirmer · Échap annuler" in lire(app, "#barre")
-        await pilot.press("x")
+        await pilot.press("y")
         assert "Entrée confirmer le minage · Échap annuler" in lire(app, "#barre")
         await pilot.press("escape", "m", "enter")
 
@@ -205,7 +209,7 @@ def test_m_sans_gisement_choisit_le_minerai() -> None:
     async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
         await pilot.press("m")
         assert "pas de gisement ici : quel minerai ? a ou b (Échap annule)" in lire(app, "#barre")
-        await pilot.press("x")
+        await pilot.press("y")
         assert "quel minerai ? a ou b (Échap annule)" in lire(app, "#barre")
         await pilot.press("a", "m", "b", "m", "escape")
 
@@ -247,7 +251,7 @@ def test_q_demande_confirmation_puis_quitte() -> None:
     async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
         await pilot.press("q")
         assert QUITTER in lire(app, "#barre")
-        await pilot.press("x")
+        await pilot.press("y")
         assert QUITTER in lire(app, "#barre")
         await pilot.press("escape")
         assert QUITTER not in lire(app, "#barre")
@@ -339,7 +343,7 @@ def test_vitesse_en_mode_developpement() -> None:
         assert "dev pause" in lire(app, "#barre")
         await pilot.press("p")
         assert "dev ×1" in lire(app, "#barre")
-        await pilot.press("x")
+        await pilot.press("y")
         assert AIDE_DEV in lire(app, "#barre")
 
     jouer(observation((navire(system=1),)), scenario, appels.append)
@@ -429,11 +433,14 @@ def test_chaque_etat_du_vaisseau_se_lit_dans_son_cadre(monde_12: Observation, et
             assert "arrivée dans 62 ticks" in vaisseau
         if etat == "minage":
             taux = obs.public_tunables.mining_rate
-            assert f"fin dans {-(-62 // taux)} ticks" in vaisseau  # 62 unités libres
+            libre = navire_.capacity - 38  # 38 unités à bord
+            assert f"fin dans {-(-libre // taux)} ticks" in vaisseau
         assert "ordre envoyé : déplacer vers system_" in vaisseau
-        carte = lire(app, "#carte-texte")
+        canevas = app.query_one(MapCanvas)
         for s in obs.systems:
-            assert f"[{s.id}]" in carte
+            colonne, ligne = anchor(canevas.vue, canevas.positions[s.id])
+            numero = canevas.grille[ligne + 1][colonne + 1 : colonne + 3]
+            assert "".join(c.char for c in numero) == f"{s.id:>2}"  # au centre de son cadre
         stations = lire(app, "#stations-texte").replace("★", "")
         for st in obs.stations:
             assert (
@@ -446,25 +453,6 @@ def test_chaque_etat_du_vaisseau_se_lit_dans_son_cadre(monde_12: Observation, et
 
 
 # --- Les textes des cadres
-
-
-def test_texte_carte_et_ligne_des_vaisseaux() -> None:
-    modele = ClientModel(ACTEUR)
-    assert texte_carte(modele) == ATTENTE
-    autres = (
-        OtherShipView(id=7, owner_id=2, system_id=3, capacity=100),
-        OtherShipView(id=5, owner_id=3, system_id=2, capacity=100),
-    )
-    obs = msgspec.structs.replace(observation((navire(system=2),)), other_ships=autres)
-    modele.on_update(mise_a_jour(obs))
-    assert texte_carte(modele).splitlines() == [
-        "[1]S1───[2]a────[3]b",
-        "",
-        "@ joueur : [2]   o vaisseaux proches : [2] [3]",
-    ]
-    seul = ClientModel(ACTEUR)
-    seul.on_update(mise_a_jour(observation(())))
-    assert texte_carte(seul).splitlines()[-1] == "@ joueur : aucun   o vaisseaux proches : aucun"
 
 
 def test_texte_vaisseau_de_chaque_etat() -> None:
@@ -632,6 +620,9 @@ def test_disposition_en_120_x_36() -> None:
     async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
         assert place(app, "#barre") == (0, 0, 120, 2)
         assert place(app, "#carte") == (0, 2, 72, 27)
+        assert place(app, "#carte-entete") == (1, 3, 70, 1)
+        assert place(app, "#carte-canevas") == (1, 4, 70, 23)  # la carte minimale
+        assert place(app, "#carte-legende") == (1, 27, 70, 1)
         assert place(app, "#etape") == (73, 2, 47, 7)
         assert place(app, "#vaisseau") == (73, 9, 47, 8)
         assert place(app, "#stations") == (73, 17, 47, 12)
@@ -645,19 +636,17 @@ def test_disposition_en_120_x_36() -> None:
     jouer(observation((navire(system=1),)), scenario)
 
 
-def test_disposition_en_100_x_30_la_carte_et_les_stations_retrecissent() -> None:
+def test_au_dela_de_120_x_36_la_carte_et_les_stations_grandissent() -> None:
     async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
-        assert place(app, "#carte") == (0, 2, 52, 21)
-        assert place(app, "#etape") == (53, 2, 47, 7)
-        assert place(app, "#vaisseau") == (53, 9, 47, 8)
-        assert place(app, "#stations") == (53, 17, 47, 6)
-        assert place(app, "#historique") == (0, 23, 100, 6)
-        assert not app.query_one("#petite").display
+        assert place(app, "#carte") == (0, 2, 92, 33)
+        assert place(app, "#carte-canevas") == (1, 4, 90, 29)
+        assert place(app, "#etape") == (93, 2, 47, 7)
+        assert place(app, "#stations") == (93, 17, 47, 18)
 
-    jouer(observation((navire(system=1),)), scenario, taille=(100, 30))
+    jouer(observation((navire(system=1),)), scenario, taille=(140, 42))
 
 
-@pytest.mark.parametrize("taille", [(99, 30), (100, 29)])
+@pytest.mark.parametrize("taille", [(119, 36), (120, 35)])
 def test_petite_fenetre_un_message_et_seule_q_agit(taille: tuple[int, int]) -> None:
     sorties: list[bool] = []
 
@@ -667,7 +656,7 @@ def test_petite_fenetre_un_message_et_seule_q_agit(taille: tuple[int, int]) -> N
         assert not app.query_one("#aide").display
         assert lire(app, "#petite") == message_petite_fenetre(*taille)
         assert lire(app, "#petite") == (
-            "Agrandis la fenêtre : 100 colonnes × 30 lignes au moins "
+            "Agrandis la fenêtre : 120 colonnes × 36 lignes au moins "
             f"(actuellement {taille[0]} × {taille[1]})."
         )
         await pilot.press("d", "enter", "m", "v")
@@ -786,13 +775,189 @@ def test_les_touches_du_mode_developpement_restent_actives_dans_l_aide() -> None
 def test_le_cadre_prochaine_etape_suit_le_modele() -> None:
     async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
         assert lire(app, "#etape").splitlines()[0] == "Aller miner ore_a à system_2"
-        await pilot.press("d", "down", "enter")
+        await pilot.press("d", "enter")
         assert lire(app, "#etape").splitlines()[0] == "Ordre envoyé : déplacer vers system_2"
 
     jouer(observation((navire(system=1),)), scenario)
+
+
+# --- La carte rétro (Technical Plan, point 7 ter, vue de la carte)
+
+
+def souris(
+    classe: type[events.MouseEvent], canevas: MapCanvas, x: int, y: int, bouton: int = 0
+) -> events.MouseEvent:
+    region = canevas.region
+    return classe(canevas, x, y, 0, 0, bouton, False, False, False, region.x + x, region.y + y)
+
+
+def test_d_ouvre_la_liste_sur_le_vaisseau_sans_conseil_de_deplacement() -> None:
+    async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
+        await pilot.press("d")  # conseil : miner ici, dans system_2
+        assert lire(app, "#destinations").startswith("system_2 : 0 sauts")
+
+    jouer(observation((navire(system=2),)), scenario)
+
+
+def test_z_x_zooment_et_les_bornes_affichent_la_ligne_d_aide() -> None:
+    async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
+        canevas = app.query_one(MapCanvas)
+        assert canevas.vue.zoom_index == 0 and canevas.vue.center == (0.5, 0.5)
+        await pilot.press("x")
+        assert AIDE in lire(app, "#barre") and canevas.vue.zoom_index == 0
+        await pilot.press("z", "z")
+        assert canevas.vue.zoom_index == 2 and canevas.vue.center == (0.5, 0.5)
+        await pilot.press("z", "z")
+        assert canevas.vue.zoom_index == len(ZOOMS) - 1
+        await pilot.press("z")
+        assert AIDE in lire(app, "#barre")
+        await pilot.press("x")
+        assert canevas.vue.zoom_index == len(ZOOMS) - 2
+
+    jouer(observation((navire(system=1),)), scenario)
+
+
+def test_les_fleches_deplacent_la_vue_et_c_la_recentre() -> None:
+    async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
+        canevas = app.query_one(MapCanvas)
+        await pilot.press("z", "right", "down")
+        assert (canevas.vue.width, canevas.vue.height) == (70, 23)
+        assert canevas.vue.center == pytest.approx(
+            (0.5 + 7 / (70 * ZOOMS[1]), 0.5 + 2 / (23 * ZOOMS[1]))
+        )
+        await pilot.press("left", "up")
+        assert canevas.vue.center == pytest.approx((0.5, 0.5))
+        await pilot.press("c")
+        assert canevas.vue.center == ship_position(app.model, canevas.positions)
+
+    jouer(observation((navire(system=1),)), scenario)
+
+
+def test_dans_une_saisie_les_touches_de_la_carte_sont_sans_effet() -> None:
+    async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
+        canevas = app.query_one(MapCanvas)
+        await pilot.press("d", "left", "z", "c")
+        assert canevas.vue.zoom_index == 0 and canevas.vue.center == (0.5, 0.5)
+        assert AIDE_LISTE in lire(app, "#barre")
+
+    jouer(observation((navire(system=1),)), scenario)
+
+
+def test_la_molette_zoome_autour_du_pointeur() -> None:
+    async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
+        canevas = app.query_one(MapCanvas)
+        avant = canevas.vue
+        canevas.post_message(souris(events.MouseScrollUp, canevas, 10, 5))
+        await pilot.pause()
+        apres = canevas.vue
+        assert apres.zoom_index == 1
+        # Le point sous la case (10, 5) y reste.
+        point = (
+            (10.5 - avant.width / 2) / avant.width + avant.center[0],
+            (5.5 - avant.height / 2) / avant.height + avant.center[1],
+        )
+        assert to_cells(apres, point) == pytest.approx((10.5, 5.5))
+        canevas.post_message(souris(events.MouseScrollDown, canevas, 10, 5))
+        await pilot.pause()
+        assert canevas.vue.zoom_index == 0
+
+    jouer(observation((navire(system=1),)), scenario)
+
+
+def test_le_glisser_deplace_la_vue_sans_cliquer() -> None:
+    async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
+        canevas = app.query_one(MapCanvas)
+        await pilot.press("z")
+        depart = canevas.vue.center
+        canevas.post_message(souris(events.MouseDown, canevas, 30, 10, bouton=1))
+        canevas.post_message(souris(events.MouseMove, canevas, 34, 12, bouton=1))
+        canevas.post_message(souris(events.MouseUp, canevas, 34, 12, bouton=1))
+        await pilot.pause()
+        assert canevas.vue.center == pytest.approx(
+            (depart[0] - 4 / (70 * ZOOMS[1]), depart[1] - 2 / (23 * ZOOMS[1]))
+        )
+        assert app.saisie is None
+
+    jouer(observation((navire(system=1),)), scenario)
+
+
+def test_le_survol_montre_la_bulle_et_le_clic_ouvre_la_liste() -> None:
+    async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
+        canevas = app.query_one(MapCanvas)
+        colonne, ligne = anchor(canevas.vue, canevas.positions[3])
+        await pilot.hover(MapCanvas, offset=(colonne + 1, ligne + 1))
+        await pilot.pause()
+        bulle = app.query_one("#bulle")
+        assert bulle.display
+        assert lire(app, "#bulle") == texte_bulle(app.model, 3)
+        assert lire(app, "#bulle").splitlines() == [
+            "system_3",
+            "gisement de ore_b, stock 20000",
+            "2 sauts, 10 ticks (≈ 30 s à 3 s)",
+        ]
+        assert canevas.grille[ligne + 1][colonne + 2].bg == "accent"
+        await pilot.click(MapCanvas, offset=(colonne + 3, ligne + 2))
+        assert app.saisie == "destination"
+        assert lire(app, "#destinations").startswith("system_3 : 2 sauts")
+        await pilot.press("escape")
+        colonne, ligne = anchor(canevas.vue, canevas.positions[1])
+        await pilot.click(MapCanvas, offset=(colonne + 1, ligne + 1))
+        assert app.saisie is None
+        assert "déjà dans system_1" in lire(app, "#barre")
+
+    jouer(observation((navire(system=1),)), scenario)
+
+
+def test_le_clic_est_ignore_pendant_l_aide_et_une_saisie() -> None:
+    async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
+        canevas = app.query_one(MapCanvas)
+        colonne, ligne = anchor(canevas.vue, canevas.positions[3])
+        canevas.post_message(MapCanvas.Clic(3))
+        await pilot.pause()
+        assert app.aide_ouverte and app.saisie is None
+        await pilot.press("escape", "m")
+        canevas.post_message(MapCanvas.Clic(3))
+        await pilot.pause()
+        assert app.saisie == "minerai"
+        assert (colonne, ligne) == anchor(canevas.vue, canevas.positions[3])
+
+    jouer(observation((navire(system=1),)), scenario, fermer_l_aide=False)
+
+
+def test_texte_bulle() -> None:
+    modele = ClientModel(ACTEUR)
+    assert texte_bulle(modele, 1) == ATTENTE
+    modele.on_update(mise_a_jour(observation((navire(system=1),), stocks=(20000, None))))
+    assert texte_bulle(modele, 1).splitlines() == ["system_1", "S1 (a 10, b 15)", "déjà ici"]
+    assert texte_bulle(modele, 3).splitlines() == [
+        "system_3",
+        "gisement de ore_b, stock ?",
+        "2 sauts, 10 ticks (≈ 30 s à 3 s)",
+    ]
+    en_route = msgspec.structs.replace(
+        navire(system=1, activity=Activity.EN_ROUTE, route=(2, 3)), ticks_to_next_jump=2
+    )
+    modele.on_update(mise_a_jour(observation((en_route,))))
+    assert texte_bulle(modele, 1).splitlines()[-1] == "1 saut, 7 ticks (≈ 21 s à 3 s)"
+    assert texte_bulle(modele, 2).splitlines()[-1] == "0 sauts, 2 ticks (≈ 6 s à 3 s)"
+    assert texte_bulle(modele, 3).splitlines()[-1] == "1 saut, 7 ticks (≈ 21 s à 3 s)"
 
 
 def test_rien_de_l_application_n_importe_le_serveur() -> None:
     """Le client reçoit une simple fonction de vitesse, ou rien (Technical Plan, point 6)."""
     source = Path(__file__).resolve().parents[2] / "src" / "fourx" / "clients" / "textual_app.py"
     assert "fourx.server" not in source.read_text(encoding="utf-8")
+
+
+def test_entete_et_legende_de_la_carte() -> None:
+    async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
+        assert lire(app, "#carte-entete") == (
+            " 3 systèmes · 2 à portée · zoom ×1   molette, glisser, clic : y aller"
+        )
+        await pilot.press("z")
+        assert "zoom ×1,5" in lire(app, "#carte-entete")
+        assert lire(app, "#carte-legende") == (
+            " S1 station  ◆ ore_a  ◆ ore_b  ▲ toi  ⠒⠒⠒ à portée  ⠂⠐⠂ loin, stock ?"
+        )
+
+    jouer(observation((navire(system=1),)), scenario)
