@@ -4,17 +4,26 @@ Document : docs/designs/niveau-2-m1-noyau.md, Technical Plan, points 7 bis et 7 
 palette, aide). Chaque cadre lit `ClientModel` et ne connaît pas les autres : on peut en ajouter,
 en retirer ou les réarranger sans toucher au reste. Le texte de chaque cadre vient d'une fonction
 de ce module, en couleurs de `PALETTE` ; le widget ne fait que l'afficher. Aucun cadre ne prend le
-focus : toutes les touches vont à `FourxApp`. La carte reste la carte en colonnes de l'amendement 1
-jusqu'au point 23 decies du plan détaillé.
+focus : toutes les touches vont à `FourxApp`. La carte (`MapCanvas`) peint la grille de
+`map_view.render`, et prévient `FourxApp` d'un clic ou d'un survol par un message.
 """
 
+import time
+
+from rich.segment import Segment
+from rich.style import Style
 from rich.text import Text
+from textual import events
 from textual.app import ComposeResult
 from textual.containers import VerticalScroll
+from textual.message import Message
+from textual.strip import Strip
+from textual.widget import Widget
 from textual.widgets import Static
 
+from fourx.clients.force_layout import force_layout
 from fourx.clients.guide import next_step
-from fourx.clients.map_layout import layout
+from fourx.clients.map_view import Cell, View, initial_view, pan, render, system_at, zoom
 from fourx.clients.model import ClientModel, HistoryKind, decrire
 from fourx.clients.palette import PALETTE
 from fourx.clients.texts import duration_text, help_pages, minerai, station, systeme
@@ -37,18 +46,44 @@ def couleur(role: str) -> str:
     return PALETTE[role]
 
 
-def texte_carte(model: ClientModel) -> str:
-    """La carte de `layout`, puis la ligne des vaisseaux : le joueur (@), les vaisseaux proches
-    (o), par système."""
+def texte_bulle(model: ClientModel, ident: int) -> str:
+    """La bulle d'un système survolé : son libellé, ses sites, le stock (ou « ? »), et la distance
+    en sauts, en ticks et en ≈ minutes depuis le vaisseau (pendant un saut, depuis `route[0]`,
+    plus `ticks_to_next_jump`) ; « déjà ici » sur le système du vaisseau."""
     obs = model.observation
     if obs is None:
         return ATTENTE
-    propres = " ".join(f"[{v.system_id}]" for v in obs.own_ships) or "aucun"
-    autres = " ".join(
-        f"[{v.system_id}]" for v in sorted(obs.other_ships, key=lambda v: (v.system_id, v.id))
-    )
-    ligne = f"@ joueur : {propres}   o vaisseaux proches : {autres or 'aucun'}"
-    return "\n".join([*layout(obs), "", ligne])
+    lignes = [systeme(ident)]
+    sites = [
+        f"{station(st.id)} (a {st.ore_prices[0]}, b {st.ore_prices[1]})"
+        for st in obs.stations
+        if st.system_id == ident
+    ]
+    sites += [
+        f"gisement de {minerai(d.ore_id)}, stock {'?' if d.stock is None else d.stock}"
+        for d in obs.deposits
+        if d.system_id == ident
+    ]
+    lignes += sites or ["aucun site"]
+    navire = model.vaisseau()
+    if navire is None:
+        return "\n".join(lignes)
+    saut = obs.public_tunables.jump_ticks
+    en_route = navire.activity is Activity.EN_ROUTE and bool(navire.route)
+    if en_route:
+        depart, deja = navire.route[0], navire.ticks_to_next_jump
+    else:
+        depart, deja = navire.system_id, 0
+    if not en_route and ident == navire.system_id:
+        lignes.append("déjà ici")
+        return "\n".join(lignes)
+    n = distances(obs.systems, depart).get(ident)
+    if n is None:
+        lignes.append("inaccessible")
+    else:
+        texte = f"{n} saut" + ("" if n == 1 else "s")
+        lignes.append(f"{texte}, {duration_text(deja + n * saut)}")
+    return "\n".join(lignes)
 
 
 def texte_etape(model: ClientModel) -> Text:
@@ -275,19 +310,168 @@ class Cadre(Static):
         self.border_title = titre
 
 
-class CadreCarte(VerticalScroll):
-    """La carte, sans bordure ; elle défile verticalement si elle dépasse sa hauteur."""
+class MapCanvas(Widget):
+    """La carte rétro : peint la grille de `map_view.render`, en demi-blocs et en couleurs de la
+    palette. La molette zoome autour du pointeur, le glisser déplace la vue, le survol montre la
+    bulle, le clic choisit une destination. La grille n'est recalculée que si l'une de ses entrées
+    change ; les mises à jour du tick sont plafonnées à 10 dessins par seconde."""
+
+    can_focus = False
+    INTERVALLE = 0.1
+
+    class Clic(Message):
+        def __init__(self, ident: int) -> None:
+            super().__init__()
+            self.ident = ident
+
+    class Survol(Message):
+        def __init__(self, ident: int | None, x: int, y: int) -> None:
+            super().__init__()
+            self.ident = ident
+            self.x = x
+            self.y = y
+
+    def __init__(self) -> None:
+        super().__init__(id="carte")
+        self.model: ClientModel | None = None
+        self.positions: dict[int, tuple[float, float]] = {}
+        self._graphe: tuple[tuple[int, tuple[int, ...]], ...] = ()
+        self.vue: View = initial_view(1, 1)
+        self.survol: int | None = None
+        self.grille: tuple[tuple[Cell, ...], ...] = ()
+        self._cle: object = None
+        self._appui: tuple[int, int] | None = None
+        self._vue_a_l_appui: View | None = None
+        self._glisse = False
+        self._dernier_dessin = 0.0
+        self._attente = False
+
+    # --- Données
+
+    def montrer(self, model: ClientModel) -> None:
+        """Une mise à jour du modèle : dessinée tout de suite, ou au plus tard dans 0,1 s."""
+        self.model = model
+        obs = model.observation
+        if obs is not None:
+            graphe = tuple((s.id, tuple(sorted(s.neighbors))) for s in obs.systems)
+            if graphe != self._graphe:
+                self._graphe = graphe
+                self.positions = force_layout(obs.systems)
+        attente = self.INTERVALLE - (time.monotonic() - self._dernier_dessin)
+        if attente <= 0:
+            self.dessiner()
+        elif not self._attente:
+            self._attente = True
+            self.set_timer(attente, self._dessiner_en_retard)
+
+    def _dessiner_en_retard(self) -> None:
+        self._attente = False
+        self.dessiner()
+
+    def _entrees(self) -> object:
+        """Les entrées de la grille : vue, survol, vaisseau, vaisseaux visibles, stocks."""
+        obs = self.model.observation if self.model is not None else None
+        if obs is None:
+            return (self.vue, self.survol)
+        return (
+            self.vue,
+            self.survol,
+            tuple(obs.own_ships),
+            tuple(sorted((v.system_id, v.id) for v in obs.other_ships)),
+            tuple((d.id, d.stock) for d in obs.deposits),
+            tuple(obs.stations),
+        )
+
+    def dessiner(self) -> None:
+        self._dernier_dessin = time.monotonic()
+        if self.model is None:
+            return
+        cle = self._entrees()
+        if cle == self._cle:
+            return
+        self._cle = cle
+        self.grille = render(self.vue, self.positions, self.model, self.survol)
+        self.refresh()
+
+    def changer_vue(self, vue: View) -> None:
+        self.vue = vue
+        self.dessiner()
+
+    def on_resize(self, event: events.Resize) -> None:
+        self.vue = View(self.vue.zoom_index, self.vue.center, event.size.width, event.size.height)
+        self.dessiner()
+
+    # --- Peinture
+
+    def render_line(self, y: int) -> Strip:
+        if y >= len(self.grille):
+            return Strip.blank(self.size.width, Style(bgcolor=PALETTE["fond"]))
+        segments: list[Segment] = []
+        for case in self.grille[y]:
+            style = Style(color=PALETTE[case.fg], bgcolor=PALETTE[case.bg])
+            if segments and segments[-1].style == style:
+                segments[-1] = Segment(segments[-1].text + case.char, style)
+            else:
+                segments.append(Segment(case.char, style))
+        return Strip(segments)
+
+    # --- Souris
+
+    def on_mouse_scroll_up(self, event: events.MouseScrollUp) -> None:
+        event.stop()
+        self.changer_vue(zoom(self.vue, 1, (event.x, event.y)))
+
+    def on_mouse_scroll_down(self, event: events.MouseScrollDown) -> None:
+        event.stop()
+        self.changer_vue(zoom(self.vue, -1, (event.x, event.y)))
+
+    def on_mouse_down(self, event: events.MouseDown) -> None:
+        event.stop()
+        if event.button == 1:
+            self._appui = (event.x, event.y)
+            self._vue_a_l_appui = self.vue
+            self._glisse = False
+
+    def on_mouse_move(self, event: events.MouseMove) -> None:
+        event.stop()
+        if event.button == 1 and self._appui is not None and self._vue_a_l_appui is not None:
+            # Le contenu suit le pointeur depuis l'appui, dès qu'il a bougé d'une case.
+            dx = int(event.x) - self._appui[0]
+            dy = int(event.y) - self._appui[1]
+            if dx or dy:
+                self._glisse = True
+            self.changer_vue(pan(self._vue_a_l_appui, -dx, -dy))
+            return
+        survol = system_at(self.vue, self.positions, event.x, event.y)
+        if survol != self.survol:
+            self.survol = survol
+            self.dessiner()
+        self.post_message(self.Survol(survol, event.screen_x, event.screen_y))
+
+    def on_mouse_up(self, event: events.MouseUp) -> None:
+        event.stop()
+        if self._appui is not None and not self._glisse:
+            ident = system_at(self.vue, self.positions, event.x, event.y)
+            if ident is not None:
+                self.post_message(self.Clic(ident))
+        self._appui = None
+        self._vue_a_l_appui = None
+        self._glisse = False
+
+    def on_leave(self, event: events.Leave) -> None:
+        if self.survol is not None:
+            self.survol = None
+            self.dessiner()
+        self.post_message(self.Survol(None, 0, 0))
+
+
+class Bulle(Static):
+    """La bulle d'information d'un système survolé, 40 × 7, près du pointeur."""
 
     can_focus = False
 
     def __init__(self) -> None:
-        super().__init__(id="carte")
-
-    def compose(self) -> ComposeResult:
-        yield Static(ATTENTE, markup=False, id="carte-texte")
-
-    def montrer(self, model: ClientModel) -> None:
-        self.query_one("#carte-texte", Static).update(texte_carte(model))
+        super().__init__("", markup=False, id="bulle")
 
 
 class CadreEtape(Cadre):

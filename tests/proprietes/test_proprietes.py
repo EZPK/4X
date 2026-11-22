@@ -30,6 +30,7 @@ from fourx.schema.orders import Mine, Move, Sell, SubmittedOrder
 from fourx.schema.results import RefusalCode
 from fourx.schema.types import MAX_INT64, MIN_INT64
 from fourx.schema.visibility import Visibility
+from tests.aide_carte import verifier_carte
 from tests.aide_monde import REGLAGES, monde, ordre, vaisseau
 
 pytestmark = pytest.mark.proprietes
@@ -230,3 +231,13 @@ def test_chaque_ordre_recoit_un_resultat(ordres_bruts: list[Any]) -> None:
 
 def test_reglages_valides() -> None:
     assert isinstance(REGLAGES, Tunables)
+
+
+@pytest.mark.parametrize("graine", range(1, 51))
+def test_disposition_et_grille_de_la_carte(graine: int) -> None:
+    """La carte rétro sur 50 graines (Technical Plan, point 7 ter, disposition de la carte) :
+    chaque système une fois, dans le carré, sans recouvrement des boîtes ; au zoom 1, en 72 × 27
+    et en 52 × 21, chaque case d'un système dans la grille, aucune sur celle d'un autre, et au
+    moins une case libre entre deux systèmes. Les graines 1 à 2 000 : marque `lent`
+    (tests/clients/test_force_layout.py)."""
+    verifier_carte(graine)

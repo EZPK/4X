@@ -1,18 +1,20 @@
 """Le client Textual : l'écran rétro.
 
 Document : docs/designs/niveau-2-m1-noyau.md, Technical Plan, point 7 bis (touches, ordres,
-alertes) et point 7 ter (disposition 120 × 36, palette, prochaine étape, aide), point 6 (fonction
-de rappel de vitesse) ; plan détaillé, point 23 nonies. `FourxApp` ne garde que l'affichage, la
-saisie en cours et les touches ; l'état du client est dans `ClientModel`, et chaque cadre de
-`frames.py` le lit. Le client ne connaît que `schema` et `policies` (niveau 1, §1) : en mode
-développement, il reçoit une simple fonction `set_speed`.
+alertes) et point 7 ter (disposition 120 × 36, palette, carte, prochaine étape, aide), point 6
+(fonction de rappel de vitesse) ; plan détaillé, points 23 nonies et 23 decies. `FourxApp` ne
+garde que l'affichage, la saisie en cours et les touches ; l'état du client est dans
+`ClientModel`, et chaque cadre de `frames.py` le lit. Le client ne connaît que `schema` et
+`policies` (niveau 1, §1) : en mode développement, il reçoit une simple fonction `set_speed`.
 
-Touches (AZERTY, sans Majuscule) : d déplacer, m miner, v vendre, h aide, q quitter ; Entrée
-acquitte l'alerte affichée, sinon confirme la saisie ; Échap annule. En mode développement : p
-pause ou reprise, a / r accélérer / ralentir (×1, ×10, ×100), Espace avancer jusqu'à la prochaine
-alerte. L'aide s'ouvre au lancement : c'est une saisie, un widget superposé, et non un écran modal,
-pour que `FourxApp` reçoive toujours les touches. En dessous de 100 × 30, seul un message
-s'affiche, et seule la touche q agit.
+Touches (AZERTY, sans Majuscule) : d déplacer, m miner, v vendre, h aide, q quitter ; z / x zoom
+avant et arrière, c recentrer sur le vaisseau, flèches déplacer la carte (hors saisie) ; Entrée
+acquitte l'alerte affichée, sinon confirme la saisie ; Échap annule. À la souris : molette, glisser,
+survol (bulle) et clic sur un système (liste des destinations ouverte sur sa ligne). En mode
+développement : p pause ou reprise, a / r accélérer / ralentir (×1, ×10, ×100), Espace avancer
+jusqu'à la prochaine alerte. L'aide s'ouvre au lancement : c'est une saisie, un widget
+superposé, et non un écran modal, pour que `FourxApp` reçoive toujours les touches. En dessous de
+100 × 30, seul un message s'affiche, et seule la touche q agit.
 """
 
 from collections.abc import Callable
@@ -25,15 +27,19 @@ from textual.widgets import Static
 from fourx.clients.frames import (
     BarreEtat,
     BarreTouches,
+    Bulle,
     CadreAide,
-    CadreCarte,
     CadreDestinations,
     CadreEtape,
     CadreHistorique,
     CadreStations,
     CadreVaisseau,
+    MapCanvas,
     destinations,
+    texte_bulle,
 )
+from fourx.clients.guide import next_step
+from fourx.clients.map_view import center_on, pan, ship_position, zoom
 from fourx.clients.model import ClientModel
 from fourx.clients.palette import PALETTE
 from fourx.clients.texts import minerai, systeme
@@ -49,6 +55,8 @@ AIDE_DEV = AIDE + " · dev : p a r ␣"
 AIDE_LISTE = "destination : ↑ ↓ choisir · Entrée confirmer · Échap annuler"
 AIDE_OUVERTE = "aide ouverte : Entrée, Échap ou h pour la fermer · ↑ ↓ pour la faire défiler"
 TOUCHES_DEV = ("p", "a", "r", "space")
+TOUCHES_CARTE = ("z", "x", "c", "left", "right", "up", "down")
+TAILLE_BULLE = (40, 7)
 
 
 def message_petite_fenetre(largeur: int, hauteur: int) -> str:
@@ -86,6 +94,17 @@ def feuille_de_style() -> str:
         height: {TAILLE_AIDE[1]};
     }}
     #aide {{ layer: aide; border: round {p["accent"]}; }}
+    #bulle {{
+        position: absolute;
+        layer: ombre;
+        display: none;
+        width: {TAILLE_BULLE[0]};
+        height: {TAILLE_BULLE[1]};
+        background: {p["cadre"]};
+        color: {p["texte"]};
+        border: round {p["accent"]};
+        padding: 0 1;
+    }}
     #ombre {{ layer: ombre; background: {p["ombre"]}; }}
     """
 
@@ -121,7 +140,7 @@ class FourxApp(App[None]):
         with Vertical(id="ecran"):
             yield BarreEtat()
             with Horizontal(id="corps"):
-                yield CadreCarte()
+                yield MapCanvas()
                 with Vertical(id="droite"):
                     yield CadreEtape()
                     yield CadreVaisseau()
@@ -131,6 +150,7 @@ class FourxApp(App[None]):
             yield BarreTouches()
         yield Static("", id="ombre")
         yield CadreAide()
+        yield Bulle()
 
     def on_mount(self) -> None:
         for ident in ("#etape", "#vaisseau", "#stations", "#destinations", "#historique", "#aide"):
@@ -191,7 +211,7 @@ class FourxApp(App[None]):
             message = message_petite_fenetre(*self.taille)
             petite.update(message + ("\n\n" + QUITTER if self.saisie == "quitter" else ""))
             return
-        self.query_one(CadreCarte).montrer(self.model)
+        self.query_one(MapCanvas).montrer(self.model)
         self.query_one(CadreEtape).montrer(self.model)
         self.query_one(CadreVaisseau).montrer(self.model)
         self.query_one(CadreHistorique).montrer(self.model)
@@ -270,6 +290,8 @@ class FourxApp(App[None]):
             return
         if self.saisie is not None:
             self.dans_la_saisie(touche)
+        elif touche in TOUCHES_CARTE:
+            self.carte(touche)
         elif touche in ("d", "m", "v", "q"):
             self.commande(touche)
         elif self.set_speed is not None and touche in TOUCHES_DEV:
@@ -288,9 +310,9 @@ class FourxApp(App[None]):
             self.aide = "en attente du premier tick"
             return
         if touche == "d":
-            self.saisie = "destination"
-            self.aide = AIDE_LISTE
-            self.choix = next(i for i, s in enumerate(obs.systems) if s.id == navire.system_id)
+            conseil = next_step(self.model).command
+            cible = conseil.target_system_id if isinstance(conseil, Move) else navire.system_id
+            self.ouvrir_la_liste(cible)
         elif touche == "m":
             ici = [d for d in obs.deposits if d.system_id == navire.system_id]
             if ici:
@@ -309,6 +331,68 @@ class FourxApp(App[None]):
                 self.aide = "cargaison vide : rien à vendre"
             else:
                 self.connection.submit(message)
+
+    def ouvrir_la_liste(self, cible: int) -> None:
+        """Ouvre la liste des destinations sur la ligne du système `cible`."""
+        obs = self.model.observation
+        if obs is None:
+            return
+        self.saisie = "destination"
+        self.aide = AIDE_LISTE
+        self.choix = next((i for i, s in enumerate(obs.systems) if s.id == cible), 0)
+
+    def carte(self, touche: str) -> None:
+        """z / x : zoom avant et arrière autour du centre ; c : recentrer sur le vaisseau ;
+        flèches : déplacer la vue d'un dixième de la zone visible."""
+        canevas = self.query_one(MapCanvas)
+        vue = canevas.vue
+        if touche in ("z", "x"):
+            nouvelle = zoom(vue, 1 if touche == "z" else -1, None)
+        elif touche == "c":
+            position = ship_position(self.model, canevas.positions)
+            if position is None:
+                self.aide = "en attente du premier tick"
+                return
+            nouvelle = center_on(vue, position)
+        else:
+            dx = max(vue.width // 10, 1)
+            dy = max(vue.height // 10, 1)
+            decalages = {"left": (-dx, 0), "right": (dx, 0), "up": (0, -dy), "down": (0, dy)}
+            nouvelle = pan(vue, *decalages[touche])
+        if nouvelle == vue:
+            self.aide = AIDE_DEV if self.set_speed is not None else AIDE
+            return
+        canevas.changer_vue(nouvelle)
+
+    def on_map_canvas_clic(self, message: MapCanvas.Clic) -> None:
+        """Un clic sur un système : la liste des destinations s'ouvre sur sa ligne ; ignoré
+        pendant une saisie ou quand l'aide est ouverte."""
+        navire = self.model.vaisseau()
+        if self.saisie is not None or self.aide_ouverte or self.petite_fenetre or navire is None:
+            return
+        self.aide = ""
+        if message.ident == navire.system_id:
+            self.aide = f"déjà dans {systeme(message.ident)}"
+        else:
+            self.ouvrir_la_liste(message.ident)
+        self.rafraichir()
+
+    def on_map_canvas_survol(self, message: MapCanvas.Survol) -> None:
+        """La bulle : deux cases à droite et en dessous du pointeur ; à gauche ou au-dessus près
+        des bords."""
+        bulle = self.query_one(Bulle)
+        if message.ident is None or self.aide_ouverte:
+            bulle.display = False
+            return
+        largeur, hauteur = self.taille
+        x, y = message.x + 2, message.y + 2
+        if x + TAILLE_BULLE[0] > largeur:
+            x = max(message.x - 2 - TAILLE_BULLE[0], 0)
+        if y + TAILLE_BULLE[1] > hauteur:
+            y = max(message.y - 2 - TAILLE_BULLE[1], 0)
+        bulle.styles.offset = (x, y)
+        bulle.update(texte_bulle(self.model, message.ident))
+        bulle.display = True
 
     def dans_la_saisie(self, touche: str) -> None:
         if touche == "escape":
