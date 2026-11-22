@@ -170,37 +170,44 @@ def _progres(model: ClientModel, navire: OwnShipView) -> tuple[str, int, int]:
 
 
 def texte_vaisseau(model: ClientModel) -> Text:
-    """État, route, durée restante, cargaison, ordre envoyé, puis les deux barres de progression :
-    le saut ou le minage en cours, et le remplissage de la cargaison."""
+    """Le cadre Vaisseau, six lignes : l'état ; la barre du saut ou du minage en cours, et les
+    ticks restants ; la barre de la cargaison ; sa composition ; l'estimation de la durée
+    restante ; l'ordre envoyé. Les barres viennent juste après l'état : une ligne trop longue pour
+    le cadre, qui passe sur deux lignes, ne les pousse jamais hors du cadre ; seul l'ordre envoyé,
+    en dernier, peut être long."""
     navire = model.vaisseau()
     if model.observation is None or navire is None:
         return Text(ATTENTE)
     restants = model.remaining_ticks()
     if navire.activity is Activity.EN_ROUTE:
-        etat = f"en route vers {systeme(navire.route[-1])}"
-        suite = "" if restants is None else f"arrivée dans {duration_text(restants)}"
+        etat, debut_estimation = f"en route vers {systeme(navire.route[-1])}", "arrivée dans"
     elif navire.activity is Activity.MINING:
         nom = "" if navire.mining_ore_id is None else f" de {minerai(navire.mining_ore_id)}"
-        etat = f"en minage{nom}"
-        suite = "" if restants is None else f"fin dans {duration_text(restants)}"
+        etat, debut_estimation = f"en minage{nom}", "fin dans"
     else:
-        etat, suite = "à l'arrêt", "aucun trajet ni minage en cours"
+        etat, debut_estimation = "à l'arrêt", ""
     texte = Text(systeme(navire.system_id), style=f"bold {couleur('texte')}")
     texte.append(f"  {etat}\n", style=couleur("texte"))
-    texte.append(suite + "\n", style=couleur("texte_attenue"))
-    texte.append("cargaison : ", style=couleur("texte_attenue"))
+    libelle, fait, total = _progres(model, navire)
+    texte.append(f"{libelle:<10}", style=couleur("texte_attenue"))
+    _ajouter_barre(texte, fait, total)
+    if restants is not None:
+        unite = "tick" if restants == 1 else "ticks"
+        texte.append(f" {restants} {unite}", style=couleur("texte"))
+    texte.append("\ncargaison ", style=couleur("texte_attenue"))
+    _ajouter_barre(texte, sum(navire.cargo), navire.capacity)
+    texte.append(f" {sum(navire.cargo)}/{navire.capacity}\n", style=couleur("texte"))
     for rang, q in enumerate(navire.cargo):
         if rang:
             texte.append("  ")
         texte.append(f"{minerai(rang + 1)} {q}", style=couleur(f"ore_{chr(ord('a') + rang)}"))
+    if restants is None or not debut_estimation:
+        estimation = "aucun trajet ni minage en cours"
+    else:
+        estimation = f"{debut_estimation} {duration_text(restants).split(' (', 1)[1][:-1]}"
+    texte.append(f"\n{estimation}\n", style=couleur("texte_attenue"))
     envoyes = [decrire(c) for _, c in model.pending]
-    texte.append("\nordre envoyé : " + (" ; ".join(envoyes) if envoyes else "aucun") + "\n")
-    libelle, fait, total = _progres(model, navire)
-    texte.append(f"{libelle:<10}", style=couleur("texte_attenue"))
-    _ajouter_barre(texte, fait, total)
-    texte.append("\ncargaison ", style=couleur("texte_attenue"))
-    _ajouter_barre(texte, sum(navire.cargo), navire.capacity)
-    texte.append(f" {sum(navire.cargo)}/{navire.capacity}", style=couleur("texte"))
+    texte.append("ordre envoyé : " + (" ; ".join(envoyes) if envoyes else "aucun"))
     return texte
 
 

@@ -430,11 +430,12 @@ def test_chaque_etat_du_vaisseau_se_lit_dans_son_cadre(monde_12: Observation, et
         assert {"arrêt": "à l'arrêt", "route": "en route", "minage": "en minage"}[etat] in vaisseau
         if etat == "route":
             assert f"vers system_{gisement.system_id}" in vaisseau
-            assert "arrivée dans 62 ticks" in vaisseau
+            assert " 62 ticks" in vaisseau.splitlines()[1]  # sur la ligne de la barre du saut
+            assert "arrivée dans ≈ 3 min 6 s à 3 s" in vaisseau
         if etat == "minage":
             taux = obs.public_tunables.mining_rate
             libre = navire_.capacity - 38  # 38 unités à bord
-            assert f"fin dans {-(-libre // taux)} ticks" in vaisseau
+            assert f" {-(-libre // taux)} ticks" in vaisseau.splitlines()[1]
         assert "ordre envoyé : déplacer vers system_" in vaisseau
         canevas = app.query_one(MapCanvas)
         for s in obs.systems:
@@ -461,11 +462,11 @@ def test_texte_vaisseau_de_chaque_etat() -> None:
     modele.on_update(mise_a_jour(observation((navire(system=1, cargo=(30, 70)),))))
     assert texte_vaisseau(modele).plain.splitlines() == [
         "system_1  à l'arrêt",
-        "aucun trajet ni minage en cours",
-        "cargaison : ore_a 30  ore_b 70",
-        "ordre envoyé : aucun",
         "activité  ░░░░░░░░░░░░░░░░░░░░",
         "cargaison ████████████████████ 100/100",
+        "ore_a 30  ore_b 70",
+        "aucun trajet ni minage en cours",
+        "ordre envoyé : aucun",
     ]
     en_route = msgspec.structs.replace(
         navire(system=1, activity=Activity.EN_ROUTE, route=(2, 3)), ticks_to_next_jump=2
@@ -475,11 +476,11 @@ def test_texte_vaisseau_de_chaque_etat() -> None:
     modele.send(Move(ship_id=1, target_system_id=1))
     assert texte_vaisseau(modele).plain.splitlines() == [
         "system_1  en route vers system_3",
-        "arrivée dans 7 ticks (≈ 21 s à 3 s)",
-        "cargaison : ore_a 0  ore_b 0",
-        "ordre envoyé : miner ore_b ; déplacer vers system_1",
-        "saut      ████████████░░░░░░░░",  # 3 ticks sur 5
+        "saut      ████████████░░░░░░░░ 7 ticks",  # 3 ticks sur 5 du saut en cours
         "cargaison ░░░░░░░░░░░░░░░░░░░░ 0/100",
+        "ore_a 0  ore_b 0",
+        "arrivée dans ≈ 21 s à 3 s",
+        "ordre envoyé : miner ore_b ; déplacer vers system_1",
     ]
     en_minage = msgspec.structs.replace(
         navire(system=3, activity=Activity.MINING, cargo=(0, 38)),
@@ -489,12 +490,34 @@ def test_texte_vaisseau_de_chaque_etat() -> None:
     modele.on_update(mise_a_jour(observation((en_minage,), stocks=(20000, 50))))
     assert texte_vaisseau(modele).plain.splitlines() == [
         "system_3  en minage de ore_b",
-        "fin dans 5 ticks (≈ 15 s à 3 s)",
-        "cargaison : ore_a 0  ore_b 38",
-        "ordre envoyé : miner ore_b ; déplacer vers system_1",  # toujours sans résultat
-        "minage    ████████░░░░░░░░░░░░",  # 38 sur 38 + 50 : le stock borne le reste
+        "minage    ████████░░░░░░░░░░░░ 5 ticks",  # 38 sur 38 + 50 : le stock borne le reste
         "cargaison ███████░░░░░░░░░░░░░ 38/100",
+        "ore_a 0  ore_b 38",
+        "fin dans ≈ 15 s à 3 s",
+        "ordre envoyé : miner ore_b ; déplacer vers system_1",  # toujours sans résultat
     ]
+
+
+def test_les_barres_du_cadre_vaisseau_restent_visibles_avec_une_longue_duree() -> None:
+    """Retour de la partie d'essai : une durée longue passait sur deux lignes et poussait la barre
+    de la cargaison hors du cadre. Les barres viennent maintenant juste après l'état, et aucune
+    ligne avant l'ordre envoyé ne dépasse les 45 colonnes du cadre."""
+    en_minage = msgspec.structs.replace(
+        navire(system=3, activity=Activity.MINING, cargo=(0, 125)),
+        capacity=2000,
+        mining_ore_id=2,
+        mined_since_start=125,
+    )
+    modele = ClientModel(ACTEUR)
+    obs = observation((en_minage,), stocks=(20000, 20000))
+    obs = msgspec.structs.replace(
+        obs, public_tunables=msgspec.structs.replace(obs.public_tunables, mining_rate=1)
+    )
+    modele.on_update(mise_a_jour(obs))
+    lignes = texte_vaisseau(modele).plain.splitlines()
+    assert lignes[1].endswith(" 1875 ticks") and lignes[2].endswith(" 125/2000")
+    assert lignes[4] == "fin dans ≈ 1 h 33 min 45 s à 3 s"
+    assert all(len(ligne) <= 45 for ligne in lignes[:5]), lignes
 
 
 def test_barre_de_progression() -> None:
