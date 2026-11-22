@@ -16,6 +16,8 @@ from fourx.clients.map_view import (
     ZOOMS,
     Cell,
     View,
+    _cases_du_trait,
+    _centre_du_cadre,
     _etiquette,
     _Grille,
     _points,
@@ -196,6 +198,36 @@ def test_les_sauts_suivants_de_la_route_partent_de_leur_systeme() -> None:
     for ligne in (14, 15, 16):
         assert grille[ligne][30] == Cell("⡇", "vaisseau", "fond"), ligne
     assert grille[15][25] == VIDE  # là où passerait un trait parti du vaisseau
+
+
+def test_la_route_est_le_lien_lui_meme_et_non_un_second_trait() -> None:
+    """Retour du propriétaire : la route ne doit pas être un second trait posé sur le lien, mais
+    le lien lui-même, jaune pour ce qui reste à parcourir. Sur un lien en diagonale, toute case
+    jaune est une case du trait du lien, avec les mêmes points que le lien seul."""
+    positions = {1: (0.1, 0.3), 2: (0.45, 0.7), 3: (0.9, 0.9)}
+    en_route = msgspec.structs.replace(
+        navire(system=1, activity=Activity.EN_ROUTE, route=(2,)), ticks_to_next_jump=2
+    )
+    avec_route = render(VUE, positions, modele_de(observation((en_route,))), None)
+    sans_route = render(VUE, positions, a_l_arret(), None)
+    trait = set(
+        _cases_du_trait(_centre_du_cadre(VUE, positions[1]), _centre_du_cadre(VUE, positions[2]))
+    )
+    jaunes = {
+        (x, y)
+        for y, ligne in enumerate(avec_route)
+        for x, case in enumerate(ligne)
+        if case.fg == "vaisseau" and case.char != "▲"
+    }
+    assert jaunes and jaunes <= trait
+    for x, y in jaunes:
+        assert avec_route[y][x].char == sans_route[y][x].char  # mêmes points que le lien
+    parcourues = {
+        (x, y)
+        for x, y in trait
+        if avec_route[y][x].fg == "trait_fort" and avec_route[y][x].char != " "
+    }
+    assert parcourues  # le début du lien reste blanc
 
 
 def test_le_vaisseau_en_route_ne_cache_ni_cadre_ni_etiquette() -> None:
