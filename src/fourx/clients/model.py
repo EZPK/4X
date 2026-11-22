@@ -1,11 +1,12 @@
 """Le modèle du client, sans Textual.
 
 Document : docs/designs/niveau-2-m1-noyau.md, Technical Plan, points 7 bis (architecture du
-client, ordres envoyés, alertes, durées) et 13 (interface de `ClientModel`). `ClientModel` garde
-la dernière observation, les ordres envoyés sans résultat (numéro → commande), la file de vente,
-les alertes non acquittées et l'historique. Il reçoit une mise à jour et rend le message à
-envoyer, s'il y en a un : la vente suivante de la file. Il implémente `SyncClient` : attaché au
-serveur en mode sans horloge, le message qu'il rend entre au tick suivant ; en mode avec
+client, ordres envoyés, alertes, durées), 7 ter (historique typé, gisements vus vides) et 13
+(interface de `ClientModel`). `ClientModel` garde la dernière observation, les ordres envoyés
+sans résultat (numéro → commande), la file de vente, les alertes non acquittées, l'historique et
+les gisements vus vides, mis à jour comme par l'hôte des PNJ. Il reçoit une mise à jour et rend
+le message à envoyer, s'il y en a un : la vente suivante de la file. Il implémente `SyncClient` :
+attaché au serveur en mode sans horloge, le message qu'il rend entre au tick suivant ; en mode avec
 horloge, `FourxApp` le soumet par sa connexion.
 """
 
@@ -14,6 +15,7 @@ from dataclasses import dataclass
 
 from fourx.clients.texts import minerai, refusal_text, systeme, ticks_de_trajet
 from fourx.policies.cargo import most_abundant
+from fourx.policies.scripted_miner import mettre_a_jour
 from fourx.schema.actors import Activity
 from fourx.schema.events import Arrived, MiningEnded, MiningStarted, Sale
 from fourx.schema.observation import Observation, OwnShipView
@@ -30,6 +32,24 @@ class AlertKind(enum.Enum):
 class Alert:
     kind: AlertKind
     tick: int
+    text: str
+
+
+class HistoryKind(enum.Enum):
+    """Le type d'une entrée de l'historique ; il donne la couleur de son étiquette."""
+
+    ORDER = "order"
+    SALE = "sale"
+    ALERT = "alert"
+    REFUSAL = "refusal"
+
+
+@dataclass(frozen=True)
+class HistoryEntry:
+    """Une entrée de l'historique ; `text` ne porte pas le tick."""
+
+    tick: int
+    kind: HistoryKind
     text: str
 
 
@@ -58,7 +78,8 @@ class ClientModel:
         self._file: list[Sell] = []
         self._vente_en_cours: int | None = None
         self._alertes: list[Alert] = []
-        self._historique: list[str] = []
+        self._historique: list[HistoryEntry] = []
+        self.seen_empty: frozenset[int] = frozenset()
 
     @property
     def pending(self) -> tuple[tuple[int, Command], ...]:
@@ -71,8 +92,11 @@ class ClientModel:
         return tuple(self._alertes)
 
     @property
-    def history(self) -> tuple[str, ...]:
+    def history(self) -> tuple[HistoryEntry, ...]:
         return tuple(self._historique)
+
+    def _noter(self, tick: int, kind: HistoryKind, text: str) -> None:
+        self._historique.append(HistoryEntry(tick=tick, kind=kind, text=text))
 
     def vaisseau(self) -> OwnShipView | None:
         """Le vaisseau du joueur : chaque personnage en a un à M1."""
@@ -148,7 +172,7 @@ class ClientModel:
 
     def _alerter(self, kind: AlertKind, tick: int, text: str) -> None:
         self._alertes.append(Alert(kind=kind, tick=tick, text=text))
-        self._historique.append(f"t{tick} {text}")
+        self._noter(tick, HistoryKind.ALERT, text)
 
     def _minerai_mine(
         self, observation: Observation, precedente: Observation | None, navire: OwnShipView
@@ -173,6 +197,7 @@ class ClientModel:
         observation = update.observation
         precedente = self.observation
         self.observation = observation
+        self.seen_empty = mettre_a_jour(observation, self.seen_empty)
         tick = observation.tick
         reponse: SubmitOrders | None = None
         for resultat in observation.results:
@@ -180,10 +205,12 @@ class ClientModel:
             if command is None:
                 continue
             if resultat.accepted:
-                self._historique.append(f"t{tick} ordre « {decrire(command)} » : accepté")
+                self._noter(tick, HistoryKind.ORDER, f"ordre « {decrire(command)} » : accepté")
             else:
                 texte = refusal_text(resultat, command, observation)
-                self._historique.append(f"t{tick} ordre « {decrire(command)} » : refusé : {texte}")
+                self._noter(
+                    tick, HistoryKind.REFUSAL, f"ordre « {decrire(command)} » : refusé : {texte}"
+                )
             if resultat.order_id.number == self._vente_en_cours:
                 self._vente_en_cours = None
                 if resultat.accepted and self._file:
@@ -195,9 +222,11 @@ class ClientModel:
         for e in observation.events:
             charge = e.payload
             if isinstance(charge, Sale) and charge.ship_id in propres:
-                self._historique.append(
-                    f"t{tick} vente : {charge.quantity} {minerai(charge.ore_id)} à {charge.price}, "
-                    f"paiement {charge.payment}, taxe {charge.tax}"
+                self._noter(
+                    tick,
+                    HistoryKind.SALE,
+                    f"vente : {charge.quantity} {minerai(charge.ore_id)} à {charge.price}, "
+                    f"paiement {charge.payment}, taxe {charge.tax}",
                 )
             elif (
                 isinstance(charge, Arrived)

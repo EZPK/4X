@@ -1,5 +1,6 @@
-"""Tests de l'écran unique par le pilote de Textual, en 80 × 24 (docs/designs/niveau-2-m1-noyau.md,
-Technical Plan, point 7 bis ; objectif 12 ; plan détaillé, point 23 quinquies).
+"""Tests de l'écran rétro par le pilote de Textual, en 120 × 36 (docs/designs/niveau-2-m1-noyau.md,
+Technical Plan, points 7 bis et 7 ter ; objectif 12 ; plan détaillé, points 23 quinquies et
+23 nonies). L'aide s'ouvre au lancement : les tests la ferment avant d'agir, sauf ceux de l'aide.
 
 Les observations sont fabriquées, à des ticks éloignés : la carte de tests/aide_observation.py
 (chaîne system_1 – system_2 – system_3, S1 dans system_1, ore_a dans system_2, ore_b dans
@@ -17,22 +18,32 @@ from textual.widgets import Static
 
 from fourx.clients.frames import (
     ATTENTE,
+    barre,
     destinations,
-    deux_lignes,
-    texte_alerte,
     texte_barre,
     texte_carte,
     texte_destinations,
+    texte_etape,
     texte_historique,
     texte_stations,
+    texte_touches,
     texte_vaisseau,
 )
 from fourx.clients.model import ClientModel
-from fourx.clients.textual_app import AIDE, AIDE_DEV, AIDE_LISTE, QUITTER, FourxApp
+from fourx.clients.palette import PALETTE
+from fourx.clients.textual_app import (
+    AIDE,
+    AIDE_DEV,
+    AIDE_LISTE,
+    AIDE_OUVERTE,
+    QUITTER,
+    FourxApp,
+    message_petite_fenetre,
+)
 from fourx.schema.actors import Activity, ActorKind
-from fourx.schema.events import Arrived, Event, Payload
+from fourx.schema.events import Arrived, Event, Payload, Sale
 from fourx.schema.ids import OrderId
-from fourx.schema.observation import Observation, OtherShipView, SystemView
+from fourx.schema.observation import Observation, OtherShipView, StationView, SystemView
 from fourx.schema.orders import Command, Mine, Move, OrderCategory, Sell
 from fourx.schema.protocol import PROTOCOL_VERSION, SubmitOrders, TickUpdate
 from fourx.schema.results import OrderResult, RefusalCode
@@ -41,7 +52,7 @@ from fourx.server.game import Game
 from fourx.server.tunables_loader import load_tunables
 from tests.aide_observation import ACTEUR, navire, observation
 
-TAILLE = (80, 24)
+TAILLE = (120, 36)
 
 
 class ConnexionFactice:
@@ -93,6 +104,11 @@ def lire(app: FourxApp, ident: str) -> str:
     return str(app.query_one(ident, Static).content)
 
 
+def place(app: FourxApp, ident: str) -> tuple[int, int, int, int]:
+    region = app.query_one(ident).region
+    return (region.x, region.y, region.width, region.height)
+
+
 def commandes(connexion: ConnexionFactice) -> list[list[Command]]:
     return [[o.command for o in m.orders] for m in connexion.soumis]
 
@@ -103,14 +119,18 @@ Scenario = Callable[[FourxApp, Pilot[None], ConnexionFactice], Awaitable[None]]
 async def piloter(
     obs: Observation | None,
     scenario: Scenario,
-    set_speed: Callable[[int | None], None] | None = None,
+    set_speed: Callable[[int | None], None] | None,
+    taille: tuple[int, int],
+    fermer_l_aide: bool,
 ) -> ConnexionFactice:
     connexion = ConnexionFactice()
     app = FourxApp(connexion, ACTEUR, set_speed)
-    async with app.run_test(size=TAILLE) as pilot:
+    async with app.run_test(size=taille) as pilot:
         if obs is not None:
             await connexion.file.put(mise_a_jour(obs))
         await pilot.pause()
+        if fermer_l_aide:
+            await pilot.press("escape")
         await scenario(app, pilot, connexion)
         await pilot.pause()
     return connexion
@@ -120,8 +140,10 @@ def jouer(
     obs: Observation | None,
     scenario: Scenario,
     set_speed: Callable[[int | None], None] | None = None,
+    taille: tuple[int, int] = TAILLE,
+    fermer_l_aide: bool = True,
 ) -> ConnexionFactice:
-    return asyncio.run(piloter(obs, scenario, set_speed))
+    return asyncio.run(piloter(obs, scenario, set_speed, taille, fermer_l_aide))
 
 
 def a_tick(obs: Observation, tick: int) -> Observation:
@@ -135,7 +157,7 @@ def test_d_ouvre_la_liste_des_destinations_et_entree_confirme() -> None:
     async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
         await pilot.press("d")
         assert app.query_one("#destinations").display
-        assert not app.query_one("#historique").display
+        assert not app.query_one("#stations").display
         assert lire(app, "#destinations").startswith("system_1 : 0 sauts")
         assert AIDE_LISTE in lire(app, "#barre")
         await pilot.press("down", "down", "down", "up")
@@ -144,7 +166,7 @@ def test_d_ouvre_la_liste_des_destinations_et_entree_confirme() -> None:
         )
         await pilot.press("enter")
         assert not app.query_one("#destinations").display
-        assert app.query_one("#historique").display
+        assert app.query_one("#stations").display
 
     connexion = jouer(a_tick(observation((navire(system=1),)), 2400), scenario)
     assert commandes(connexion) == [[Move(ship_id=1, target_system_id=2)]]
@@ -254,10 +276,13 @@ def test_entree_acquitte_l_alerte_sans_rien_confirmer() -> None:
     )
 
     async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
-        assert app.query_one("#alerte").display
-        assert lire(app, "#alerte") == "t840 arrivée : system_3 · Entrée : acquitter"
+        assert lire(app, "#etape").splitlines() == [
+            "arrivée : system_3",
+            "Entrée : acquitter",
+            "Touche : Entrée",
+        ]
         await pilot.press("m", "enter")
-        assert not app.query_one("#alerte").display
+        assert "arrivée" not in lire(app, "#etape")
         assert "t840 arrivée : system_3" in lire(app, "#historique")
         await pilot.press("enter")
 
@@ -409,10 +434,10 @@ def test_chaque_etat_du_vaisseau_se_lit_dans_son_cadre(monde_12: Observation, et
         carte = lire(app, "#carte-texte")
         for s in obs.systems:
             assert f"[{s.id}]" in carte
-        stations = lire(app, "#stations")
+        stations = lire(app, "#stations-texte").replace("★", "")
         for st in obs.stations:
             assert (
-                f"S{st.id} sys {st.system_id}  a {st.ore_prices[0]}  b {st.ore_prices[1]}"
+                f"S{st.id} system_{st.system_id}  a {st.ore_prices[0]}  b {st.ore_prices[1]}"
                 in stations
             )
         assert "Tick 7840" in lire(app, "#barre")
@@ -444,13 +469,15 @@ def test_texte_carte_et_ligne_des_vaisseaux() -> None:
 
 def test_texte_vaisseau_de_chaque_etat() -> None:
     modele = ClientModel(ACTEUR)
-    assert texte_vaisseau(modele) == ATTENTE
+    assert texte_vaisseau(modele).plain == ATTENTE
     modele.on_update(mise_a_jour(observation((navire(system=1, cargo=(30, 70)),))))
-    assert texte_vaisseau(modele).splitlines() == [
+    assert texte_vaisseau(modele).plain.splitlines() == [
         "system_1  à l'arrêt",
-        "cargaison 100/100",
-        "ore_a 30  ore_b 70",
+        "aucun trajet ni minage en cours",
+        "cargaison : ore_a 30  ore_b 70",
         "ordre envoyé : aucun",
+        "activité  ░░░░░░░░░░░░░░░░░░░░",
+        "cargaison ████████████████████ 100/100",
     ]
     en_route = msgspec.structs.replace(
         navire(system=1, activity=Activity.EN_ROUTE, route=(2, 3)), ticks_to_next_jump=2
@@ -458,42 +485,96 @@ def test_texte_vaisseau_de_chaque_etat() -> None:
     modele.on_update(mise_a_jour(observation((en_route,))))
     modele.send(Mine(ship_id=1, ore_id=2))
     modele.send(Move(ship_id=1, target_system_id=1))
-    assert texte_vaisseau(modele).splitlines() == [
-        "system_1  en route",
-        "vers system_3",
-        "arrivée dans 7 ticks",
-        "(≈ 21 s à 3 s)",
-        "cargaison 0/100",
-        "ore_a 0  ore_b 0",
-        "ordre envoyé : miner ore_b; déplacer vers system_1",
+    assert texte_vaisseau(modele).plain.splitlines() == [
+        "system_1  en route vers system_3",
+        "arrivée dans 7 ticks (≈ 21 s à 3 s)",
+        "cargaison : ore_a 0  ore_b 0",
+        "ordre envoyé : miner ore_b ; déplacer vers system_1",
+        "saut      ████████████░░░░░░░░",  # 3 ticks sur 5
+        "cargaison ░░░░░░░░░░░░░░░░░░░░ 0/100",
     ]
     en_minage = msgspec.structs.replace(
-        navire(system=3, activity=Activity.MINING, cargo=(0, 38)), mining_ore_id=2
+        navire(system=3, activity=Activity.MINING, cargo=(0, 38)),
+        mining_ore_id=2,
+        mined_since_start=38,
     )
-    modele.on_update(mise_a_jour(observation((en_minage,))))
-    assert texte_vaisseau(modele).splitlines()[:4] == [
-        "system_3  en minage",
-        "mine ore_b",
-        "fin dans 7 ticks",
-        "(≈ 21 s à 3 s)",
+    modele.on_update(mise_a_jour(observation((en_minage,), stocks=(20000, 50))))
+    assert texte_vaisseau(modele).plain.splitlines() == [
+        "system_3  en minage de ore_b",
+        "fin dans 5 ticks (≈ 15 s à 3 s)",
+        "cargaison : ore_a 0  ore_b 38",
+        "ordre envoyé : miner ore_b ; déplacer vers system_1",  # toujours sans résultat
+        "minage    ████████░░░░░░░░░░░░",  # 38 sur 38 + 50 : le stock borne le reste
+        "cargaison ███████░░░░░░░░░░░░░ 38/100",
     ]
 
 
-def test_texte_stations_historique_et_alerte() -> None:
+def test_barre_de_progression() -> None:
+    assert barre(0, 5) == "░" * 20
+    assert barre(5, 5) == "█" * 20
+    assert barre(1, 3) == "█" * 6 + "░" * 14
+    assert barre(9, 5) == "█" * 20
+    assert barre(0, 0) == "░" * 20
+
+
+def test_texte_stations_meilleurs_prix_et_gisements() -> None:
     modele = ClientModel(ACTEUR)
-    assert texte_stations(modele) == ATTENTE
-    assert texte_alerte(modele) == ""
-    for systeme, tick in ((2, 840), (3, 1240)):
+    assert texte_stations(modele).plain == ATTENTE
+    modele.on_update(mise_a_jour(observation((navire(system=1),), stocks=(20000, None))))
+    assert texte_stations(modele).plain.splitlines() == [
+        "S1 system_1  a 10★  b 15★",
+        "ore_a : system_2 (20000)",
+        "ore_b : system_3 (?)",
+    ]
+    deux = msgspec.structs.replace(
+        observation((navire(system=1),)),
+        stations=(
+            StationView(id=1, system_id=1, ore_prices=(10, 15)),
+            StationView(id=2, system_id=3, ore_prices=(20, 15)),
+        ),
+    )
+    modele.on_update(mise_a_jour(deux))
+    lignes = texte_stations(modele).plain.splitlines()
+    assert lignes[:2] == ["S1 system_1  a 10  b 15★", "S2 system_3  a 20★  b 15★"]
+
+
+def test_texte_historique_les_quatre_dernieres_et_leurs_couleurs() -> None:
+    modele = ClientModel(ACTEUR)
+    assert texte_historique(modele).plain == ""
+    for tick in range(1, 6):
         obs = observation(
-            (navire(system=systeme),),
+            (navire(system=2),),
             tick=tick,
-            evenements=(evenement(Arrived(ship_id=1, system_id=systeme)),),
+            evenements=(evenement(Arrived(ship_id=1, system_id=2)),),
         )
         modele.on_update(mise_a_jour(obs))
-    assert texte_stations(modele) == "S1 sys 1  a 10  b 15"
-    assert texte_alerte(modele) == "t840 arrivée : system_2 · Entrée : acquitter (1 de plus)"
-    assert texte_historique(modele, 1) == "t1240 arrivée : system_3"
-    assert texte_historique(modele, 0) == "t840 arrivée : system_2\nt1240 arrivée : system_3"
+    assert texte_historique(modele).plain.splitlines() == [
+        f"t{tick} arrivée : system_2" for tick in range(2, 6)
+    ]
+    vente = evenement(Sale(ship_id=1, ore_id=2, quantity=10, price=15, payment=150, tax=15))
+    modele.on_update(mise_a_jour(observation((navire(system=1),), tick=6, evenements=(vente,))))
+    texte = texte_historique(modele, 1)
+    assert texte.plain == "t6 vente : 10 ore_b à 15, paiement 150, taxe 15"
+    etiquette = next(s for s in texte.spans if s.start == 0)
+    assert PALETTE["succes"].lower() in str(etiquette.style).lower()
+
+
+def test_texte_etape() -> None:
+    modele = ClientModel(ACTEUR)
+    assert texte_etape(modele).plain == "En attente du premier tick"
+    modele.on_update(mise_a_jour(observation((navire(system=1),))))
+    assert texte_etape(modele).plain.splitlines() == [
+        "Aller miner ore_a à system_2",
+        "1 saut, 5 ticks (≈ 15 s à 3 s) ; cycle complet estimé : 20 ticks (≈ 1 min à 3 s)",
+        "Touche : d",
+    ]
+    arrive = observation(
+        (navire(system=3),), tick=840, evenements=(evenement(Arrived(ship_id=1, system_id=3)),)
+    )
+    modele.on_update(mise_a_jour(arrive))
+    texte = texte_etape(modele)
+    assert texte.plain.splitlines()[0] == "arrivée : system_3"
+    assert PALETTE["vaisseau"].lower() in str(texte.style).lower()
 
 
 def test_destinations_et_fenetre_de_la_liste() -> None:
@@ -527,15 +608,188 @@ def test_destinations_et_fenetre_de_la_liste() -> None:
 
 def test_texte_barre() -> None:
     modele = ClientModel(ACTEUR)
-    assert texte_barre(modele, None, "") == " Tick — │ Solde — │ d m v q\n "
+    assert texte_barre(modele, None, "").plain == " Tick — │ Solde —\n "
     modele.on_update(mise_a_jour(observation((navire(),), tick=840, solde=1500)))
-    assert texte_barre(modele, "×10", "aide") == (
-        " Tick 840 │ Solde 1500 │ dev ×10 │ d m v q · dev : p a r ␣\n aide"
+    assert texte_barre(modele, "×10", "aide").plain == (
+        " Tick 840 (≈ 42 min à 3 s) │ Solde 1500 │ dev ×10\n aide"
     )
 
 
-def test_deux_lignes() -> None:
-    assert deux_lignes("fin dans", 62) == ["fin dans 62 ticks", "(≈ 3 min 6 s à 3 s)"]
+def test_texte_touches() -> None:
+    assert texte_touches(None, False) == " d déplacer · m miner · v vendre · h aide · q quitter"
+    assert texte_touches("destination", False) == " ↑↓ choisir · Entrée confirmer · Échap annuler"
+    assert texte_touches("miner", False) == " Entrée confirmer · Échap annuler"
+    assert texte_touches("quitter", False) == " Entrée confirmer · Échap annuler"
+    assert texte_touches("minerai", False) == " a ou b : minerai · Échap annuler"
+    assert texte_touches(None, True) == " ↑↓ défiler · Entrée, Échap ou h fermer"
+    assert texte_touches("destination", True) == texte_touches(None, True)
+
+
+# --- Disposition de l'écran (Technical Plan, point 7 ter)
+
+
+def test_disposition_en_120_x_36() -> None:
+    async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
+        assert place(app, "#barre") == (0, 0, 120, 2)
+        assert place(app, "#carte") == (0, 2, 72, 27)
+        assert place(app, "#etape") == (73, 2, 47, 7)
+        assert place(app, "#vaisseau") == (73, 9, 47, 8)
+        assert place(app, "#stations") == (73, 17, 47, 12)
+        assert place(app, "#historique") == (0, 29, 120, 6)
+        assert place(app, "#touches") == (0, 35, 120, 1)
+        assert lire(app, "#touches") == " d déplacer · m miner · v vendre · h aide · q quitter"
+        await pilot.press("d")
+        assert place(app, "#destinations") == (73, 17, 47, 12)
+        assert lire(app, "#touches") == " ↑↓ choisir · Entrée confirmer · Échap annuler"
+
+    jouer(observation((navire(system=1),)), scenario)
+
+
+def test_disposition_en_100_x_30_la_carte_et_les_stations_retrecissent() -> None:
+    async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
+        assert place(app, "#carte") == (0, 2, 52, 21)
+        assert place(app, "#etape") == (53, 2, 47, 7)
+        assert place(app, "#vaisseau") == (53, 9, 47, 8)
+        assert place(app, "#stations") == (53, 17, 47, 6)
+        assert place(app, "#historique") == (0, 23, 100, 6)
+        assert not app.query_one("#petite").display
+
+    jouer(observation((navire(system=1),)), scenario, taille=(100, 30))
+
+
+@pytest.mark.parametrize("taille", [(99, 30), (100, 29)])
+def test_petite_fenetre_un_message_et_seule_q_agit(taille: tuple[int, int]) -> None:
+    sorties: list[bool] = []
+
+    async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
+        assert app.query_one("#petite").display
+        assert not app.query_one("#ecran").display
+        assert not app.query_one("#aide").display
+        assert lire(app, "#petite") == message_petite_fenetre(*taille)
+        assert lire(app, "#petite") == (
+            "Agrandis la fenêtre : 100 colonnes × 30 lignes au moins "
+            f"(actuellement {taille[0]} × {taille[1]})."
+        )
+        await pilot.press("d", "enter", "m", "v")
+        await pilot.press("q")
+        assert QUITTER in lire(app, "#petite")
+        await pilot.press("escape")
+        assert QUITTER not in lire(app, "#petite")
+        sorties.append(app.is_running)
+        await pilot.press("q", "enter")
+        await pilot.pause()
+        sorties.append(app.is_running)
+
+    connexion = jouer(observation((navire(system=1, cargo=(0, 50)),)), scenario, taille=taille)
+    assert connexion.soumis == [] and sorties == [True, False]
+
+
+def test_la_fenetre_agrandie_retrouve_l_ecran() -> None:
+    async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
+        await pilot.resize_terminal(90, 25)
+        await pilot.pause()
+        assert app.query_one("#petite").display
+        assert lire(app, "#petite") == message_petite_fenetre(90, 25)
+        await pilot.resize_terminal(120, 36)
+        await pilot.pause()
+        assert not app.query_one("#petite").display
+        assert app.query_one("#ecran").display
+
+    jouer(observation((navire(system=1),)), scenario)
+
+
+# --- L'aide (Technical Plan, point 7 ter)
+
+
+def test_l_aide_s_ouvre_au_lancement_centree_avec_son_ombre() -> None:
+    async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
+        assert app.query_one("#aide").display and app.query_one("#ombre").display
+        assert place(app, "#aide") == (15, 4, 90, 28)
+        assert place(app, "#ombre") == (17, 5, 90, 28)
+        texte = lire(app, "#aide-texte").splitlines()
+        assert texte[0] == "COMMENT JOUER"
+        assert texte[2].endswith("prend 10 ticks (≈ 30 s à 3 s).")
+        assert texte[-1] == "Entrée, Échap ou h : fermer"
+        assert lire(app, "#touches") == " ↑↓ défiler · Entrée, Échap ou h fermer"
+        await pilot.press("escape")
+        assert not app.query_one("#aide").display and not app.query_one("#ombre").display
+
+    jouer(observation((navire(system=1),)), scenario, fermer_l_aide=False)
+
+
+def test_l_aide_avant_le_premier_tick() -> None:
+    async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
+        assert "(connue au premier tick)" in lire(app, "#aide-texte")
+
+    jouer(None, scenario, fermer_l_aide=False)
+
+
+def test_les_touches_de_l_aide() -> None:
+    async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
+        await pilot.press("d")
+        assert AIDE_OUVERTE in lire(app, "#barre")
+        assert app.saisie is None and app.aide_ouverte
+        await pilot.press("up", "down", "down")
+        assert AIDE_OUVERTE not in lire(app, "#barre") and app.aide_ouverte
+        assert app.query_one("#aide").scroll_y == 2  # l'aide dépasse sa hauteur et défile
+        await pilot.press("up")
+        assert app.query_one("#aide").scroll_y == 1
+        await pilot.press("h")
+        assert not app.aide_ouverte
+        await pilot.press("h")
+        assert app.aide_ouverte
+        assert app.query_one("#aide").scroll_y == 0  # rouverte en haut
+        await pilot.press("enter")
+        assert not app.aide_ouverte
+        await pilot.press("d", "h")
+        assert app.aide_ouverte and app.saisie is None
+        assert not app.query_one("#destinations").display
+        await pilot.press("q")
+        assert not app.aide_ouverte and app.saisie == "quitter"
+        assert QUITTER in lire(app, "#barre")
+        await pilot.press("escape")
+        assert app.saisie is None
+
+    connexion = jouer(observation((navire(system=1),)), scenario, fermer_l_aide=False)
+    assert connexion.soumis == []
+
+
+def test_entree_ferme_l_aide_avant_l_alerte() -> None:
+    arrive = observation(
+        (navire(system=3),), tick=840, evenements=(evenement(Arrived(ship_id=1, system_id=3)),)
+    )
+
+    async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
+        await pilot.press("enter")
+        assert not app.aide_ouverte
+        assert len(app.model.alerts) == 1
+        assert lire(app, "#etape").startswith("arrivée : system_3")
+        await pilot.press("enter")
+        assert len(app.model.alerts) == 0
+
+    jouer(arrive, scenario, fermer_l_aide=False)
+
+
+def test_les_touches_du_mode_developpement_restent_actives_dans_l_aide() -> None:
+    appels: list[int | None] = []
+
+    async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
+        assert "Mode développement" in lire(app, "#aide-texte")
+        await pilot.press("a", "p")
+        assert app.aide_ouverte
+        assert "dev pause" in lire(app, "#barre")
+
+    jouer(observation((navire(system=1),)), scenario, appels.append, fermer_l_aide=False)
+    assert appels == [10, None]
+
+
+def test_le_cadre_prochaine_etape_suit_le_modele() -> None:
+    async def scenario(app: FourxApp, pilot: Pilot[None], _: ConnexionFactice) -> None:
+        assert lire(app, "#etape").splitlines()[0] == "Aller miner ore_a à system_2"
+        await pilot.press("d", "down", "enter")
+        assert lire(app, "#etape").splitlines()[0] == "Ordre envoyé : déplacer vers system_2"
+
+    jouer(observation((navire(system=1),)), scenario)
 
 
 def test_rien_de_l_application_n_importe_le_serveur() -> None:

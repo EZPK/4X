@@ -1,9 +1,10 @@
-"""Textes du client : refus en français et durées.
+"""Textes du client : refus en français, durées et aide.
 
 Document : docs/designs/niveau-2-m1-noyau.md, Technical Plan, point 7 bis (refus en français,
-durées affichées) ; plan détaillé, point 23 quinquies (table des refus). Fonctions pures : elles
-ne lisent que le résultat d'ordre, la commande refusée, que le modèle client garde sous le numéro
-de l'ordre, et l'observation. Le texte de `OrderResult`, construit par `step`, n'est pas repris.
+durées affichées) et point 7 ter (aide) ; plan détaillé, point 23 quinquies (table des refus).
+Fonctions pures : elles ne lisent que le résultat d'ordre, la commande refusée, que le modèle
+client garde sous le numéro de l'ordre, et l'observation. Le texte de `OrderResult`, construit
+par `step`, n'est pas repris.
 """
 
 from fourx.policies.geometry import distances
@@ -151,3 +152,53 @@ def refusal_text(result: OrderResult, command: Command, observation: Observation
         a_bord = navire.cargo[command.ore_id - 1]
         return f"quantité supérieure à la cargaison ({a_bord} à bord)"
     raise ValueError(f"refus {code.name} inattendu pour la commande {type(command).__name__}")
+
+
+INCONNUE = "(connue au premier tick)"
+
+
+def help_pages(observation: Observation | None, dev: bool) -> tuple[str, ...]:
+    """Les lignes de l'aide « Comment jouer » (Technical Plan, point 7 ter). Une durée qui dépend
+    d'une observation absente, ou d'un vaisseau du joueur absent, est remplacée par « (connue au
+    premier tick) »."""
+    minage = saut = INCONNUE
+    if observation is not None:
+        reglages = observation.public_tunables
+        saut = duration_text(reglages.jump_ticks)
+        if observation.own_ships:
+            capacite = observation.own_ships[0].capacity
+            minage = duration_text(-(-capacite // reglages.mining_rate))
+    lignes = [
+        "COMMENT JOUER",
+        "Tu pilotes un vaisseau minier. Tu gagnes ta vie en trois étapes, qui prennent du temps :",
+        "1. Miner (m), dans un système qui a un gisement : remplir une cargaison vide prend "
+        f"{minage}.",
+        "2. Transporter (d, ou un clic sur la carte) : un saut entre deux systèmes voisins dure "
+        f"{saut}.",
+        "3. Vendre (v), dans le système d'une station : au prix de cette station, moins une taxe. "
+        "La vente est immédiate.",
+        "Ce que tu vois : toute la carte, les gisements et les prix des stations. Les autres "
+        "vaisseaux et le stock d'un gisement, seulement dans ton système et les systèmes voisins ; "
+        "ailleurs, « ? ».",
+        "Le temps : un tick dure environ 3 secondes à la vitesse normale, et le monde avance même "
+        "si tu ne fais rien. Une alerte te prévient à l'arrivée et à la fin du minage.",
+        "Premier objectif : vendre une première cargaison. Le cadre « Prochaine étape » te guide.",
+        "Les touches :",
+        "d : déplacer (liste des destinations ; Entrée envoie, Échap annule)",
+        "m : miner le gisement du système",
+        "v : vendre toute la cargaison",
+        "h : ouvrir ou fermer cette aide",
+        "z / x : zoomer, dézoomer la carte",
+        "c : recentrer la carte sur ton vaisseau",
+        "flèches : déplacer la carte",
+        "Entrée : confirmer, ou acquitter une alerte",
+        "Échap : annuler",
+        "q : quitter",
+    ]
+    if dev:
+        lignes.append(
+            "Mode développement : p pause, a / r accélérer / ralentir, Espace avancer jusqu'à la "
+            "prochaine alerte"
+        )
+    lignes.append("Entrée, Échap ou h : fermer")
+    return tuple(lignes)

@@ -1,14 +1,18 @@
-"""Le client Textual : l'écran unique.
+"""Le client Textual : l'écran rétro.
 
-Document : docs/designs/niveau-2-m1-noyau.md, Technical Plan, point 7 bis (disposition, touches)
-et point 6 (fonction de rappel de vitesse) ; plan détaillé, point 23 quinquies. `FourxApp` ne
-garde que l'affichage, la saisie en cours et les touches ; l'état du client est dans
-`ClientModel`, et chaque cadre de `frames.py` le lit. Le client ne connaît que `schema` et
-`policies` (niveau 1, §1) : en mode développement, il reçoit une simple fonction `set_speed`.
+Document : docs/designs/niveau-2-m1-noyau.md, Technical Plan, point 7 bis (touches, ordres,
+alertes) et point 7 ter (disposition 120 × 36, palette, prochaine étape, aide), point 6 (fonction
+de rappel de vitesse) ; plan détaillé, point 23 nonies. `FourxApp` ne garde que l'affichage, la
+saisie en cours et les touches ; l'état du client est dans `ClientModel`, et chaque cadre de
+`frames.py` le lit. Le client ne connaît que `schema` et `policies` (niveau 1, §1) : en mode
+développement, il reçoit une simple fonction `set_speed`.
 
-Touches (AZERTY, sans Majuscule) : d déplacer, m miner, v vendre, q quitter ; Entrée acquitte
-l'alerte affichée, sinon confirme la saisie ; Échap annule. En mode développement : p pause ou
-reprise, a / r accélérer / ralentir (×1, ×10, ×100), Espace avancer jusqu'à la prochaine alerte.
+Touches (AZERTY, sans Majuscule) : d déplacer, m miner, v vendre, h aide, q quitter ; Entrée
+acquitte l'alerte affichée, sinon confirme la saisie ; Échap annule. En mode développement : p
+pause ou reprise, a / r accélérer / ralentir (×1, ×10, ×100), Espace avancer jusqu'à la prochaine
+alerte. L'aide s'ouvre au lancement : c'est une saisie, un widget superposé, et non un écran modal,
+pour que `FourxApp` reçoive toujours les touches. En dessous de 100 × 30, seul un message
+s'affiche, et seule la touche q agit.
 """
 
 from collections.abc import Callable
@@ -16,45 +20,80 @@ from collections.abc import Callable
 from textual import events
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
+from textual.widgets import Static
 
 from fourx.clients.frames import (
     BarreEtat,
-    CadreAlerte,
+    BarreTouches,
+    CadreAide,
     CadreCarte,
     CadreDestinations,
+    CadreEtape,
     CadreHistorique,
     CadreStations,
     CadreVaisseau,
     destinations,
 )
 from fourx.clients.model import ClientModel
+from fourx.clients.palette import PALETTE
 from fourx.clients.texts import minerai, systeme
 from fourx.schema.orders import Command, Mine, Move
 from fourx.schema.protocol import Connection, TickUpdate
 
 PALIERS = (1, 10, 100)
+TAILLE_MINIMALE = (100, 30)
+TAILLE_AIDE = (90, 28)
 QUITTER = "Quitter termine la partie (pas de reprise avant M5). Entrée pour confirmer."
-AIDE = "sans effet ici · d déplacer · m miner · v vendre · q quitter"
+AIDE = "sans effet ici · d déplacer · m miner · v vendre · h aide · q quitter"
 AIDE_DEV = AIDE + " · dev : p a r ␣"
 AIDE_LISTE = "destination : ↑ ↓ choisir · Entrée confirmer · Échap annuler"
+AIDE_OUVERTE = "aide ouverte : Entrée, Échap ou h pour la fermer · ↑ ↓ pour la faire défiler"
+TOUCHES_DEV = ("p", "a", "r", "space")
+
+
+def message_petite_fenetre(largeur: int, hauteur: int) -> str:
+    return (
+        f"Agrandis la fenêtre : {TAILLE_MINIMALE[0]} colonnes × {TAILLE_MINIMALE[1]} lignes au "
+        f"moins (actuellement {largeur} × {hauteur})."
+    )
+
+
+def feuille_de_style() -> str:
+    p = PALETTE
+    return f"""
+    Screen {{ layers: base ombre aide; background: {p["fond"]}; color: {p["texte"]}; }}
+    #ecran {{ height: 100%; }}
+    #petite {{ display: none; padding: 1 2; color: {p["texte"]}; }}
+    #barre {{ height: 2; background: {p["fond"]}; }}
+    #corps {{ height: 1fr; }}
+    #carte {{ width: 1fr; background: {p["fond"]}; color: {p["texte"]}; }}
+    #droite {{ width: 47; margin-left: 1; }}
+    .cadre {{
+        background: {p["cadre"]};
+        border: round {p["trait"]};
+        border-title-color: {p["texte_attenue"]};
+        padding: 0 1;
+    }}
+    #etape {{ height: 7; }}
+    #vaisseau {{ height: 8; }}
+    #stations, #destinations {{ height: 1fr; }}
+    #destinations {{ display: none; }}
+    #historique {{ height: 6; }}
+    #touches {{ height: 1; background: {p["cadre_clair"]}; color: {p["texte"]}; }}
+    #aide, #ombre {{
+        position: absolute;
+        width: {TAILLE_AIDE[0]};
+        height: {TAILLE_AIDE[1]};
+    }}
+    #aide {{ layer: aide; border: round {p["accent"]}; }}
+    #ombre {{ layer: ombre; background: {p["ombre"]}; }}
+    """
 
 
 class FourxApp(App[None]):
     TITLE = "4X — tranche 0"
     ENABLE_COMMAND_PALETTE = False
-    CSS = """
-    Screen { layout: vertical; }
-    #corps { height: 1fr; }
-    #gauche { width: 53; }
-    #droite { width: 1fr; }
-    #carte { height: 12; border: solid $foreground; }
-    #alerte { height: auto; text-style: reverse; border: solid $foreground; display: none; }
-    #historique, #destinations { height: 1fr; border: solid $foreground; }
-    #destinations { display: none; }
-    #vaisseau { height: 10; border: solid $foreground; }
-    #stations { height: 1fr; border: solid $foreground; }
-    #barre { height: 2; }
-    """
+    CSS = feuille_de_style()
 
     def __init__(
         self,
@@ -67,6 +106,9 @@ class FourxApp(App[None]):
         self.model = ClientModel(actor_id)
         self.set_speed = set_speed
         self.saisie: str | None = None
+        self.aide_ouverte = True
+        self.petite_fenetre = False
+        self.taille = (0, 0)
         self.choix = 0
         self.minerai_a_miner: int | None = None
         self.aide = ""
@@ -75,20 +117,40 @@ class FourxApp(App[None]):
         self.en_avance = False
 
     def compose(self) -> ComposeResult:
-        with Horizontal(id="corps"):
-            with Vertical(id="gauche"):
+        yield Static("", markup=False, id="petite")
+        with Vertical(id="ecran"):
+            yield BarreEtat()
+            with Horizontal(id="corps"):
                 yield CadreCarte()
-                yield CadreAlerte()
-                yield CadreHistorique()
-                yield CadreDestinations()
-            with Vertical(id="droite"):
-                yield CadreVaisseau()
-                yield CadreStations()
-        yield BarreEtat()
+                with Vertical(id="droite"):
+                    yield CadreEtape()
+                    yield CadreVaisseau()
+                    yield CadreStations()
+                    yield CadreDestinations()
+            yield CadreHistorique()
+            yield BarreTouches()
+        yield Static("", id="ombre")
+        yield CadreAide()
 
     def on_mount(self) -> None:
+        for ident in ("#etape", "#vaisseau", "#stations", "#destinations", "#historique", "#aide"):
+            self.query_one(ident).add_class("cadre")
+        self.placer(self.size.width, self.size.height)
         self.rafraichir()
         self.run_worker(self.recevoir(), exclusive=True)
+
+    def on_resize(self, event: events.Resize) -> None:
+        self.placer(event.size.width, event.size.height)
+        self.rafraichir()
+
+    def placer(self, largeur: int, hauteur: int) -> None:
+        """Centre l'aide et son ombre ; en dessous de 100 × 30, n'affiche que le message."""
+        self.taille = (largeur, hauteur)
+        self.petite_fenetre = largeur < TAILLE_MINIMALE[0] or hauteur < TAILLE_MINIMALE[1]
+        x = max((largeur - TAILLE_AIDE[0]) // 2, 0)
+        y = max((hauteur - TAILLE_AIDE[1]) // 2, 0)
+        self.query_one("#aide").styles.offset = (x, y)
+        self.query_one("#ombre").styles.offset = (x + 2, y + 1)
 
     async def recevoir(self) -> None:
         while True:
@@ -119,18 +181,33 @@ class FourxApp(App[None]):
         return f"×{self.palier}"
 
     def rafraichir(self) -> None:
+        petite = self.query_one("#petite", Static)
+        petite.display = self.petite_fenetre
+        self.query_one("#ecran").display = not self.petite_fenetre
+        aide_visible = self.aide_ouverte and not self.petite_fenetre
+        self.query_one(CadreAide).display = aide_visible
+        self.query_one("#ombre").display = aide_visible
+        if self.petite_fenetre:
+            message = message_petite_fenetre(*self.taille)
+            petite.update(message + ("\n\n" + QUITTER if self.saisie == "quitter" else ""))
+            return
         self.query_one(CadreCarte).montrer(self.model)
+        self.query_one(CadreEtape).montrer(self.model)
         self.query_one(CadreVaisseau).montrer(self.model)
-        self.query_one(CadreStations).montrer(self.model)
-        self.query_one(CadreAlerte).montrer(self.model)
         self.query_one(CadreHistorique).montrer(self.model)
-        liste = self.query_one(CadreDestinations)
         en_liste = self.saisie == "destination"
+        liste = self.query_one(CadreDestinations)
         liste.display = en_liste
-        self.query_one(CadreHistorique).display = not en_liste
+        stations = self.query_one(CadreStations)
+        stations.display = not en_liste
         if en_liste:
             liste.montrer(self.model, self.choix)
+        else:
+            stations.montrer(self.model)
+        if aide_visible:
+            self.query_one(CadreAide).montrer(self.model, self.set_speed is not None)
         self.query_one(BarreEtat).montrer(self.model, self.libelle_vitesse(), self.aide)
+        self.query_one(BarreTouches).montrer(self.saisie, self.aide_ouverte)
 
     # --- Ordres
 
@@ -146,10 +223,48 @@ class FourxApp(App[None]):
     def on_key(self, event: events.Key) -> None:
         event.stop()
         self.aide = ""
-        self.touche(event.key)
+        if self.petite_fenetre:
+            self.dans_la_petite_fenetre(event.key)
+        elif self.aide_ouverte:
+            self.dans_l_aide(event.key)
+        else:
+            self.touche(event.key)
         self.rafraichir()
 
+    def dans_la_petite_fenetre(self, touche: str) -> None:
+        """Seule q agit, avec sa confirmation."""
+        if self.saisie == "quitter":
+            if touche == "enter":
+                self.exit()
+            elif touche == "escape":
+                self.saisie = None
+        elif touche == "q":
+            self.saisie = "quitter"
+
+    def dans_l_aide(self, touche: str) -> None:
+        if touche in ("enter", "escape", "h"):
+            self.aide_ouverte = False
+        elif touche in ("up", "down"):
+            cadre = self.query_one(CadreAide)
+            if touche == "up":
+                cadre.scroll_up(animate=False)
+            else:
+                cadre.scroll_down(animate=False)
+        elif touche == "q":
+            self.aide_ouverte = False
+            self.saisie = "quitter"
+            self.aide = QUITTER
+        elif self.set_speed is not None and touche in TOUCHES_DEV:
+            self.developpement(touche)
+        else:
+            self.aide = AIDE_OUVERTE
+
     def touche(self, touche: str) -> None:
+        if touche == "h":
+            self.saisie = None
+            self.aide_ouverte = True
+            self.query_one(CadreAide).scroll_home(animate=False)
+            return
         if touche == "enter" and self.model.alerts:
             self.model.acknowledge()
             return
@@ -157,7 +272,7 @@ class FourxApp(App[None]):
             self.dans_la_saisie(touche)
         elif touche in ("d", "m", "v", "q"):
             self.commande(touche)
-        elif self.set_speed is not None and touche in ("p", "a", "r", "space"):
+        elif self.set_speed is not None and touche in TOUCHES_DEV:
             self.developpement(touche)
         else:
             self.aide = AIDE_DEV if self.set_speed is not None else AIDE
