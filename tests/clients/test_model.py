@@ -11,7 +11,14 @@ from pathlib import Path
 import msgspec
 import pytest
 
-from fourx.clients.model import Alert, AlertKind, ClientModel, decrire
+from fourx.clients.model import (
+    Alert,
+    AlertKind,
+    ClientModel,
+    HistoryEntry,
+    HistoryKind,
+    decrire,
+)
 from fourx.policies.geometry import distances
 from fourx.schema.actors import Activity, ActorKind
 from fourx.schema.events import Arrived, Event, MiningEnded, MiningStarted, Payload, Sale
@@ -81,7 +88,9 @@ def test_send_numerote_et_garde_l_ordre_jusqu_a_son_resultat() -> None:
     obs = observation((navire(system=1),), resultats=(resultat(2), resultat(9)))
     assert modele.on_update(mise_a_jour(obs)) is None
     assert list(modele.pending) == [(1, Move(ship_id=1, target_system_id=3))]
-    assert modele.history == ("t7 ordre « miner ore_a » : accepté",)
+    assert modele.history == (
+        HistoryEntry(7, HistoryKind.ORDER, "ordre « miner ore_a » : accepté"),
+    )
     assert modele.observation == obs
 
 
@@ -96,8 +105,12 @@ def test_un_refus_est_traduit_dans_l_historique() -> None:
         )
     )
     assert modele.history == (
-        "t7 ordre « miner ore_b » : refusé : pas de gisement de ore_b ici ; le plus proche est "
-        "dans system_3 (2 sauts)",
+        HistoryEntry(
+            7,
+            HistoryKind.REFUSAL,
+            "ordre « miner ore_b » : refusé : pas de gisement de ore_b ici ; le plus proche est "
+            "dans system_3 (2 sauts)",
+        ),
     )
     assert modele.pending == ()
 
@@ -194,7 +207,9 @@ def test_une_vente_dans_l_historique() -> None:
     vente = evenement(Sale(ship_id=1, ore_id=2, quantity=100, price=15, payment=1500, tax=150))
     autre = evenement(Sale(ship_id=2, ore_id=2, quantity=5, price=15, payment=75, tax=8), acteur=2)
     modele.on_update(mise_a_jour(observation((navire(system=1),), evenements=(vente, autre))))
-    assert modele.history == ("t7 vente : 100 ore_b à 15, paiement 1500, taxe 150",)
+    assert modele.history == (
+        HistoryEntry(7, HistoryKind.SALE, "vente : 100 ore_b à 15, paiement 1500, taxe 150"),
+    )
 
 
 def test_alerte_d_arrivee_seulement_quand_la_route_est_vide() -> None:
@@ -210,7 +225,7 @@ def test_alerte_d_arrivee_seulement_quand_la_route_est_vide() -> None:
     )
     modele.on_update(mise_a_jour(arrive))
     assert list(modele.alerts) == [Alert(kind=AlertKind.ARRIVED, tick=7, text="arrivée : system_3")]
-    assert modele.history == ("t7 arrivée : system_3",)
+    assert modele.history == (HistoryEntry(7, HistoryKind.ALERT, "arrivée : system_3"),)
 
 
 def test_l_arrivee_d_un_autre_vaisseau_n_alerte_pas() -> None:
@@ -236,7 +251,7 @@ def test_alerte_de_fin_de_minage_avec_le_minerai_de_l_observation_precedente() -
     assert modele.alerts == (
         Alert(kind=AlertKind.MINING_ENDED, tick=7, text="fin de minage : ore_b 100/100"),
     )
-    assert modele.history == ("t7 fin de minage : ore_b 100/100",)
+    assert modele.history == (HistoryEntry(7, HistoryKind.ALERT, "fin de minage : ore_b 100/100"),)
 
 
 def test_minage_commence_et_fini_dans_le_meme_tick() -> None:
@@ -300,7 +315,10 @@ def test_les_alertes_forment_une_file_acquittee_par_la_plus_ancienne() -> None:
     assert modele.alerts == (Alert(kind=AlertKind.ARRIVED, tick=8, text="arrivée : system_3"),)
     modele.acknowledge()
     assert list(modele.alerts) == []
-    assert modele.history == ("t7 arrivée : system_2", "t8 arrivée : system_3")
+    assert modele.history == (
+        HistoryEntry(7, HistoryKind.ALERT, "arrivée : system_2"),
+        HistoryEntry(8, HistoryKind.ALERT, "arrivée : system_3"),
+    )
 
 
 # --- Ticks restants
@@ -393,6 +411,29 @@ def test_la_vente_suivante_entre_au_tick_suivant(partie: Game) -> None:
     assert partie.state.ships[0].cargo == (30, 0)
     partie.advance(1)
     assert partie.state.ships[0].cargo == (0, 0)
-    ventes = [ligne for ligne in modele.history if " vente : " in ligne]
+    ventes = [e.text for e in modele.history if e.kind is HistoryKind.SALE]
     assert len(ventes) == 2 and "70 ore_b" in ventes[0] and "30 ore_a" in ventes[1]
     partie.close()
+
+
+# --- Gisements vus vides (amendement 2, Technical Plan, point 7 ter)
+
+
+def test_gisements_vus_vides_mis_a_jour_a_chaque_observation() -> None:
+    modele = ClientModel(ACTEUR)
+    assert modele.seen_empty == frozenset()
+    modele.on_update(mise_a_jour(observation((navire(system=2),), stocks=(0, None))))
+    assert modele.seen_empty == frozenset({1})
+    modele.on_update(mise_a_jour(observation((navire(system=3),), stocks=(None, 500))))
+    assert modele.seen_empty == frozenset({1})
+    modele.on_update(mise_a_jour(observation((navire(system=2),), stocks=(30, None))))
+    assert modele.seen_empty == frozenset()
+
+
+def test_gisements_vus_vides_se_vident_quand_tous_y_sont() -> None:
+    modele = ClientModel(ACTEUR)
+    modele.on_update(mise_a_jour(observation((navire(system=2),), stocks=(0, None))))
+    modele.on_update(mise_a_jour(observation((navire(system=3),), stocks=(None, 0))))
+    assert modele.seen_empty == frozenset({2})  # l'ensemble repart des seuls vides visibles
+    modele.on_update(mise_a_jour(observation((navire(system=2),), stocks=(0, 0))))
+    assert modele.seen_empty == frozenset()

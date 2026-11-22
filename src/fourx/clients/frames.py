@@ -1,28 +1,40 @@
-"""Les cadres de l'écran unique : un widget Textual par cadre.
+"""Les cadres de l'écran rétro : un widget Textual par cadre.
 
-Document : docs/designs/niveau-2-m1-noyau.md, Technical Plan, point 7 bis. Chaque cadre lit
-`ClientModel` et ne connaît pas les autres : on peut en ajouter, en retirer ou les réarranger
-sans toucher au reste. Le texte de chaque cadre vient d'une fonction de ce module ; le widget ne
-fait que l'afficher. Aucun cadre ne prend le focus : toutes les touches vont à `FourxApp`.
+Document : docs/designs/niveau-2-m1-noyau.md, Technical Plan, points 7 bis et 7 ter (cadres,
+palette, aide). Chaque cadre lit `ClientModel` et ne connaît pas les autres : on peut en ajouter,
+en retirer ou les réarranger sans toucher au reste. Le texte de chaque cadre vient d'une fonction
+de ce module, en couleurs de `PALETTE` ; le widget ne fait que l'afficher. Aucun cadre ne prend le
+focus : toutes les touches vont à `FourxApp`. La carte reste la carte en colonnes de l'amendement 1
+jusqu'au point 23 decies du plan détaillé.
 """
 
+from rich.text import Text
 from textual.app import ComposeResult
 from textual.containers import VerticalScroll
 from textual.widgets import Static
 
+from fourx.clients.guide import next_step
 from fourx.clients.map_layout import layout
-from fourx.clients.model import ClientModel, decrire
-from fourx.clients.texts import duration_text, minerai, station, systeme
+from fourx.clients.model import ClientModel, HistoryKind, decrire
+from fourx.clients.palette import PALETTE
+from fourx.clients.texts import duration_text, help_pages, minerai, station, systeme
 from fourx.policies.geometry import distances
 from fourx.schema.actors import Activity
-from fourx.schema.observation import Observation
+from fourx.schema.observation import Observation, OwnShipView
 
 ATTENTE = "En attente du premier tick…"
-ACTIVITES = {
-    Activity.IDLE: "à l'arrêt",
-    Activity.EN_ROUTE: "en route",
-    Activity.MINING: "en minage",
+LARGEUR_BARRE = 20
+NOMS_DES_TOUCHES = {"enter": "Entrée", "escape": "Échap", "space": "Espace"}
+COULEURS_DE_L_HISTORIQUE = {
+    HistoryKind.ORDER: "accent",
+    HistoryKind.SALE: "succes",
+    HistoryKind.ALERT: "vaisseau",
+    HistoryKind.REFUSAL: "alerte",
 }
+
+
+def couleur(role: str) -> str:
+    return PALETTE[role]
 
 
 def texte_carte(model: ClientModel) -> str:
@@ -39,60 +51,131 @@ def texte_carte(model: ClientModel) -> str:
     return "\n".join([*layout(obs), "", ligne])
 
 
-def deux_lignes(debut: str, ticks: int) -> list[str]:
-    """« arrivée dans 62 ticks », puis l'estimation « (≈ 3 min 6 s à 3 s) » sur sa ligne."""
-    duree, estimation = duration_text(ticks).split(" (", 1)
-    return [f"{debut} {duree}", f"({estimation}"]
+def texte_etape(model: ClientModel) -> Text:
+    """La prochaine étape : son titre (en couleur `vaisseau` pour une alerte), son détail et ses
+    touches, par leur nom français."""
+    etape = next_step(model)
+    alerte = etape.keys == ("enter",) and bool(model.alerts)
+    texte = Text(etape.title, style=f"bold {couleur('vaisseau' if alerte else 'texte')}")
+    if etape.detail:
+        texte.append("\n" + etape.detail, style=couleur("texte_attenue"))
+    if etape.keys:
+        noms = " ".join(NOMS_DES_TOUCHES.get(k, k) for k in etape.keys)
+        texte.append("\nTouche : ", style=couleur("texte_attenue"))
+        texte.append(noms, style=f"bold {couleur('accent')}")
+    return texte
 
 
-def texte_vaisseau(model: ClientModel) -> str:
-    """Où est le vaisseau, ce qu'il fait, les ticks restants, la cargaison, les ordres envoyés."""
+def barre(fait: int, total: int) -> str:
+    """Une barre de progression de 20 cases : █ fait, ░ à faire."""
+    pleines = 0 if total <= 0 else min(fait * LARGEUR_BARRE // total, LARGEUR_BARRE)
+    return "█" * pleines + "░" * (LARGEUR_BARRE - pleines)
+
+
+def _progres(model: ClientModel, navire: OwnShipView) -> tuple[str, int, int]:
+    """Le libellé, le fait et le total de la barre du saut ou du minage en cours."""
+    obs = model.observation
+    assert obs is not None
+    reglages = obs.public_tunables
+    if navire.activity is Activity.EN_ROUTE:
+        return "saut", reglages.jump_ticks - navire.ticks_to_next_jump, reglages.jump_ticks
+    if navire.activity is Activity.MINING:
+        restant = navire.capacity - sum(navire.cargo)
+        for d in obs.deposits:
+            if (
+                d.system_id == navire.system_id
+                and d.ore_id == navire.mining_ore_id
+                and d.stock is not None
+            ):
+                restant = min(restant, d.stock)
+        return "minage", navire.mined_since_start, navire.mined_since_start + restant
+    return "activité", 0, 1
+
+
+def texte_vaisseau(model: ClientModel) -> Text:
+    """État, route, durée restante, cargaison, ordre envoyé, puis les deux barres de progression :
+    le saut ou le minage en cours, et le remplissage de la cargaison."""
     navire = model.vaisseau()
     if model.observation is None or navire is None:
-        return ATTENTE
-    lignes = [f"{systeme(navire.system_id)}  {ACTIVITES[navire.activity]}"]
+        return Text(ATTENTE)
     restants = model.remaining_ticks()
     if navire.activity is Activity.EN_ROUTE:
-        lignes.append(f"vers {systeme(navire.route[-1])}")
-        if restants is not None:
-            lignes += deux_lignes("arrivée dans", restants)
+        etat = f"en route vers {systeme(navire.route[-1])}"
+        suite = "" if restants is None else f"arrivée dans {duration_text(restants)}"
     elif navire.activity is Activity.MINING:
-        if navire.mining_ore_id is not None:
-            lignes.append(f"mine {minerai(navire.mining_ore_id)}")
-        if restants is not None:
-            lignes += deux_lignes("fin dans", restants)
-    lignes.append(f"cargaison {sum(navire.cargo)}/{navire.capacity}")
-    lignes.append("  ".join(f"{minerai(rang + 1)} {q}" for rang, q in enumerate(navire.cargo)))
+        nom = "" if navire.mining_ore_id is None else f" de {minerai(navire.mining_ore_id)}"
+        etat = f"en minage{nom}"
+        suite = "" if restants is None else f"fin dans {duration_text(restants)}"
+    else:
+        etat, suite = "à l'arrêt", "aucun trajet ni minage en cours"
+    texte = Text(systeme(navire.system_id), style=f"bold {couleur('texte')}")
+    texte.append(f"  {etat}\n", style=couleur("texte"))
+    texte.append(suite + "\n", style=couleur("texte_attenue"))
+    texte.append("cargaison : ", style=couleur("texte_attenue"))
+    for rang, q in enumerate(navire.cargo):
+        if rang:
+            texte.append("  ")
+        texte.append(f"{minerai(rang + 1)} {q}", style=couleur(f"ore_{chr(ord('a') + rang)}"))
     envoyes = [decrire(c) for _, c in model.pending]
-    lignes.append("ordre envoyé : " + ("; ".join(envoyes) if envoyes else "aucun"))
-    return "\n".join(lignes)
+    texte.append("\nordre envoyé : " + (" ; ".join(envoyes) if envoyes else "aucun") + "\n")
+    libelle, fait, total = _progres(model, navire)
+    texte.append(f"{libelle:<10}", style=couleur("texte_attenue"))
+    _ajouter_barre(texte, fait, total)
+    texte.append("\ncargaison ", style=couleur("texte_attenue"))
+    _ajouter_barre(texte, sum(navire.cargo), navire.capacity)
+    texte.append(f" {sum(navire.cargo)}/{navire.capacity}", style=couleur("texte"))
+    return texte
 
 
-def texte_stations(model: ClientModel) -> str:
-    """Chaque station, son système et son prix de rachat de chaque minerai."""
+def _ajouter_barre(texte: Text, fait: int, total: int) -> None:
+    trace = barre(fait, total)
+    pleines = trace.count("█")
+    texte.append(trace[:pleines], style=couleur("accent"))
+    texte.append(trace[pleines:], style=couleur("trait_faible"))
+
+
+def texte_stations(model: ClientModel) -> Text:
+    """Une ligne par station, le meilleur prix de chaque minerai marqué ★ (toutes les stations à
+    égalité le sont) ; puis, par minerai, les systèmes de ses gisements et leur stock, « ? » hors
+    de portée."""
     obs = model.observation
     if obs is None:
-        return ATTENTE
-    lignes = []
+        return Text(ATTENTE)
+    meilleurs = [max((s.ore_prices[rang] for s in obs.stations), default=0) for rang in range(2)]
+    texte = Text()
     for s in obs.stations:
-        prix = "  ".join(f"{chr(ord('a') + rang)} {p}" for rang, p in enumerate(s.ore_prices))
-        lignes.append(f"{station(s.id)} sys {s.system_id}  {prix}")
-    return "\n".join(lignes)
+        texte.append(f"{station(s.id)} ", style=f"bold {couleur('station')}")
+        texte.append(systeme(s.system_id), style=couleur("texte"))
+        for rang, prix in enumerate(s.ore_prices):
+            lettre = chr(ord("a") + rang)
+            texte.append(f"  {lettre} {prix}", style=couleur(f"ore_{lettre}"))
+            if prix == meilleurs[rang]:
+                texte.append("★", style=couleur("succes"))
+        texte.append("\n")
+    for rang in range(2):
+        lieux = [
+            f"{systeme(d.system_id)} ({'?' if d.stock is None else d.stock})"
+            for d in obs.deposits
+            if d.ore_id == rang + 1
+        ]
+        texte.append(f"{minerai(rang + 1)} : ", style=couleur(f"ore_{chr(ord('a') + rang)}"))
+        texte.append(", ".join(lieux) or "aucun gisement", style=couleur("texte"))
+        if rang == 0:
+            texte.append("\n")
+    return texte
 
 
-def texte_historique(model: ClientModel, hauteur: int) -> str:
-    """Les dernières lignes de l'historique, la plus récente en bas."""
-    lignes = model.history[-hauteur:] if hauteur > 0 else model.history
-    return "\n".join(lignes)
-
-
-def texte_alerte(model: ClientModel) -> str:
-    """La plus ancienne alerte non acquittée, et le nombre d'alertes qui suivent."""
-    if not model.alerts:
-        return ""
-    texte = f"t{model.alerts[0].tick} {model.alerts[0].text} · Entrée : acquitter"
-    if len(model.alerts) > 1:
-        texte += f" ({len(model.alerts) - 1} de plus)"
+def texte_historique(model: ClientModel, nombre: int = 4) -> Text:
+    """Les dernières entrées de l'historique, la plus récente en bas, chacune « t[tick] [texte] »,
+    l'étiquette colorée selon son type."""
+    texte = Text()
+    for rang, entree in enumerate(model.history[-nombre:]):
+        if rang:
+            texte.append("\n")
+        texte.append(
+            f"t{entree.tick}", style=f"bold {couleur(COULEURS_DE_L_HISTORIQUE[entree.kind])}"
+        )
+        texte.append(f" {entree.text}", style=couleur("texte"))
     return texte
 
 
@@ -139,22 +222,51 @@ def texte_destinations(model: ClientModel, choix: int, hauteur: int) -> str:
     return "\n".join([tete, *fenetre])
 
 
-def texte_barre(model: ClientModel, vitesse: str | None, aide: str) -> str:
-    """Première ligne : tick, solde, en mode développement la vitesse demandée, et les touches ;
-    seconde ligne : l'aide ou l'invite de la saisie en cours."""
+def texte_barre(model: ClientModel, vitesse: str | None, aide: str) -> Text:
+    """Ligne 1 : tick, durée de jeu estimée, solde ; en mode développement, la vitesse demandée.
+    Ligne 2 : la ligne d'aide d'une touche sans effet, ou l'invite de la saisie en cours."""
     obs = model.observation
-    morceaux = [
-        f"Tick {obs.tick}" if obs else "Tick —",
-        f"Solde {obs.wallet_balance}" if obs else "Solde —",
-    ]
+    texte = Text(" ")
+    if obs is None:
+        texte.append("Tick —", style=f"bold {couleur('texte')}")
+        texte.append(" │ Solde —", style=couleur("texte"))
+    else:
+        estimation = "(" + duration_text(obs.tick).split(" (", 1)[1]
+        texte.append(f"Tick {obs.tick}", style=f"bold {couleur('texte')}")
+        texte.append(f" {estimation}", style=couleur("texte_attenue"))
+        texte.append(" │ ", style=couleur("texte_attenue"))
+        texte.append(f"Solde {obs.wallet_balance}", style=f"bold {couleur('succes')}")
     if vitesse is not None:
-        morceaux.append(f"dev {vitesse}")
-    morceaux.append("d m v q" + (" · dev : p a r ␣" if vitesse is not None else ""))
-    return " " + " │ ".join(morceaux) + "\n " + aide
+        texte.append(" │ ", style=couleur("texte_attenue"))
+        texte.append(f"dev {vitesse}", style=couleur("vaisseau"))
+    texte.append("\n " + aide, style=couleur("accent"))
+    return texte
+
+
+def texte_touches(saisie: str | None, aide_ouverte: bool) -> str:
+    """Les touches utiles dans la saisie en cours."""
+    if aide_ouverte:
+        return " ↑↓ défiler · Entrée, Échap ou h fermer"
+    if saisie == "destination":
+        return " ↑↓ choisir · Entrée confirmer · Échap annuler"
+    if saisie in ("miner", "quitter"):
+        return " Entrée confirmer · Échap annuler"
+    if saisie == "minerai":
+        return " a ou b : minerai · Échap annuler"
+    return " d déplacer · m miner · v vendre · h aide · q quitter"
+
+
+def texte_aide(model: ClientModel, dev: bool) -> Text:
+    """L'aide « Comment jouer », son titre en couleur `accent`."""
+    lignes = help_pages(model.observation, dev)
+    texte = Text(lignes[0], style=f"bold {couleur('accent')}")
+    for ligne in lignes[1:]:
+        texte.append("\n" + ligne, style=couleur("texte"))
+    return texte
 
 
 class Cadre(Static):
-    """Un cadre de texte brut, sans balisage, qui ne prend pas le focus."""
+    """Un cadre de texte, sans balisage, qui ne prend pas le focus."""
 
     can_focus = False
 
@@ -164,19 +276,26 @@ class Cadre(Static):
 
 
 class CadreCarte(VerticalScroll):
-    """Le cadre Carte défile verticalement si la carte dépasse sa hauteur."""
+    """La carte, sans bordure ; elle défile verticalement si elle dépasse sa hauteur."""
 
     can_focus = False
 
     def __init__(self) -> None:
         super().__init__(id="carte")
-        self.border_title = "Carte"
 
     def compose(self) -> ComposeResult:
         yield Static(ATTENTE, markup=False, id="carte-texte")
 
     def montrer(self, model: ClientModel) -> None:
         self.query_one("#carte-texte", Static).update(texte_carte(model))
+
+
+class CadreEtape(Cadre):
+    def __init__(self) -> None:
+        super().__init__("Prochaine étape", "etape")
+
+    def montrer(self, model: ClientModel) -> None:
+        self.update(texte_etape(model))
 
 
 class CadreVaisseau(Cadre):
@@ -187,12 +306,20 @@ class CadreVaisseau(Cadre):
         self.update(texte_vaisseau(model))
 
 
-class CadreStations(Cadre):
+class CadreStations(VerticalScroll):
+    """Les prix et les gisements ; le cadre défile quand son contenu dépasse sa hauteur."""
+
+    can_focus = False
+
     def __init__(self) -> None:
-        super().__init__("Stations", "stations")
+        super().__init__(id="stations")
+        self.border_title = "Stations"
+
+    def compose(self) -> ComposeResult:
+        yield Static(ATTENTE, markup=False, id="stations-texte")
 
     def montrer(self, model: ClientModel) -> None:
-        self.update(texte_stations(model))
+        self.query_one("#stations-texte", Static).update(texte_stations(model))
 
 
 class CadreHistorique(Cadre):
@@ -200,22 +327,11 @@ class CadreHistorique(Cadre):
         super().__init__("Historique", "historique")
 
     def montrer(self, model: ClientModel) -> None:
-        self.update(texte_historique(model, self.content_region.height))
-
-
-class CadreAlerte(Cadre):
-    """En vidéo inverse au-dessus de l'historique, seulement quand une alerte attend."""
-
-    def __init__(self) -> None:
-        super().__init__("Alerte", "alerte")
-
-    def montrer(self, model: ClientModel) -> None:
-        self.update(texte_alerte(model))
-        self.display = bool(model.alerts)
+        self.update(texte_historique(model))
 
 
 class CadreDestinations(Cadre):
-    """La liste des destinations, à la place de l'historique pendant la saisie."""
+    """La liste des destinations, à la place du cadre Stations pendant la saisie."""
 
     def __init__(self) -> None:
         super().__init__("Destinations", "destinations")
@@ -232,3 +348,29 @@ class BarreEtat(Static):
 
     def montrer(self, model: ClientModel, vitesse: str | None, aide: str) -> None:
         self.update(texte_barre(model, vitesse, aide))
+
+
+class BarreTouches(Static):
+    can_focus = False
+
+    def __init__(self) -> None:
+        super().__init__("", markup=False, id="touches")
+
+    def montrer(self, saisie: str | None, aide_ouverte: bool) -> None:
+        self.update(texte_touches(saisie, aide_ouverte))
+
+
+class CadreAide(VerticalScroll):
+    """L'aide « Comment jouer », superposée au centre de l'écran ; elle défile."""
+
+    can_focus = False
+
+    def __init__(self) -> None:
+        super().__init__(id="aide")
+        self.border_title = "Aide"
+
+    def compose(self) -> ComposeResult:
+        yield Static("", markup=False, id="aide-texte")
+
+    def montrer(self, model: ClientModel, dev: bool) -> None:
+        self.query_one("#aide-texte", Static).update(texte_aide(model, dev))

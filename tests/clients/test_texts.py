@@ -8,7 +8,7 @@ system_1, gisement de ore_a dans system_2, de ore_b dans system_3.
 import msgspec
 import pytest
 
-from fourx.clients.texts import duration_text, refusal_text
+from fourx.clients.texts import duration_text, help_pages, refusal_text
 from fourx.schema.actors import Activity, ActorKind
 from fourx.schema.ids import OrderId
 from fourx.schema.observation import DepositView, Observation, StationView, SystemView
@@ -242,3 +242,70 @@ def test_chaque_code_a_un_texte() -> None:
 )
 def test_durees(ticks: int, attendu: str) -> None:
     assert duration_text(ticks) == attendu
+
+
+# --- L'aide (amendement 2, Technical Plan, point 7 ter)
+
+AIDE_ATTENDUE = (
+    "COMMENT JOUER",
+    "Tu pilotes un vaisseau minier. Tu gagnes ta vie en trois étapes, qui prennent du temps :",
+    "1. Miner (m), dans un système qui a un gisement : remplir une cargaison vide prend {minage}.",
+    "2. Transporter (d, ou un clic sur la carte) : un saut entre deux systèmes voisins dure "
+    "{saut}.",
+    "3. Vendre (v), dans le système d'une station : au prix de cette station, moins une taxe. "
+    "La vente est immédiate.",
+    "Ce que tu vois : toute la carte, les gisements et les prix des stations. Les autres "
+    "vaisseaux et le stock d'un gisement, seulement dans ton système et les systèmes voisins ; "
+    "ailleurs, « ? ».",
+    "Le temps : un tick dure environ 3 secondes à la vitesse normale, et le monde avance même si "
+    "tu ne fais rien. Une alerte te prévient à l'arrivée et à la fin du minage.",
+    "Premier objectif : vendre une première cargaison. Le cadre « Prochaine étape » te guide.",
+    "Les touches :",
+    "d : déplacer (liste des destinations ; Entrée envoie, Échap annule)",
+    "m : miner le gisement du système",
+    "v : vendre toute la cargaison",
+    "h : ouvrir ou fermer cette aide",
+    "z / x : zoomer, dézoomer la carte",
+    "c : recentrer la carte sur ton vaisseau",
+    "flèches : déplacer la carte",
+    "Entrée : confirmer, ou acquitter une alerte",
+    "Échap : annuler",
+    "q : quitter",
+)
+LIGNE_DEV = (
+    "Mode développement : p pause, a / r accélérer / ralentir, Espace avancer jusqu'à la "
+    "prochaine alerte"
+)
+FERMER = "Entrée, Échap ou h : fermer"
+
+
+def aide_attendue(minage: str, saut: str, dev: bool) -> tuple[str, ...]:
+    lignes = tuple(ligne.format(minage=minage, saut=saut) for ligne in AIDE_ATTENDUE)
+    return lignes + ((LIGNE_DEV,) if dev else ()) + (FERMER,)
+
+
+@pytest.mark.parametrize("dev", [False, True])
+def test_aide_avec_observation(dev: bool) -> None:
+    # Capacité 100, mining_rate 10, jump_ticks 5 (tests/aide_observation.py).
+    obs = observation((navire(system=1),))
+    assert help_pages(obs, dev) == aide_attendue(
+        "10 ticks (≈ 30 s à 3 s)", "5 ticks (≈ 15 s à 3 s)", dev
+    )
+
+
+def test_aide_arrondit_le_minage_vers_le_haut() -> None:
+    petit = msgspec.structs.replace(navire(system=1), capacity=95)
+    lignes = help_pages(observation((petit,)), False)
+    assert lignes[2].endswith("prend 10 ticks (≈ 30 s à 3 s).")
+
+
+@pytest.mark.parametrize("dev", [False, True])
+def test_aide_sans_observation(dev: bool) -> None:
+    inconnue = "(connue au premier tick)"
+    assert help_pages(None, dev) == aide_attendue(inconnue, inconnue, dev)
+
+
+def test_aide_sans_vaisseau_du_joueur() -> None:
+    assert help_pages(observation(()), False) == aide_attendue(
+        "(connue au premier tick)", "5 ticks (≈ 15 s à 3 s)", False
+    )
