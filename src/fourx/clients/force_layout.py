@@ -10,7 +10,7 @@ Les positions sont dans le carré [0, 1] × [0, 1], axe des y vers le bas. Cinq 
 1. `initial_layers` : départ en couches, par distance en sauts depuis le plus petit identifiant ;
 2. `relax` : 300 itérations de répulsion, de ressorts et de rappel vers l'origine ;
 3. `normalize` : une échelle par axe : les positions remplissent le rectangle utile R ;
-4. `separate` : les boîtes des systèmes (7 × 5 cases d'une carte de 70 × 23, à partir du coin
+4. `separate` : les boîtes des systèmes (7,5 × 5,5 cases d'une carte de 70 × 23, à partir du coin
    en haut à gauche du cadre, vers la droite et vers le bas) sont
    écartées jusqu'à ne plus se recouvrir, en au plus 100 passes ;
 5. `snap_overlaps` : un système encore en recouvrement va au point libre le plus proche d'un

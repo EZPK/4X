@@ -16,6 +16,8 @@ from fourx.clients.map_view import (
     ZOOMS,
     Cell,
     View,
+    _etiquette,
+    _Grille,
     _points,
     anchor,
     case_du_point,
@@ -233,3 +235,15 @@ def test_un_mot_ne_coupe_jamais_un_nombre() -> None:
     assert texte(grille, 9, 14, 17) == "a10"
     assert grille[9][18] == Cell("…", "texte_attenue", "fond")
     assert "b" not in texte(grille, 9, 14, 19)
+
+
+def test_l_espace_entre_deux_mots_ne_couvre_jamais_une_case_occupee() -> None:
+    grille = _Grille(View(0, (0.5, 0.5), 30, 1))
+    grille.ecrire(2, 0, "X", "texte")  # juste après le premier mot
+    _etiquette(grille, 0, 0, [("ab", "texte"), ("cd", "texte")])
+    ligne = grille.rendre()[0]
+    assert "".join(c.char for c in ligne[:5]) == "abX  "  # « cd » n'est pas écrit au-delà
+    libre = _Grille(View(0, (0.5, 0.5), 30, 1))
+    libre.ecrire(5, 0, "X", "texte")
+    _etiquette(libre, 0, 0, [("ab", "texte"), ("cd", "texte")])
+    assert "".join(c.char for c in libre.rendre()[0][:6]) == "ab cdX"

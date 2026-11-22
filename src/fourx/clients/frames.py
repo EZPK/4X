@@ -353,10 +353,10 @@ class Cadre(Static):
 
 
 class MapCanvas(Widget):
-    """La carte rétro : peint la grille de `map_view.render`, en demi-blocs et en couleurs de la
-    palette. La molette zoome autour du pointeur, le glisser déplace la vue, le survol montre la
-    bulle, le clic choisit une destination. La grille n'est recalculée que si l'une de ses entrées
-    change ; les mises à jour du tick sont plafonnées à 10 dessins par seconde."""
+    """La carte rétro : peint la grille de `map_view.render` (cadres, texte, liens en Braille), en
+    couleurs de la palette. La molette zoome autour du pointeur, le glisser déplace la vue, le
+    survol montre la bulle, le clic choisit une destination. La grille n'est recalculée que si l'une
+    de ses entrées change ; les mises à jour du tick sont plafonnées à 10 dessins par seconde."""
 
     can_focus = False
     INTERVALLE = 0.1

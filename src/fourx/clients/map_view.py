@@ -268,21 +268,24 @@ class _Grille:
 
 
 def _etiquette(grille: _Grille, colonne: int, ligne: int, mots: list[tuple[str, str]]) -> None:
-    """Une ligne d'étiquette : des mots entiers, séparés d'une espace ; un mot qui ne tient pas
-    avant la première case occupée est remplacé par « … », et les suivants ne sont pas écrits."""
+    """Une ligne d'étiquette : des mots entiers, séparés d'une espace qui doit elle aussi tomber sur
+    une case libre ; un mot qui ne tient pas avant la première case occupée est remplacé par « … »
+    (s'il reste une case libre), et les suivants ne sont pas écrits."""
     curseur = colonne
     for mot, fg in mots:
-        limite = curseur
+        debut = curseur - 1 if curseur > colonne else curseur  # l'espace qui le sépare compris
+        limite = debut
         while not grille.occupee(limite, ligne):
             limite += 1
         if curseur + len(mot) <= limite:
-            if curseur > colonne:
-                grille.ecrire(curseur - 1, ligne, " ", "texte")
+            if debut < curseur:
+                grille.ecrire(debut, ligne, " ", "texte")
             grille.mot(curseur, ligne, mot, fg)
             curseur += len(mot) + 1
             continue
-        if curseur < limite:
-            grille.ecrire(curseur, ligne, POINTS_DE_SUSPENSION, "texte_attenue")
+        place = curseur if curseur < limite else debut
+        if place < limite:
+            grille.ecrire(place, ligne, POINTS_DE_SUSPENSION, "texte_attenue")
         return
 
 
