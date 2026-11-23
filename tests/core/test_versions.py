@@ -19,4 +19,4 @@ def test_valeurs_de_version() -> None:
     assert events.EVENT_SCHEMA_VERSION == 0
     assert protocol.PROTOCOL_VERSION == 2
     assert protocol.NOMINAL_TICK_PERIOD_S == 3.0
-    assert version.RULES_REVISION == 0
+    assert version.RULES_REVISION == 1

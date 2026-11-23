@@ -12,7 +12,7 @@ import msgspec.msgpack
 
 from fourx.core.tunables import Tunables
 
-RULES_REVISION = 0
+RULES_REVISION = 1
 
 
 def tunables_fingerprint(tunables: Tunables) -> str:
