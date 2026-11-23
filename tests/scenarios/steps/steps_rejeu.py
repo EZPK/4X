@@ -17,11 +17,14 @@ Conventions que ces étapes figent :
 - un fichier d'empreintes a une ligne par tick, l'encodage JSON msgspec de `Fingerprints`, dans
   l'ordre des ticks ;
 - `python -m fourx.tools.replay <dossier>` lit les réglages de `tunables.toml`, rejoue la partie
-  et finit avec le code 0 si les empreintes concordent avec celles du journal des ordres ;
+  et finit avec le code 0 si les empreintes concordent avec celles du journal des ordres ; avec
+  `--export-fingerprints <fichier>`, il écrit aussi dans ce fichier les empreintes du rejeu ;
 - `python -m fourx.tools.divergence <A> <B>` accepte un dossier de partie (empreintes de son
   journal des ordres) ou un fichier d'empreintes ; il affiche « tick <n> : <composants> », les
-  composants séparés par « , » dans l'ordre des champs de `Fingerprints`, et finit avec le code 1,
-  ou affiche « aucune divergence » et finit avec le code 0 ;
+  composants séparés par une virgule suivie d'une espace (`", "`), dans l'ordre des champs de
+  `Fingerprints`, et finit avec le code 1, ou affiche « aucune divergence » et finit avec le
+  code 0 ;
+- chaque commande rend la main en moins de 300 secondes ;
 - `first_divergence(a, b)` renvoie le premier tick (champ `tick` des empreintes) où a et b
   diffèrent, avec les noms des champs qui diffèrent, ou None.
 """
@@ -40,6 +43,7 @@ from pytest_bdd import parsers, then, when
 from tests.scenarios.steps.steps_partie import Serveur
 
 RACINE = Path(__file__).resolve().parents[3]
+DELAI_S = 300
 
 
 def importer(nom: str) -> Any:
@@ -52,6 +56,7 @@ class Rejeu:
     empreintes: tuple[Any, ...] = ()
     evenements: tuple[Any, ...] = ()
     fichier: Path | None = None
+    exporte: Path | None = None
     sortie: subprocess.CompletedProcess[str] | None = None
     rejoues: list[tuple[Any, ...]] = field(default_factory=list)
 
@@ -91,7 +96,12 @@ def instantane(serveur: Serveur) -> Any:
 
 def lancer(*args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [sys.executable, "-m", *args], cwd=RACINE, capture_output=True, text=True, check=False
+        [sys.executable, "-m", *args],
+        cwd=RACINE,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=DELAI_S,
     )
 
 
@@ -157,10 +167,36 @@ def rejouer_par_step(
     "de ce rejeu"
 )
 def lancer_divergence(serveur: Serveur, rejeu: Rejeu) -> None:
+    importer("fourx.tools.divergence")  # en attente : échoue ici tant que l'outil n'existe pas
     assert rejeu.fichier is not None
     rejeu.sortie = lancer(
         "fourx.tools.divergence", str(dossier_de_partie(serveur)), str(rejeu.fichier)
     )
+
+
+@when("l'outil de rejeu, lancé sur le dossier de la partie, exporte ses empreintes dans un fichier")
+def exporter(serveur: Serveur, rejeu: Rejeu, tmp_path: Path) -> None:
+    importer("fourx.tools.replay")  # en attente : échoue ici tant que l'outil n'existe pas
+    arreter(serveur, rejeu)
+    rejeu.exporte = tmp_path / "exportees.jsonl"
+    sortie = lancer(
+        "fourx.tools.replay",
+        str(dossier_de_partie(serveur)),
+        "--export-fingerprints",
+        str(rejeu.exporte),
+    )
+    assert sortie.returncode == 0, sortie.stdout + sortie.stderr
+    assert rejeu.exporte.is_file()
+
+
+@when(
+    "on lance l'outil de divergence sur le fichier exporté par l'outil de rejeu et le fichier "
+    "d'empreintes de ce rejeu"
+)
+def lancer_divergence_fichiers(rejeu: Rejeu) -> None:
+    importer("fourx.tools.divergence")  # en attente : échoue ici tant que l'outil n'existe pas
+    assert rejeu.exporte is not None and rejeu.fichier is not None
+    rejeu.sortie = lancer("fourx.tools.divergence", str(rejeu.exporte), str(rejeu.fichier))
 
 
 # --- Alors

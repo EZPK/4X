@@ -31,6 +31,7 @@ Fonctionnalité: Le rejeu d'une partie et l'outil de divergence
     Alors l'outil de divergence affiche « tick 50 : ledger » et finit avec le code 1
     Et first_divergence, sur les empreintes du journal des ordres et celles de ce rejeu, renvoie le tick 50 et le seul composant ledger
     Quand on rejoue la partie par step depuis son instantané initial et son journal des ordres, sans modification
-    Et on lance l'outil de divergence sur le dossier de la partie et le fichier d'empreintes de ce rejeu
+    Et l'outil de rejeu, lancé sur le dossier de la partie, exporte ses empreintes dans un fichier
+    Et on lance l'outil de divergence sur le fichier exporté par l'outil de rejeu et le fichier d'empreintes de ce rejeu
     Alors l'outil de divergence affiche « aucune divergence » et finit avec le code 0
     Et first_divergence, sur les empreintes du journal des ordres et celles de ce rejeu, ne renvoie rien
