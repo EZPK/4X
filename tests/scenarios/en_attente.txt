@@ -1,3 +1,1 @@
 # Une entrée par ligne : <fichier>.feature::<titre du scénario>. Voir docs/designs/niveau-2-m0-garde-fous.md, Technical Plan, point 10.
-rejeu.feature::Une partie jouée à travers le serveur se rejoue avec les mêmes empreintes à chaque tick, refus compris
-rejeu.feature::L'outil de divergence signale au tick 50, composant ledger, une partie dont le registre est modifié au tick 50
