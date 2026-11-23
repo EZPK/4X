@@ -205,10 +205,10 @@ def test_reglages_bornes_au_decodage() -> None:
 
 
 def test_rules_version() -> None:
-    assert version.RULES_REVISION == 0
+    assert version.RULES_REVISION == 1
     empreinte_reglages = version.tunables_fingerprint(REGLAGES)
     assert len(empreinte_reglages) == 16
-    assert version.rules_version(REGLAGES) == f"rules-0+{empreinte_reglages}"
+    assert version.rules_version(REGLAGES) == f"rules-1+{empreinte_reglages}"
     autres = msgspec.structs.replace(REGLAGES, tax_rate_bp=500)
     assert version.tunables_fingerprint(autres) != empreinte_reglages
 
