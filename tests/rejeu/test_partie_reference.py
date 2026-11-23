@@ -156,3 +156,47 @@ def test_la_regeneration_remplace_l_ancienne_revision(
         a.startswith(f"Rapport de différences : rules-0 → rules-{RULES_REVISION}") for a in affiches
     )
     assert any(a.startswith("Gisements vidés : ") for a in affiches)
+
+
+def test_un_gisement_vide_au_tick_de_regeneration_est_releve(tmp_path: Path) -> None:
+    """Régénération à chaque tick : le stock est rempli avant la fin de chaque tick, donc jamais
+    nul dans l'état ; le gisement vidé par le minage du tick est pourtant relevé."""
+    tunables = msgspec.structs.replace(load_tunables(), deposit_stock=20, regen_ticks=1, **COURTS)
+    run_dir = jouer(tmp_path, tunables, ticks=300)
+    journal = OrderLog(run_dir / "orders.sqlite")
+    ordres = journal.orders_by_tick()
+    journal.close()
+    releve = relever_epuisement(generate(1, tunables), ordres, tunables)
+    assert releve.vides
+
+
+def test_regenerer_la_meme_revision_la_compare_a_elle_meme(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    references, affiches = preparer(monkeypatch, tmp_path, [])
+    partie_reference.regenerer(tmp_path / "runs", load_tunables(), affiches.append)
+    premiere = (references / f"rules-{RULES_REVISION}" / "reference.json").read_bytes()
+    affiches.clear()
+    partie_reference.regenerer(tmp_path / "runs2", load_tunables(), affiches.append)
+    rapport = next(a for a in affiches if a.startswith("Rapport de différences"))
+    assert rapport.splitlines()[0] == (
+        f"Rapport de différences : rules-{RULES_REVISION} → rules-{RULES_REVISION}"
+    )
+    assert "- premier relevé d'empreintes qui diffère : aucune divergence" in rapport
+    assert (references / f"rules-{RULES_REVISION}" / "reference.json").read_bytes() == premiere
+
+
+def test_un_echec_pendant_l_ecriture_laisse_l_ancienne_revision(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    references, affiches = preparer(monkeypatch, tmp_path, [])
+    ancienne = references / "rules-0"
+    ancienne.mkdir(parents=True)
+    contenu = msgspec.json.encode(Reference(rules_version="rules-0+x", fingerprints=()))
+    (ancienne / "reference.json").write_bytes(contenu)
+    (ancienne / "orders.jsonl").write_bytes(b"{}\n")
+    monkeypatch.setattr(partie_reference, "import_jsonl", lambda _: (None, ()))
+    with pytest.raises(AssertionError, match="orders.jsonl relu : 0 ticks au lieu de 300"):
+        partie_reference.regenerer(tmp_path / "runs", load_tunables(), affiches.append)
+    assert sorted(p.name for p in references.iterdir()) == ["rules-0"]
+    assert (ancienne / "reference.json").read_bytes() == contenu

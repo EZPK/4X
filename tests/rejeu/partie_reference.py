@@ -21,6 +21,7 @@ import shutil
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 from unittest import mock
 
 import msgspec
@@ -97,32 +98,43 @@ class Epuisement:
 def relever_epuisement(
     initial: State, ordres: Sequence[tuple[SubmittedOrder, ...]], tunables: Tunables
 ) -> Epuisement:
-    """Rejoue les états par `step`. Un gisement est vidé au tick où son stock passe d'une valeur
-    positive à 0 (un tick de régénération le remplit avant la fin du tick : il n'est pas relevé).
-    Un départage a lieu au tick où plusieurs vaisseaux minent un même gisement dont le stock est
-    inférieur à la somme de leurs débits : c'est exactement le cas où `step` tire leur ordre par
-    `keyed_draw` ; chaque tirage est relevé avec le vaisseau, rangé par gisement de son système."""
+    """Rejoue les états par `step` et relève, à chaque tick :
+    - un gisement vidé : son stock passe d'une valeur positive à 0 pendant la phase de minage
+      (lu juste après `_minage`, avant la régénération de la fin du tick) ;
+    - un départage : plusieurs vaisseaux minent un même gisement dont le stock est inférieur à la
+      somme de leurs débits. C'est exactement le cas où `step` tire leur ordre par `keyed_draw` ;
+      chaque tirage est relevé avec le vaisseau, rangé par gisement de son système (un gisement au
+      plus par système)."""
     releve = Epuisement()
-    tires: list[tuple[int, int]] = []
-    original = keyed_random.keyed_draw
+    tires: list[int] = []
+    tirage = keyed_random.keyed_draw
+    minage = module_step._minage
 
-    def espion(world_seed: int, tick: int, ident: int, motif: str, attempt: int = 0) -> int:
-        tires.append((tick, ident))
-        return original(world_seed, tick, ident, motif, attempt)
+    def espion_du_tirage(
+        world_seed: int, tick: int, ident: int, motif: str, attempt: int = 0
+    ) -> int:
+        tires.append(ident)
+        return tirage(world_seed, tick, ident, motif, attempt)
+
+    def espion_du_minage(t: Any) -> None:
+        avant = {i: g.stock for i, g in t.deposits.items()}
+        minage(t)
+        for i in sorted(t.deposits):
+            if avant[i] > 0 and t.deposits[i].stock == 0:
+                releve.vides.setdefault(i, []).append(t.tick)
 
     etat = initial
-    with mock.patch("fourx.core.step.keyed_draw", espion):
+    with (
+        mock.patch("fourx.core.step.keyed_draw", espion_du_tirage),
+        mock.patch("fourx.core.step._minage", espion_du_minage),
+    ):
         for soumis in ordres:
-            avant = {g.id: g.stock for g in etat.deposits}
             tires.clear()
             etat, _ = module_step.step(etat, soumis, GRAINE, tunables)
-            for g in etat.deposits:
-                if avant[g.id] > 0 and g.stock == 0:
-                    releve.vides.setdefault(g.id, []).append(etat.tick)
             systeme_du_vaisseau = {s.id: s.system_id for s in etat.ships}
             gisement_du_systeme = {g.system_id: g.id for g in etat.deposits}
             par_gisement: dict[int, set[int]] = {}
-            for _, ident in tires:
+            for ident in tires:
                 gisement = gisement_du_systeme[systeme_du_vaisseau[ident]]
                 par_gisement.setdefault(gisement, set()).add(ident)
             for gisement, vaisseaux in sorted(par_gisement.items()):
@@ -217,28 +229,39 @@ def regenerer(runs_dir: Path, tunables: Tunables, afficher: Callable[[str], None
         empreintes = journal.fingerprints_by_tick()
         version = journal.en_tete().rules_version  # celle de la partie jouée
         ordres = journal.orders_by_tick()
-        nouveau = dossier_de_revision()
-        precedentes = sorted(
-            (p for p in REFERENCES.glob("rules-*") if p != nouveau),
-            key=lambda p: int(p.name.removeprefix("rules-")),
-        )
-        temporaire = REFERENCES / f".rules-{RULES_REVISION}.nouveau"
-        shutil.rmtree(temporaire, ignore_errors=True)
-        temporaire.mkdir(parents=True)
-        journal.export_jsonl(temporaire / "orders.jsonl")
     finally:
         journal.close()
-    reference = Reference(rules_version=version, fingerprints=releves(empreintes))
-    (temporaire / "reference.json").write_bytes(msgspec.json.format(msgspec.json.encode(reference)))
     afficher(texte_de_l_epuisement(relever_epuisement(initial, ordres, tunables)))
-    lignes = len((temporaire / "orders.jsonl").read_bytes().splitlines()) - 1
-    taille = sum(f.stat().st_size for f in temporaire.iterdir())
-    precedente = precedentes[-1] if precedentes else None
-    afficher(rapport_de_differences(precedente, reference, lignes, taille))
-    for ancien in precedentes:
-        shutil.rmtree(ancien)
-    shutil.rmtree(nouveau, ignore_errors=True)
-    temporaire.rename(nouveau)
-    _, relus = import_jsonl(nouveau / "orders.jsonl")
-    if len(relus) != TICKS:
-        raise AssertionError(f"orders.jsonl relu : {len(relus)} ticks au lieu de {TICKS}")
+    reference = Reference(rules_version=version, fingerprints=releves(empreintes))
+    nouveau = dossier_de_revision()
+    autres = sorted(
+        (p for p in REFERENCES.glob("rules-*") if p != nouveau),
+        key=lambda p: int(p.name.removeprefix("rules-")),
+    )
+    # La révision précédente : le dossier de la même révision s'il existe (régénération sans
+    # changement de règles), sinon la plus haute des autres.
+    precedente = nouveau if nouveau.is_dir() else (autres[-1] if autres else None)
+    temporaire = REFERENCES / f".rules-{RULES_REVISION}.nouveau"
+    shutil.rmtree(temporaire, ignore_errors=True)
+    temporaire.mkdir(parents=True)
+    try:
+        journal = OrderLog(run_dir / "orders.sqlite")
+        try:
+            journal.export_jsonl(temporaire / "orders.jsonl")
+        finally:
+            journal.close()
+        (temporaire / "reference.json").write_bytes(
+            msgspec.json.format(msgspec.json.encode(reference))
+        )
+        lignes = len((temporaire / "orders.jsonl").read_bytes().splitlines()) - 1
+        taille = sum(f.stat().st_size for f in temporaire.iterdir())
+        afficher(rapport_de_differences(precedente, reference, lignes, taille))
+        _, relus = import_jsonl(temporaire / "orders.jsonl")
+        if len(relus) != TICKS:
+            raise AssertionError(f"orders.jsonl relu : {len(relus)} ticks au lieu de {TICKS}")
+        for ancien in autres:
+            shutil.rmtree(ancien)
+        shutil.rmtree(nouveau, ignore_errors=True)
+        temporaire.rename(nouveau)
+    finally:
+        shutil.rmtree(temporaire, ignore_errors=True)

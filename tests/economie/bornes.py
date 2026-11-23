@@ -85,7 +85,8 @@ def ecarts(
     """Les fenêtres de la partie et la liste de leurs écarts aux bornes (vide si aucun) :
     émission ORE_SALE strictement positive et au plus `emission_max` ; destruction SALE_TAX égale
     à la somme des taxes des ventes de la fenêtre, arrondies vers le haut ; croissance de la masse
-    monétaire égale à l'émission moins la destruction, entre 0 et `emission_max`."""
+    monétaire entre 0 et `emission_max` (`window_stats` la calcule déjà comme l'émission moins la
+    destruction : l'invariant 2 n'est pas revérifié ici, `step` le garde à chaque tick)."""
     fenetres = window_stats(evenements, limites.fenetre)
     vente, taxe_de_vente = MOTIFS.index(Reason.ORE_SALE), MOTIFS.index(Reason.SALE_TAX)
     taxes: dict[int, int] = {}
@@ -106,8 +107,6 @@ def ecarts(
             erreurs.append(f"{nom} : émission {emis} au-dessus de {limites.emission_max}")
         if detruit != taxes.get(rang, 0):
             erreurs.append(f"{nom} : destruction {detruit}, taxes des ventes {taxes.get(rang, 0)}")
-        if f.money_supply_growth != sum(f.issued_by_reason) - sum(f.destroyed_by_reason):
-            erreurs.append(f"{nom} : croissance {f.money_supply_growth} ≠ émission − destruction")
         if not 0 <= f.money_supply_growth <= limites.emission_max:
             erreurs.append(f"{nom} : croissance {f.money_supply_growth} hors de [0, émission max]")
     return fenetres, erreurs
