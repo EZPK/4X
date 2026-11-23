@@ -16,6 +16,8 @@ from fourx.clients.map_view import (
     ZOOMS,
     Cell,
     View,
+    _cases_du_trait,
+    _centre_du_cadre,
     _etiquette,
     _Grille,
     _points,
@@ -198,6 +200,36 @@ def test_les_sauts_suivants_de_la_route_partent_de_leur_systeme() -> None:
     assert grille[15][25] == VIDE  # là où passerait un trait parti du vaisseau
 
 
+def test_la_route_est_le_lien_lui_meme_et_non_un_second_trait() -> None:
+    """Retour du propriétaire : la route ne doit pas être un second trait posé sur le lien, mais
+    le lien lui-même, jaune pour ce qui reste à parcourir. Sur un lien en diagonale, toute case
+    jaune est une case du trait du lien, avec les mêmes points que le lien seul."""
+    positions = {1: (0.1, 0.3), 2: (0.45, 0.7), 3: (0.9, 0.9)}
+    en_route = msgspec.structs.replace(
+        navire(system=1, activity=Activity.EN_ROUTE, route=(2,)), ticks_to_next_jump=2
+    )
+    avec_route = render(VUE, positions, modele_de(observation((en_route,))), None)
+    sans_route = render(VUE, positions, a_l_arret(), None)
+    trait = set(
+        _cases_du_trait(_centre_du_cadre(VUE, positions[1]), _centre_du_cadre(VUE, positions[2]))
+    )
+    jaunes = {
+        (x, y)
+        for y, ligne in enumerate(avec_route)
+        for x, case in enumerate(ligne)
+        if case.fg == "vaisseau" and case.char != "▲"
+    }
+    assert jaunes and jaunes <= trait
+    for x, y in jaunes:
+        assert avec_route[y][x].char == sans_route[y][x].char  # mêmes points que le lien
+    parcourues = {
+        (x, y)
+        for x, y in trait
+        if avec_route[y][x].fg == "trait_fort" and avec_route[y][x].char != " "
+    }
+    assert parcourues  # le début du lien reste blanc
+
+
 def test_le_vaisseau_en_route_ne_cache_ni_cadre_ni_etiquette() -> None:
     # Le saut vient de commencer : la case de sa fraction est dans le cadre de départ.
     en_route = msgspec.structs.replace(
@@ -264,3 +296,35 @@ def test_l_espace_entre_deux_mots_ne_couvre_jamais_une_case_occupee() -> None:
     libre.ecrire(5, 0, "X", "texte")
     _etiquette(libre, 0, 0, [("ab", "texte"), ("cd", "texte")])
     assert "".join(c.char for c in libre.rendre()[0][:6]) == "ab cdX"
+
+
+def test_tracer_a_partir_d_une_fraction_du_trait() -> None:
+    # Un trait horizontal de 11 points, de x = 0 à x = 10, sur la rangée 0 des cases.
+    # À partir de la moitié : le point 5 est le premier tracé (round(0,5 × 10) = 5).
+    grille = _Grille(View(0, (0.5, 0.5), 10, 1))
+    grille.tracer((0.0, 0.0), (10.0, 0.0), True, "vaisseau", 0.5)
+    assert (2, 0) in grille.braille and grille.braille[(2, 0)] == (0x08, "vaisseau")  # x = 5
+    assert (1, 0) not in grille.braille  # x = 2 et 3 : avant la moitié
+    assert grille.braille[(5, 0)] == (0x01, "vaisseau")  # x = 10, le dernier point
+    entier = _Grille(View(0, (0.5, 0.5), 10, 1))
+    entier.tracer((0.0, 0.0), (10.0, 0.0), True, "vaisseau")
+    assert entier.braille[(0, 0)] == (0x09, "vaisseau")  # x = 0 et 1 : tout le trait
+
+
+def test_la_grille_sans_vaisseau_du_joueur() -> None:
+    grille = render(VUE, POSITIONS, modele_de(observation(())), None)
+    assert texte(grille, 9, 49, 53) == "┌┄┄┐"  # aucun système à portée sans vaisseau
+    assert not any(c.char == "▲" for ligne in grille for c in ligne)
+
+
+def test_positions_manquantes_ou_inconnues() -> None:
+    # system_3 n'a pas de position, et une position désigne un système inconnu (99) : ni l'un ni
+    # l'autre n'est dessiné, et la route vers system_3 s'arrête à system_2.
+    positions = {1: (0.1, 0.4), 2: (0.4, 0.4), 99: (0.7, 0.1)}
+    en_route = msgspec.structs.replace(
+        navire(system=1, activity=Activity.EN_ROUTE, route=(2, 3)), ticks_to_next_jump=2
+    )
+    grille = render(VUE, positions, modele_de(observation((en_route,))), None)
+    assert grille[2][49] == VIDE  # là où serait le cadre de 99
+    assert grille[10][25] == Cell("⠤", "vaisseau", "fond")
+    assert grille[10][40] == VIDE  # plus de lien ni de route vers system_3

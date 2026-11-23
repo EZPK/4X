@@ -228,12 +228,15 @@ class _Grille:
     def dedans(self, colonne: int, ligne: int) -> bool:
         return 0 <= colonne < self.view.width and 0 <= ligne < self.view.height
 
-    def tracer(self, a: Position, b: Position, plein: bool, role: str) -> None:
-        """Un lien, point par point : tous les points s'il est plein, un sur trois sinon. Une case
-        traversée par plusieurs liens prend la couleur du plus important (route, puis lien à
-        portée, puis lien lointain)."""
-        for rang, point in enumerate(_points(a, b)):
-            if not plein and rang % POINTILLE:
+    def tracer(self, a: Position, b: Position, plein: bool, role: str, depuis: float = 0.0) -> None:
+        """Un lien, point par point : tous les points s'il est plein, un sur trois sinon ; à partir
+        de la fraction `depuis` du trait seulement (0 : tout le trait). Une case traversée par
+        plusieurs liens prend la couleur du plus important (route, puis lien à portée, puis lien
+        lointain)."""
+        points = _points(a, b)
+        premier = round(depuis * (len(points) - 1))  # depuis est entre 0 et 1
+        for rang, point in enumerate(points):
+            if rang < premier or (not plein and rang % POINTILLE):
                 continue
             case = case_du_point(point)
             if not self.dedans(*case):
@@ -328,17 +331,17 @@ def render(
                 plein = s.id in portee and v in portee
                 role = "trait_fort" if plein else "trait_faible"
                 grille.tracer(centres[s.id], centres[v], plein, role)
-    # Route du vaisseau, en jaune : seulement ce qui reste à parcourir. Le saut en cours part de
-    # la position du vaisseau ; la part déjà parcourue garde le tracé de son lien.
+    # Route du vaisseau, en jaune : seulement ce qui reste à parcourir. Elle suit exactement les
+    # points de ses liens ; pendant un saut, les points du lien en cours déjà parcourus (avant la
+    # fraction 1 − ticks_to_next_jump ÷ jump_ticks) gardent le tracé du lien.
     if navire is not None and navire.route:
         etapes = [navire.system_id, *navire.route]
-        ici = ship_position(model, places)
+        # Un vaisseau qui a une route est en route : la fraction du saut en cours.
+        fait = 1 - navire.ticks_to_next_jump / obs.public_tunables.jump_ticks
         for rang, (a, b) in enumerate(zip(etapes, etapes[1:], strict=False)):
             if a in centres and b in centres:
-                depart = centres[a]
-                if rang == 0 and ici is not None:
-                    depart = _centre_du_cadre(view, ici)
-                grille.tracer(depart, centres[b], True, "vaisseau")
+                depuis = fait if rang == 0 else 0.0
+                grille.tracer(centres[a], centres[b], True, "vaisseau", depuis)
     # Systèmes : cadre, station, gisement et stock, vaisseaux.
     proches: dict[int, int] = {}
     for autre in obs.other_ships:
