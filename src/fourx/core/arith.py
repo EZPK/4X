@@ -28,3 +28,10 @@ def mul_div_ceil(a: int, b: int, c: int) -> int:
     if a < 0 or b < 0 or c <= 0:
         raise ValueError("mul_div_ceil attend a et b positifs ou nuls et c positif")
     return -((-(a * b)) // c)
+
+
+def canari_ecart(a: int, b: int) -> int:
+    """Canari de la tâche mutation : son résultat n'est vérifié par aucun test."""
+    if a > b:
+        return a - b
+    return b - a
