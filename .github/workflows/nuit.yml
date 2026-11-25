@@ -1,0 +1,56 @@
+# Contrôles de nuit, après fusion (docs/designs/niveau-2-m1-noyau.md, plan détaillé, point 30 bis).
+# Chaque nuit à 3 h UTC et à la main, sur main. Un échec envoie la notification de GitHub Actions
+# au propriétaire. Aucun nouveau secret : la tâche protection lit l'API avec le jeton du workflow,
+# en lecture seule.
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canari:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: false
+      - run: uv python install
+      - run: uv sync --locked
+      - run: uv run python .github/scripts/canaris.py
+
+  mutation-complete:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: false
+      - run: uv python install
+      - run: uv sync --locked
+      - run: uv run python .github/scripts/mutation.py --tout-core --plancher-partout
+
+  protection:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: false
+      - run: uv python install
+      - run: uv sync --locked
+      - env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: uv run python .github/scripts/protection.py

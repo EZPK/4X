@@ -1,0 +1,16 @@
+{
+  "description": "Le tirage \"world_size\" de world.generate fait par hash() d'une chaîne au lieu de keyed_below : hash() change avec PYTHONHASHSEED, le rejeu doit échouer.",
+  "controle": "rejeu",
+  "modifications": [
+    {
+      "fichier": "src/fourx/core/world.py",
+      "ancre": {
+        "type": "expression",
+        "fonction": "_graphe",
+        "appel": "_entre",
+        "contient": "MOTIF_TAILLE"
+      },
+      "texte": "tunables.systems_min + hash(f\"world_size-{world_seed}\") % (tunables.systems_max - tunables.systems_min + 1)"
+    }
+  ]
+}

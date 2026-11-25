@@ -616,6 +616,8 @@ def test_pr_create_sans_body_file_refuse(lancer: Callable[..., int], commande: s
         "gh pr edit 1 --remove-label 'fichiers protégés modifiés'",
         "gh pr edit 1 --remove-label=autre,'fichiers protégés modifiés'",
         "gh issue edit 1 --remove-label 'fichiers protégés modifiés'",
+        "gh pr edit 1 --remove-label 'références régénérées'",
+        "gh pr edit 1 --remove-label=autre,'références régénérées'",
     ],
 )
 def test_retrait_etiquette_du_garde_refuse(lancer: Callable[..., int], commande: str) -> None:

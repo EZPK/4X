@@ -1,0 +1,16 @@
+{
+  "description": "Une vente sans écriture de taxe, mais avec le compteur cumulé de destruction augmenté : l'invariant 2, vérifié après chaque tick par les scénarios du noyau, doit échouer.",
+  "controle": "tests",
+  "modifications": [
+    {
+      "fichier": "src/fourx/core/step.py",
+      "ancre": {
+        "type": "expression",
+        "fonction": "_commerce",
+        "appel": "t.passer",
+        "contient": "Reason.SALE_TAX"
+      },
+      "texte": "t.ledger = msgspec.structs.replace(t.ledger, destroyed_by_reason=tuple(v + taxe if i == 1 else v for i, v in enumerate(t.ledger.destroyed_by_reason)))"
+    }
+  ]
+}

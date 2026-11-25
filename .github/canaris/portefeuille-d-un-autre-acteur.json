@@ -1,0 +1,16 @@
+{
+  "description": "observe met dans l'observation le portefeuille d'un autre acteur : les tests de propriétés doivent le voir.",
+  "controle": "proprietes",
+  "modifications": [
+    {
+      "fichier": "src/fourx/core/observe.py",
+      "ancre": {
+        "type": "expression",
+        "fonction": "observe",
+        "appel": "_solde",
+        "contient": "actor_id"
+      },
+      "texte": "_solde(state.ledger, actor_id + 1)"
+    }
+  ]
+}

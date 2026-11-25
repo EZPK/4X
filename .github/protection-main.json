@@ -1,7 +1,10 @@
 {
   "required_status_checks": {
     "strict": true,
-    "contexts": ["lint", "typage", "gitleaks", "termes-interdits", "tests-outillage", "garde", "en-attente"]
+    "contexts": [
+      "lint", "typage", "gitleaks", "termes-interdits", "tests-outillage", "garde",
+      "en-attente", "tests", "rejeu", "proprietes", "imports", "mutation"
+    ]
   },
   "enforce_admins": true,
   "required_pull_request_reviews": {"required_approving_review_count": 0},

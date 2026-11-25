@@ -52,7 +52,7 @@ def test_lignes_vides_et_commentaires_ignores(motifs: ModuleType) -> None:
 
 def test_vraie_liste_des_chemins_proteges(motifs: ModuleType, racine: Path) -> None:
     liste = motifs.lire_fichier_motifs(racine / ".github/chemins-proteges.txt")
-    assert len(liste) == 29
+    assert len(liste) == 31
     for chemin in (
         "pyproject.toml",
         "uv.lock",
@@ -60,6 +60,8 @@ def test_vraie_liste_des_chemins_proteges(motifs: ModuleType, racine: Path) -> N
         "setup.cfg",
         "tests/conftest.py",
         "tests/references/rules-1/reference.json",
+        "tests/rejeu/test_rejeu.py",
+        "tests/economie/bornes.py",
         "tests/core/test_determinisme_statique.py",
     ):
         assert motifs.est_couvert(chemin, liste)
