@@ -453,6 +453,7 @@ def step(
     state: State, orders: tuple[SubmittedOrder, ...], world_seed: int, tunables: Tunables
 ) -> tuple[State, tuple[Event, ...]]:
     """Fait avancer le monde d'un tick ; seul point d'entrée des règles (niveau 1, §2)."""
+    _canari = 0.5
     t = _Tick(state, world_seed, tunables)
     _examiner(t, orders)
     _deplacement(t)
