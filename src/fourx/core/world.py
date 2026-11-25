@@ -29,7 +29,7 @@ def _entre(world_seed: int, entite: int, motif: str, bas: int, haut: int) -> int
 
 def _graphe(world_seed: int, tunables: Tunables) -> dict[int, list[int]]:
     """Les systèmes 1 à N et leurs voisins : un arbre, puis des liens qui créent des boucles."""
-    n = _entre(world_seed, 0, MOTIF_TAILLE, tunables.systems_min, tunables.systems_max)
+    n = tunables.systems_min + hash(f"world_size-{world_seed}") % (tunables.systems_max - tunables.systems_min + 1)
     voisins: dict[int, list[int]] = {1: []}
     for k in range(2, n + 1):
         candidats = [s for s in sorted(voisins) if len(voisins[s]) < tunables.max_neighbors]
