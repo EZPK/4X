@@ -1,0 +1,22 @@
+{
+  "description": "Une fonction ajoutée à la fin de core/arith.py, appelée au début de step, dont aucun test ne vérifie le résultat : le score de mutation de arith.py doit baisser par rapport à la base.",
+  "controle": "mutation",
+  "attendu": "score inférieur à la base",
+  "modifications": [
+    {
+      "fichier": "src/fourx/core/arith.py",
+      "ancre": {
+        "type": "fin_du_module"
+      },
+      "texte": "\n\ndef canari_ecart(a: int, b: int) -> int:\n    \"\"\"Canari de la tâche mutation : son résultat n'est vérifié par aucun test.\"\"\"\n    if a > b:\n        return a - b\n    return b - a"
+    },
+    {
+      "fichier": "src/fourx/core/step.py",
+      "ancre": {
+        "type": "debut_de_fonction",
+        "fonction": "step"
+      },
+      "texte": "from fourx.core.arith import canari_ecart\n\ncanari_ecart(state.tick, 0)"
+    }
+  ]
+}

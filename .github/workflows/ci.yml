@@ -1,5 +1,5 @@
 # CI de M0 (docs/designs/niveau-2-m0-garde-fous.md, plan détaillé, point 23)
-# et de M1 (docs/designs/niveau-2-m1-noyau.md, plan détaillé, point 8).
+# et de M1 (docs/designs/niveau-2-m1-noyau.md, plan détaillé, points 8 et 31 bis).
 # Les tâches obligatoires n'ont pas de clé de nom : le nom du contrôle est l'identifiant de la tâche.
 on:
   pull_request:
@@ -113,7 +113,7 @@ jobs:
           enable-cache: false
       - run: uv python install
       - run: uv sync --locked
-      - run: uv run pytest
+      - run: uv run pytest tests/outillage
 
   imports:
     runs-on: ubuntu-24.04
@@ -139,15 +139,7 @@ jobs:
           enable-cache: false
       - run: uv python install
       - run: uv sync --locked
-      - run: |
-          set +e
-          uv run pytest -m "not rejeu and not proprietes and not lent and not mesure" --ignore=tests/outillage
-          CODE=$?
-          if [ "$CODE" -eq 5 ]; then
-            echo "Aucun test trouvé (code 5 de pytest) : toléré jusqu'au palier 4 de M1." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          exit "$CODE"
+      - run: uv run pytest -m "not rejeu and not proprietes and not lent and not mesure" --ignore=tests/outillage
 
   rejeu:
     runs-on: ubuntu-24.04
@@ -160,44 +152,10 @@ jobs:
           enable-cache: false
       - run: uv python install
       - run: uv sync --locked
-      - run: |
-          set +e
-          PYTHONHASHSEED=0 uv run pytest -m rejeu
-          CODE=$?
-          if [ "$CODE" -eq 5 ]; then
-            echo "Aucun test trouvé (code 5 de pytest) : toléré jusqu'au palier 4 de M1." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          exit "$CODE"
-      - run: |
-          set +e
-          PYTHONHASHSEED=1 uv run pytest -m rejeu
-          CODE=$?
-          if [ "$CODE" -eq 5 ]; then
-            echo "Aucun test trouvé (code 5 de pytest) : toléré jusqu'au palier 4 de M1." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          exit "$CODE"
-      - run: |
-          A=runs/rejeu-0/fingerprints.jsonl
-          B=runs/rejeu-1/fingerprints.jsonl
-          if [ -f "$A" ] && [ -f "$B" ]; then
-            uv run python -m fourx.tools.divergence "$A" "$B"
-          elif [ -f "$A" ] || [ -f "$B" ]; then
-            echo "Un seul des deux fichiers d'empreintes existe : le rejeu est incomplet."
-            exit 1
-          else
-            echo "Pas encore de fichiers d'empreintes : étape de divergence sautée jusqu'au volet C de M1." >> "$GITHUB_STEP_SUMMARY"
-          fi
-      - run: |
-          set +e
-          uv run pytest -m lent
-          CODE=$?
-          if [ "$CODE" -eq 5 ]; then
-            echo "Aucun test trouvé (code 5 de pytest) : toléré jusqu'au palier 4 de M1." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          exit "$CODE"
+      - run: PYTHONHASHSEED=0 uv run pytest -m rejeu
+      - run: PYTHONHASHSEED=1 uv run pytest -m rejeu
+      - run: uv run python -m fourx.tools.divergence runs/rejeu-0/fingerprints.jsonl runs/rejeu-1/fingerprints.jsonl
+      - run: uv run pytest -m lent
 
   proprietes:
     runs-on: ubuntu-24.04
@@ -210,15 +168,7 @@ jobs:
           enable-cache: false
       - run: uv python install
       - run: uv sync --locked
-      - run: |
-          set +e
-          uv run pytest -m proprietes
-          CODE=$?
-          if [ "$CODE" -eq 5 ]; then
-            echo "Aucun test trouvé (code 5 de pytest) : toléré jusqu'au palier 4 de M1." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          exit "$CODE"
+      - run: uv run pytest -m proprietes
 
   mutation:
     if: github.event_name == 'pull_request'

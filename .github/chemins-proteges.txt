@@ -26,4 +26,6 @@ uv.lock
 setup.cfg
 tests/conftest.py
 tests/references/**
+tests/rejeu/**
+tests/economie/**
 tests/core/test_determinisme_statique.py

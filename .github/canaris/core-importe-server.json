@@ -1,0 +1,14 @@
+{
+  "description": "core importe server : le contrat d'imports doit le refuser.",
+  "controle": "imports",
+  "attendu": "fourx.server",
+  "modifications": [
+    {
+      "fichier": "src/fourx/core/step.py",
+      "ancre": {
+        "type": "fin_du_module"
+      },
+      "texte": "from fourx.server import game as _canari  # noqa: E402, F401"
+    }
+  ]
+}

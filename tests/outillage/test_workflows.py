@@ -1,8 +1,9 @@
 """Vérifications des workflows par lecture du texte.
 
-Niveau 2 de M0, plan détaillé, point 26 ; niveau 2 de M1, plan détaillé, point 13.
+Niveau 2 de M0, plan détaillé, point 26 ; niveau 2 de M1, plan détaillé, points 13 et 31 bis.
 """
 
+import json
 import re
 from pathlib import Path
 
@@ -16,10 +17,13 @@ OBLIGATOIRES = {
     "tests-outillage",
     "garde",
     "en-attente",
+    # Tâches de M1, obligatoires à partir du palier 4 (niveau 2 de M1, plan détaillé, point 31).
+    "tests",
+    "rejeu",
+    "proprietes",
+    "imports",
+    "mutation",
 }
-# Tâches de M1, obligatoires à partir du palier 4 (niveau 2 de M1, plan détaillé, point 31) :
-# elles suivent dès le palier 2 la règle « pas de clé name ni de strategy ».
-NOUVELLES_M1 = {"tests", "rejeu", "proprietes", "mutation"}
 
 
 def blocs_run(texte: str) -> list[str]:
@@ -61,8 +65,14 @@ def textes() -> dict[str, str]:
     return {f.name: f.read_text(encoding="utf-8") for f in sorted(WORKFLOWS.glob("*.yml"))}
 
 
-def test_les_deux_workflows_existent() -> None:
-    assert set(textes()) == {"ci.yml", "garde.yml"}
+def test_les_trois_workflows_existent() -> None:
+    assert set(textes()) == {"ci.yml", "garde.yml", "nuit.yml"}
+
+
+def test_taches_obligatoires_en_accord_avec_la_protection_de_main() -> None:
+    with open(RACINE / ".github/protection-main.json", encoding="utf-8") as fichier:
+        protection = json.load(fichier)
+    assert set(protection["required_status_checks"]["contexts"]) == OBLIGATOIRES
 
 
 def test_aucun_run_ne_contient_d_expression_github_event() -> None:
@@ -109,21 +119,47 @@ def test_actions_epinglees_par_sha() -> None:
             assert re.fullmatch(r"[\w.-]+/[\w.-]+@[0-9a-f]{40}", action), f"{nom} : {action}"
 
 
-def test_nouvelles_taches_de_m1_sans_nom_ni_strategie() -> None:
-    cles = taches(textes()["ci.yml"])
-    assert NOUVELLES_M1 <= set(cles)
-    for tache in NOUVELLES_M1:
-        assert "name" not in cles[tache], tache
-        assert "strategy" not in cles[tache], tache
-
-
 def test_rejeu_sous_deux_pythonhashseed_puis_divergence() -> None:
-    texte = textes()["ci.yml"]
-    assert "PYTHONHASHSEED=0 uv run pytest -m rejeu" in texte
-    assert "PYTHONHASHSEED=1 uv run pytest -m rejeu" in texte
-    assert "python -m fourx.tools.divergence" in texte
-
-
-def test_tests_outillage_lance_encore_toute_la_suite() -> None:
     blocs = [b.strip() for b in blocs_run(textes()["ci.yml"])]
-    assert "uv run pytest" in blocs
+    attendus = [
+        "PYTHONHASHSEED=0 uv run pytest -m rejeu",
+        "PYTHONHASHSEED=1 uv run pytest -m rejeu",
+        "uv run python -m fourx.tools.divergence"
+        " runs/rejeu-0/fingerprints.jsonl runs/rejeu-1/fingerprints.jsonl",
+        "uv run pytest -m lent",
+    ]
+    debut = blocs.index(attendus[0])
+    assert blocs[debut : debut + 4] == attendus
+
+
+def test_plus_aucune_tolerance_du_palier_3() -> None:
+    texte = textes()["ci.yml"]
+    assert "code 5" not in texte
+    assert "-eq 5" not in texte
+    assert "sautée" not in texte
+
+
+def test_tests_outillage_ne_lance_que_les_tests_de_l_outillage() -> None:
+    blocs = [b.strip() for b in blocs_run(textes()["ci.yml"])]
+    assert "uv run pytest tests/outillage" in blocs
+    assert "uv run pytest" not in blocs
+
+
+def test_nuit_trois_taches_planifiees_en_lecture_seule() -> None:
+    texte = textes()["nuit.yml"]
+    assert set(taches(texte)) == {"canari", "mutation-complete", "protection"}
+    for cles in taches(texte).values():
+        assert "if" in cles  # sur main seulement
+    assert texte.count("if: github.ref == 'refs/heads/main'") == 3
+    assert 'cron: "0 3 * * *"' in texte
+    assert "workflow_dispatch:" in texte
+    assert re.search(r"^permissions:\n  contents: read\n", texte, re.MULTILINE)
+    assert "write" not in texte
+    assert "secrets." not in texte
+    blocs = [b.strip() for b in blocs_run(texte)]
+    for commande in (
+        "uv run python .github/scripts/canaris.py",
+        "uv run python .github/scripts/mutation.py --tout-core --plancher-partout",
+        "uv run python .github/scripts/protection.py",
+    ):
+        assert commande in blocs
