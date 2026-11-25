@@ -1,7 +1,7 @@
 {
-  "description": "Une vente sans écriture de taxe, mais avec le compteur cumulé de destruction augmenté : l'invariant 2, vérifié après chaque tick par les scénarios du noyau, doit échouer.",
+  "description": "Une vente sans écriture de taxe, mais avec le compteur cumulé de destruction augmenté : les invariants du registre, vérifiés après chaque tick par les scénarios du noyau, doivent échouer (compteur de destruction sans écriture du tick correspondante).",
   "controle": "tests",
-  "attendu": "invariant 2",
+  "attendu": "compteur de destruction et écritures du tick différents",
   "modifications": [
     {
       "fichier": "src/fourx/core/step.py",
