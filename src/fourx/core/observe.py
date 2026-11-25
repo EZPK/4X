@@ -147,7 +147,7 @@ def observe(state: State, actor_id: int, tunables: Tunables) -> Observation:
             for v in state.ships
             if v.owner_id != actor_id and v.system_id in systemes
         ),
-        wallet_balance=_solde(state.ledger, actor_id),
+        wallet_balance=_solde(state.ledger, actor_id + 1),
         action_budget=acteur.action_budget if acteur is not None else 0,
         events=evenements,
         results=tuple(r for r in state.last_tick.results if r.recipient_actor_id == actor_id),
