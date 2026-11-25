@@ -17,6 +17,7 @@ from pathlib import Path
 
 RACINE = Path(__file__).resolve().parents[2]
 ETIQUETTE = "fichiers protégés modifiés"
+ETIQUETTES_DU_GARDE = (ETIQUETTE, "références régénérées")
 
 AMORCAGE_SECURITE = "gh api -X PATCH repos/EZPK/4X --input .github/securite-depot.json"
 AMORCAGE_PUSH = "git push -u origin main"
@@ -42,6 +43,11 @@ REFERENCE_PROTECTION: dict[str, object] = {
             "tests-outillage",
             "garde",
             "en-attente",
+            "tests",
+            "rejeu",
+            "proprietes",
+            "imports",
+            "mutation",
         ],
     },
     "enforce_admins": True,
@@ -682,8 +688,8 @@ def verifier_retrait_etiquette(options: list[str]) -> None:
             retrait = valeur(options, rang)
         elif option.startswith("--remove-label="):
             retrait = option.split("=", 1)[1]
-        if retrait is not None and ETIQUETTE in retrait:
-            raise refuser("retrait de l'étiquette du garde", REGLE_REGLAGES)
+        if retrait is not None and any(e in retrait for e in ETIQUETTES_DU_GARDE):
+            raise refuser("retrait d'une étiquette du garde", REGLE_REGLAGES)
 
 
 def verifier_creation_pr(options: list[str]) -> None:
