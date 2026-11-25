@@ -22,7 +22,7 @@
 - La tâche de nuit, lancée à la main, réussit : 6 canaris attrapés sur 6, mutation complète du noyau au-dessus du plancher, protection de `main` en place.
 
 **Ce qui n'est pas encore démontré, ou pas entièrement.**
-- **Le rejeu sur le PC d'entraînement** (objectif 2, « sur les deux machines ») : **reporté** par le propriétaire le 2026-11-25 ; le rejeu est fait sur le portable et en CI (section 5). C'est le seul élément du critère de sortie de M1 sans preuve complète.
+- **Le rejeu sur le PC d'entraînement** (objectif 2, « sur les deux machines ») : **reporté** par le propriétaire le 2026-11-25 ; le rejeu est fait sur le portable et en CI (section 5). C'est le seul élément du critère de sortie de M1 sans preuve complète, et, selon le document de M1, il empêche la livraison tant qu'il manque.
 - **Le message de refus de GitHub pour l'essai E3** n'a pas été consigné (section 3).
 - **Les objectifs 18 et 19** n'ont pas de verdict séparé du propriétaire, alors que le plan le prend comme preuve ; leurs tests sont verts (section 7).
 - **L'essai en 256 couleurs** n'a pas été fait (section 7).
@@ -120,6 +120,8 @@ Aucune tâche n'approche le seuil de 30 minutes du point 28 bis.
 
 **Portable de développement : fait.** Le 2026-11-25, par l'agent de code, depuis `main` au commit `f5d5073` (fusion de ce compte rendu, code identique à `7361aac`), sous Linux x86_64 avec Python 3.15.2. Sortie locale, qui ne vaut pas preuve au sens de `CLAUDE.md` ; la même tâche passe en CI (section 4).
 
+Sortie réduite à la dernière ligne de chaque commande :
+
 ```text
 $ git rev-parse --short HEAD
 f5d5073
@@ -133,9 +135,11 @@ $ uv run python -m fourx.tools.divergence runs/rejeu-0/fingerprints.jsonl runs/r
 aucune divergence
 ```
 
-Chaque passe compare la partie de référence aux empreintes de `tests/references/rules-1/`, et écrit 100 000 lignes d'empreintes.
+Chaque passe compare, tous les 1 000 ticks, les empreintes du rejeu à celles de `tests/references/rules-1/reference.json`, et écrit les empreintes de chaque tick (100 000 lignes).
 
-**PC d'entraînement : reporté.** L'agent de code n'a pas accès à cette machine. Le propriétaire a reporté ce rejeu le 2026-11-25 (« c'est compliqué maintenant tout de suite »). Il lancera les mêmes commandes depuis un clone à jour sur le PC d'entraînement ; leur sortie sera ajoutée ici, sans adresse ni identifiant de la machine.
+**PC d'entraînement : reporté.** L'agent de code n'a pas accès à cette machine. Le propriétaire a reporté ce rejeu le 2026-11-25 (« c'est compliqué maintenant tout de suite »). Il lancera les mêmes commandes depuis la racine d'un clone, au commit livré, en commençant par `git rev-parse --short HEAD` ; l'agent de code ajoutera leur sortie ici, sans adresse ni identifiant de la machine.
+
+**Conséquence pour la livraison.** Le document de M1 (Risks & Mitigations, ligne « Le PC d'entraînement est indisponible à la fin du jalon ») prévoit que « le jalon n'est pas livré tant que la sortie manque ». Livrer M1 sans elle s'écarterait du document approuvé, et demanderait une décision explicite du propriétaire, consignée par un amendement.
 
 ## 6. Économie, mesures et mutation
 
@@ -257,7 +261,7 @@ Liens : [`tests`](https://github.com/EZPK/4X/actions/runs/45679948773/job/139437
 
 ## 9. Écarts, réserves et incidents
 
-1. **Rejeu sur le PC d'entraînement reporté** (section 5) par le propriétaire, le 2026-11-25. Tant qu'il manque, un élément du critère de sortie n'est prouvé que sur le portable et en CI.
+1. **Rejeu sur le PC d'entraînement reporté** (section 5) par le propriétaire, le 2026-11-25. Tant qu'il manque, un élément du critère de sortie n'est prouvé que sur le portable et en CI, et le document de M1 prévoit que le jalon n'est pas livré (section 5).
 2. **Message de refus de E3 non consigné.** Le blocage est montré par `mergeStateStatus` = `BLOCKED` et par les quatre autres essais, mais le message de GitHub n'a pas été vu. L'essai peut être refait à peu de frais : rouvrir une pull request avec le même bug, et tenter la fusion par une commande `!`.
 3. **Essai en 256 couleurs non fait**, et taille du terminal non mesurée exactement (point 23 undecies).
 4. **Objectifs 18 et 19 sans verdict séparé.** Le verdict favorable porte sur l'écran dans son ensemble ; le plan prend comme preuve un verdict sur chacun de ces objectifs.
@@ -267,6 +271,6 @@ Liens : [`tests`](https://github.com/EZPK/4X/actions/runs/45679948773/job/139437
 
 ## 10. Ce qui reste à faire
 
-1. **Propriétaire :** lancer le rejeu sur le PC d'entraînement quand il le pourra, et coller sa sortie, ajoutée en section 5 ; ou accepter ce report comme réserve de la livraison.
+1. **Propriétaire :** lancer le rejeu sur le PC d'entraînement et transmettre sa sortie, que l'agent de code ajoute en section 5. M1 n'est pas livré tant que cette sortie manque (document de M1, Risks & Mitigations). Livrer sans elle demande une décision explicite du propriétaire qui s'écarte du document approuvé, consignée par un amendement.
 2. **Propriétaire :** décider, pour chacune des réserves 2 à 4, si elle empêche de déclarer M1 livré, ou s'il faut la lever d'abord : refaire l'essai E3, essayer un terminal en 256 couleurs, rendre un verdict sur les objectifs 18 et 19.
 3. **Propriétaire :** décider si M1 passe à `livré` (point 33). Sur sa demande, l'agent de code met alors à jour `docs/feuille-de-route.md` dans une pull request protégée : M1 `livré`, « Jalon en cours » : M2.
