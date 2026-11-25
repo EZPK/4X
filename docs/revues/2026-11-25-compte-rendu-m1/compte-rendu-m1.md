@@ -1,7 +1,7 @@
 # Compte rendu de M1 : noyau déterministe et tranche 0
 
 *   **Document suivi :** `docs/designs/niveau-2-m1-noyau.md` (Approved, amendements 1 et 2 compris), plan détaillé, points 1 à 33.
-*   **Date du compte rendu :** 2026-11-25. Les travaux de M1 vont du 2026-11-08 (approbation du document) au 2026-11-25.
+*   **Date du compte rendu :** 2026-11-25 ; complété le même jour pour les réserves 2 à 4 (section 9). Les travaux de M1 vont du 2026-11-08 (approbation du document) au 2026-11-25.
 *   **Rédigé par :** l'agent de code, à partir des pull requests, des contrôles CI, des dossiers de partie et des décisions du propriétaire prises en session ; corrigé après une revue EGM sans contexte (exactitude technique).
 *   **Statut de M1 :** `approuvé` dans `docs/feuille-de-route.md`. Seul le propriétaire peut le déclarer `livré` (point 33).
 
@@ -18,16 +18,14 @@
 - Le propriétaire joue la tranche 0 de bout en bout dans le client rétro : il extrait, transporte et vend (objectif 1). Il a validé la boucle de jeu (objectif 11).
 - La partie de référence (graine 1, 5 PNJ, 100 000 ticks) se rejoue avec les mêmes empreintes sous `PYTHONHASHSEED=0` et `1`, et l'outil de divergence localise un écart au tick et au composant près (objectifs 2 et 3).
 - L'économie reste dans ses fourchettes sur les dix fenêtres de 10 000 ticks, et les trois invariants de conservation tiennent à chaque tick (objectifs 4 et 5).
-- Les 12 contrôles sont exigés par la protection de `main`. Chacun des cinq essais E1 à E5 a fait rougir le contrôle visé, et la fusion, tentée en administrateur, a été refusée (objectif 8). Pour E3, le refus est déduit : son message n'a pas été vu.
+- Les 12 contrôles sont exigés par la protection de `main`. Chacun des cinq essais E1 à E5 a fait rougir le contrôle visé, et la fusion, tentée en administrateur, a été refusée (objectif 8). L'essai E3 a été refait pour consigner le message de refus (section 3.1).
+- Le propriétaire a rendu un verdict sur chacun des objectifs 17 à 19 : favorable sur la carte (17) et sur l'aide (19), **défavorable sur la prochaine étape (18)** (section 7). Ce verdict ne bloque pas la livraison (point 23 undecies). L'écran se lit en 256 couleurs.
 - La tâche de nuit, lancée à la main, réussit : 6 canaris attrapés sur 6, mutation complète du noyau au-dessus du plancher, protection de `main` en place.
 
 **Ce qui n'est pas encore démontré, ou pas entièrement.**
 - **Le rejeu sur le PC d'entraînement** (objectif 2, « sur les deux machines ») : **reporté** par le propriétaire le 2026-11-25 ; le rejeu est fait sur le portable et en CI (section 5). C'est le seul élément du critère de sortie de M1 sans preuve complète, et, selon le document de M1, il empêche la livraison tant qu'il manque.
-- **Le message de refus de GitHub pour l'essai E3** n'a pas été consigné (section 3).
-- **Les objectifs 18 et 19** n'ont pas de verdict séparé du propriétaire, alors que le plan le prend comme preuve ; leurs tests sont verts (section 7).
-- **L'essai en 256 couleurs** n'a pas été fait (section 7).
 
-Le propriétaire décide si ces réserves empêchent de déclarer M1 livré (section 10).
+Les réserves 2 à 4 de la première version de ce compte rendu sont levées (section 9). Reste au propriétaire une décision sur la suite du verdict défavorable sur l'objectif 18 (section 10).
 
 ## 2. Ce qui a été livré
 
@@ -41,7 +39,7 @@ Le propriétaire décide si ces réserves empêchent de déclarer M1 livré (sec
 | Volet B ter : écran rétro (amendement 2) | 23 septies à 23 undecies | n° 28 à 33, 35, 36, 38 à 41 (ADR 0006 et 0007) | palette 8 bits, carte par forces en Braille, prochaine étape, aide |
 | Volet C : rejeu, divergence, économie | 24 à 28 bis | n° 42 à 44 | `tools` (rejeu, divergence, économie), partie de référence, fourchettes, `RULES_REVISION` = 1 |
 | Palier 4 : contrôles obligatoires | 29 à 31 ter | n° 45 | suite canari, `nuit.yml`, 12 contrôles exigés, hook mis à jour |
-| Palier 5 : compte rendu | 32, 32 bis | n° 48 à 52 (essais, fermées) et celle-ci | essais E1 à E5, ce compte rendu |
+| Palier 5 : compte rendu | 32, 32 bis | n° 48 à 52 et 55 (essais, fermées), n° 53, 54 et celle-ci | essais E1 à E5, ce compte rendu |
 
 **Hors du plan.** La pull request n° 34 (soute de 2 000) a été fermée sans fusion : la soute est entrée par la n° 33. La n° 37 ajoute le `Makefile` (`make jouer`, version stable). Les n° 46 et 47 réécrivent `README.md`.
 
@@ -53,11 +51,14 @@ Les détails de chaque pull request (revue EGM, mesures, liens CI) sont dans sa 
 
 Chaque pull request d'essai part de `main` (`7361aac`), applique le bug volontaire du canari correspondant (`.github/canaris/`), et a été fermée sans fusion par le propriétaire, branche supprimée. Le propriétaire a tenté chaque fusion par `! gh pr merge <n> --admin --squash`, une fois le contrôle visé rouge.
 
+L'essai E3 a été refait le 2026-11-25, parce que le message de refus de la première tentative n'avait pas été vu. La pull request n° 55 part de `main` au commit `73759f9` et applique le même bug ; sa tête est le commit `2a900f4`, et `mergeStateStatus` valait `BLOCKED`. Le propriétaire a tenté la fusion par une commande `!` dans la session, où le message s'est affiché, puis a fermé la pull request sans fusion et supprimé la branche.
+
 | Essai | Pull request | Contrôle visé : lien et message | Autres contrôles rouges | Refus de GitHub |
 | :-- | :-- | :-- | :-- | :-- |
 | E1. Nombre flottant dans `step` | [n° 48](https://github.com/EZPK/4X/pull/48) | [`tests`](https://github.com/EZPK/4X/actions/runs/45680098110/job/139438041980) : « src/fourx/core/step.py:456: nombre flottant » | `mutation` (`step.py` 98,1 % contre 98,4 % à la base) | « GraphQL: 2 of 12 required status checks are failing. (mergePullRequest) » |
 | E2. Taille du monde par `hash()` | [n° 49](https://github.com/EZPK/4X/pull/49) | [`rejeu`](https://github.com/EZPK/4X/actions/runs/45682045025/job/139444836180), dès `PYTHONHASHSEED=0` : « le rejeu diverge de la référence : tick 1000 : systems, deposits, stations, ships » | `tests` (« world.py:32: usage de hash »), `lint` (ligne trop longue), `mutation` (un test du monde casse) | « GraphQL: 4 of 12 required status checks are failing. (mergePullRequest) » |
-| E3. Portefeuille d'un autre acteur dans l'observation | [n° 50](https://github.com/EZPK/4X/pull/50) | [`proprietes`](https://github.com/EZPK/4X/actions/runs/45683109808/job/139448521061) : « test_visibilite_des_observations - AssertionError: assert 0 == 9 » | `tests` (`test_observation_d_un_acteur` et deux autres), `mutation` | **refus déduit, message non vu** : la commande a été lancée hors de la session ; `mergeStateStatus` = `BLOCKED` avant la tentative, et la pull request est fermée sans fusion |
+| E3. Portefeuille d'un autre acteur dans l'observation | [n° 50](https://github.com/EZPK/4X/pull/50) | [`proprietes`](https://github.com/EZPK/4X/actions/runs/45683109808/job/139448521061) : « test_visibilite_des_observations - AssertionError: assert 0 == 9 » | `tests` (`test_observation_d_un_acteur` et deux autres), `mutation` | message non vu : la commande a été lancée hors de la session ; essai refait (ligne suivante) |
+| E3 refait | [n° 55](https://github.com/EZPK/4X/pull/55) | [`proprietes`](https://github.com/EZPK/4X/actions/runs/45696834071/job/139496325895) : « test_visibilite_des_observations - AssertionError: assert 0 == 9 » | [`tests`](https://github.com/EZPK/4X/actions/runs/45696834071/job/139496325806) (`test_observation_d_un_acteur` : « assert 0 == 135 », et les deux mêmes autres), [`mutation`](https://github.com/EZPK/4X/actions/runs/45696834071/job/139496325959) | « GraphQL: 3 of 12 required status checks are failing. (mergePullRequest) » |
 | E4. `core` importe `server` | [n° 51](https://github.com/EZPK/4X/pull/51) | [`imports`](https://github.com/EZPK/4X/actions/runs/45683810794/job/139450979813) : « Contracts: 6 kept, 1 broken. fourx.core is not allowed to import fourx.server » | `tests` (contrôle statique du déterminisme) | « GraphQL: 2 of 12 required status checks are failing. (mergePullRequest) » |
 | E5. Fonction non vérifiée dans `arith.py` | [n° 52](https://github.com/EZPK/4X/pull/52) | [`mutation`](https://github.com/EZPK/4X/actions/runs/45685558738/job/139457119299) : `arith.py` 92,3 % contre 100,0 % à la base, « score inférieur à la base » | aucun | « GraphQL: Required status check "mutation" is failing. (mergePullRequest) » |
 
@@ -213,9 +214,17 @@ La graine, les vitesses et les ticks viennent des dossiers de partie écrits par
 | Premier cycle | minage au tick 1 173 dans le système d'une station, sans saut ; vente de 100 `ore_a` au tick 1 417 | quatre sauts, minage de 2 000 `ore_b` du tick 1 622 au tick 3 621, deux sauts, vente au tick 4 426 (paiement 24 000, taxe 2 400) |
 | Vitesses jouées | ×1 (44 ticks), ×10 (2), ×100 (1 371) ; durée estimée 2 min 54 s | ×1 (1 980 ticks), ×10 (6), ×100 (2 440) ; durée estimée 100 min. Le propriétaire l'estimait à environ 1 h |
 | Saut complet à la période nominale (3 s) | aucun | deux : ticks 807 à 1 206 et 1 207 à 1 606, 20 minutes chacun |
-| Terminal | non consigné | foot, dans le multiplexeur herdr ; police JetBrainsMono Nerd Font, corps 8 ; `TERM` = `xterm-256color`, `COLORTERM` = `truecolor` ; au moins 120 × 36 (le jeu s'affichait), environ 160 colonnes d'après la capture ; essai en 256 couleurs non fait |
-| Verdict sur la lisibilité (objectif 12) | **non atteint** : « l'écran est visible, mais l'interface est vraiment pas claire. L'information n'est pas hiérarchisée. » Suite : ADR 0006 et amendement 2 | **favorable** : « beaucoup mieux maintenant […] pour le moment, c'est pas mal » ; la carte en Braille est « nettement mieux » (objectif 17). Aucun verdict séparé sur les objectifs 18 et 19 |
+| Terminal | non consigné | foot, dans le multiplexeur herdr ; police JetBrainsMono Nerd Font, corps 8 ; `TERM` = `xterm-256color`, `COLORTERM` = `truecolor` ; au moins 120 × 36 (le jeu s'affichait), environ 160 colonnes d'après la capture. Essai en 256 couleurs le 2026-11-25 (voir après le tableau) : 57 lignes × 212 colonnes |
+| Verdict sur la lisibilité (objectif 12) | **non atteint** : « l'écran est visible, mais l'interface est vraiment pas claire. L'information n'est pas hiérarchisée. » Suite : ADR 0006 et amendement 2 | **favorable** : « beaucoup mieux maintenant […] pour le moment, c'est pas mal » ; la carte en Braille est « nettement mieux » (objectif 17). Verdicts sur les objectifs 18 et 19 rendus le 2026-11-25 (voir après le tableau) |
 | Autres retours | ASCII abandonné au profit d'un style rétro 8 bits | la route déjà parcourue ne doit plus être jaune (corrigé par les pull requests n° 38 et 41) ; il reste difficile de savoir où aller vendre |
+
+**Essai en 256 couleurs et verdicts sur les objectifs 18 et 19 (2026-11-25).**
+- **Lancement.** Le propriétaire a lancé le jeu dans foot, sous herdr, avec `stty size && env -u COLORTERM TERM=xterm-256color TEXTUAL_COLOR_SYSTEM=256 uv run python -m fourx --graine 1 --dev`. Avec Rich 15.0.0 et Textual 8.2.8 (versions du lockfile), sans `COLORTERM` et avec `TERM` = `xterm-256color`, la console détecte `256` ; Textual lui passe `TEXTUAL_COLOR_SYSTEM`. L'agent de code a relu l'environnement des deux processus du jeu encore ouverts : `TERM=xterm-256color`, `TEXTUAL_COLOR_SYSTEM=256`, pas de `COLORTERM`.
+- **Taille du terminal.** `stty size`, tapé par le propriétaire dans la même fenêtre : « 57 212 », soit 57 lignes × 212 colonnes.
+- **Parties.** Dossiers `20261125-203910-477253`, `20261125-203931-554780` et `20261125-204207-081798`, graine 1, période de 3 s sans changement de vitesse. Ce sont des parties courtes, pour regarder l'écran ; aucun cycle complet n'y est consigné. Le cycle complet de l'écran rétro est celui du 2026-11-22.
+- **Rendu en 256 couleurs :** « Bien lisible ».
+- **Objectif 19 (l'aide explique les mécaniques) : favorable.** « la touche H fonctionne bien » ; à la question « l'aide explique-t-elle les mécaniques ? » : « oui ».
+- **Objectif 18 (l'écran dit quoi faire ensuite) : défavorable.** « Non, le cadre, prochaine étape ne m'a pas trop aidé. Déjà, il parle beaucoup trop de tics, etc. Ça n'a pas trop d'intérêt pour le joueur. Ça, c'est plus des mécaniques internes et pour le debug. […] En plus, c'est pas très bien mis en forme. » Sur les messages en haut de l'écran : « il y a des informations qui apparaissent pour valider ou non des choses, mais c'est pas trop mis en avance, on voit pas trop que c'est là que ça se passe ». Sur le principe : « la prochaine étape, ça sera plutôt au joueur à la déterminer et pas tellement à lui suggérer. Après, il doit pouvoir suivre ce qu'il est en train de faire, là où il en est dans la tâche qu'il cherche à accomplir ».
 
 **Validation de la boucle de jeu (objectif 11).**
 - 2026-11-22, après la partie de l'écran unique : « considère que je valide la boucle de jeu actuelle, mais garde en tête qu'il va falloir l'étoffer ».
@@ -223,7 +232,7 @@ La graine, les vitesses et les ticks viennent des dossiers de partie écrits par
 
 La condition de l'amendement 1 (un cycle en accéléré, et au moins un saut complet à la période nominale) est remplie par la partie de l'écran rétro.
 
-Le verdict sur l'écran rétro ne bloque pas la livraison de M1 (décision du propriétaire, 2026-11-22). Les besoins d'écran exprimés après la partie (informations sur les systèmes, onglets, inventaire de la soute, vente sélective) sont pour une prochaine conception.
+Le verdict sur l'écran rétro ne bloque pas la livraison de M1 (décision du propriétaire, 2026-11-22). Les besoins d'écran exprimés après la partie (informations sur les systèmes, onglets, inventaire de la soute, vente sélective) sont pour une prochaine conception. S'y ajoutent ceux du 2026-11-25 : durées présentées autrement qu'en ticks, messages de validation et de refus mis en avant, et suivi de la tâche en cours à la place d'une étape suggérée.
 
 ## 8. Objectifs et critère de sortie
 
@@ -238,18 +247,18 @@ Liens : [`tests`](https://github.com/EZPK/4X/actions/runs/45679948773/job/139437
 | 5. L'économie reste dans ses fourchettes sur 100 000 ticks | section 6.1 ; `test_fourchettes.py` ([`rejeu`](https://github.com/EZPK/4X/actions/runs/45679948773/job/139437518162)) | atteint | — |
 | 6. Tous les acteurs passent par la même porte | `test_visibilite_des_observations` ([`proprietes`](https://github.com/EZPK/4X/actions/runs/45679948773/job/139437518288)) ; scénarios « Un ordre au nom d'un autre acteur est refusé par la réception », « Un ordre d'administration soumis par un client est refusé par la réception » et « On ne voit un autre vaisseau, et le stock d'un gisement, qu'à proximité » ; contrats « clients » et « policies » sans import de `core` ([`imports`](https://github.com/EZPK/4X/actions/runs/45679948773/job/139437518406)) ; E3 | atteint | — |
 | 7. Tout ce qui persiste ou circule porte un numéro de version | `tests/core/test_versions.py`, `tests/server/test_versions_journal.py` ([`tests`](https://github.com/EZPK/4X/actions/runs/45679948773/job/139437517592)) ; le garde lit `RULES_REVISION` (`.github/scripts/garde.py`) | atteint | — |
-| 8. Les contrôles de M1 deviennent obligatoires | protection de `main` relue (section 3.2) ; E1 à E5 ; run de nuit ; `test_canaris.py` ([`tests-outillage`](https://github.com/EZPK/4X/actions/runs/45679948773/job/139437518438)) | atteint | 2 |
+| 8. Les contrôles de M1 deviennent obligatoires | protection de `main` relue (section 3.2) ; E1 à E5 ; run de nuit ; `test_canaris.py` ([`tests-outillage`](https://github.com/EZPK/4X/actions/runs/45679948773/job/139437518438)) | atteint | — |
 | 9. L'indicateur avancé est mesuré | section 6.2 (local) | atteint | — |
 | 10. Les identifiants du glossaire sont fixés | `grep -c "à fixer au niveau 2 de M1" docs/glossaire.md` → 0 ; Technical Plan, point 12 | atteint | — |
 | 11. Le propriétaire valide la boucle de jeu | section 7 : validations du 2026-11-22 et du 2026-11-25 ; graine, paliers et saut à la période nominale relevés dans le dossier de partie | atteint | — |
-| 12. Le propriétaire lit l'écran sans se perdre | section 7 : non à l'écran unique, favorable à l'écran rétro ; tests du pilote de Textual ([`tests`](https://github.com/EZPK/4X/actions/runs/45679948773/job/139437517592)) | verdict favorable consigné | 3 |
+| 12. Le propriétaire lit l'écran sans se perdre | section 7 : non à l'écran unique, favorable à l'écran rétro ; tests du pilote de Textual ([`tests`](https://github.com/EZPK/4X/actions/runs/45679948773/job/139437517592)) ; rendu en 256 couleurs « Bien lisible » | verdict favorable consigné | — |
 | 13. Le temps est une ressource, et les durées sont des règles | scénario « Les durées lues dans l'observation sont celles du jeu, sur les vrais réglages » | atteint | — |
 | 14. Le joueur connaît les durées par l'observation seule | ADR 0003 ; `test_reglages_publics_et_aucun_autre` (`tests/core/test_observe.py`) ; scénarios « Les ticks restants d'un trajet annoncés par le modèle client sont ceux du jeu » et « … d'un minage … » | atteint | — |
 | 15. L'univers s'accélère en mode développement | `test_rejeu_exact_d_une_partie_jouee_en_accelere` et `test_speed_jsonl_en_tete_periode_initiale_et_changements` (`tests/server/test_partie.py`) ; mesure de débordement (section 6.3) | atteint | — |
 | 16. Le monde est plus grand, et sa taille vient de la graine | ADR 0004 ; `test_generation_sous_deux_pythonhashseed` (`tests/core/test_monde_version_empreintes.py`) ; `world.py` muté à 100 % | atteint | — |
-| 17. La carte montre tous les systèmes à la fois | scénario « La disposition de la carte place chaque système une fois, dans le carré, sans recouvrement, et la même à chaque appel » ; section 6.3 ; verdict « nettement mieux » | verdict favorable consigné | 3 |
-| 18. L'écran dit quoi faire ensuite | scénario « La prochaine étape suit un cycle joué : aller miner, miner, aller vendre, vendre » | **verdict non rendu** ; tests verts | 4 |
-| 19. Les mécaniques sont expliquées dans le jeu | scénario « L'aide donne les durées lues dans l'observation » ; tests de l'aide | **verdict non rendu** ; tests verts | 4 |
+| 17. La carte montre tous les systèmes à la fois | scénario « La disposition de la carte place chaque système une fois, dans le carré, sans recouvrement, et la même à chaque appel » ; section 6.3 ; verdict « nettement mieux » | verdict favorable consigné | — |
+| 18. L'écran dit quoi faire ensuite | scénario « La prochaine étape suit un cycle joué : aller miner, miner, aller vendre, vendre » ; verdict du propriétaire (section 7) | **verdict défavorable consigné** ; tests verts | — |
+| 19. Les mécaniques sont expliquées dans le jeu | scénario « L'aide donne les durées lues dans l'observation » ; tests de l'aide ; verdict du propriétaire (section 7) | verdict favorable consigné | — |
 
 | Élément du critère de sortie de M1 (niveau 1, §11) | Preuve | État |
 | :-- | :-- | :-- |
@@ -262,9 +271,9 @@ Liens : [`tests`](https://github.com/EZPK/4X/actions/runs/45679948773/job/139437
 ## 9. Écarts, réserves et incidents
 
 1. **Rejeu sur le PC d'entraînement reporté** (section 5) par le propriétaire, le 2026-11-25. Tant qu'il manque, un élément du critère de sortie n'est prouvé que sur le portable et en CI, et le document de M1 prévoit que le jalon n'est pas livré (section 5).
-2. **Message de refus de E3 non consigné.** Le blocage est montré par `mergeStateStatus` = `BLOCKED` et par les quatre autres essais, mais le message de GitHub n'a pas été vu. L'essai peut être refait à peu de frais : rouvrir une pull request avec le même bug, et tenter la fusion par une commande `!`.
-3. **Essai en 256 couleurs non fait**, et taille du terminal non mesurée exactement (point 23 undecies).
-4. **Objectifs 18 et 19 sans verdict séparé.** Le verdict favorable porte sur l'écran dans son ensemble ; le plan prend comme preuve un verdict sur chacun de ces objectifs.
+2. **Message de refus de E3 non consigné : levée le 2026-11-25.** L'essai a été refait (pull request n° 55) et le message est consigné (section 3.1).
+3. **Essai en 256 couleurs non fait, et taille du terminal non mesurée exactement : levée le 2026-11-25.** Rendu « Bien lisible », sur 57 lignes × 212 colonnes (section 7).
+4. **Objectifs 18 et 19 sans verdict séparé : levée le 2026-11-25.** Verdict favorable sur l'objectif 19, défavorable sur l'objectif 18 (section 7). Le plan prend comme preuve le verdict consigné, favorable ou non (Verification Plan, critère de sortie).
 5. **Le hook refuse `gh workflow run` et `gh pr close` à l'agent de code.** Le propriétaire a lancé la tâche de nuit et fermé les pull requests d'essai lui-même.
 6. **Incident de la pull request n° 46 (`README.md`).** Elle a été fusionnée sur son premier commit, avant que GitHub n'ait pris en compte les deux suivants ; la pull request n° 47 a rétabli la version voulue. Depuis, l'agent de code vérifie que la tête de la pull request est son dernier commit avant de la dire prête.
 7. **Point 27 corrigé au palier 4.** Ses deux calculs dataient d'avant la soute de 2 000 ; ils ont été refaits (10 800 ticks ; 900 000) dans la pull request n° 45.
@@ -272,5 +281,5 @@ Liens : [`tests`](https://github.com/EZPK/4X/actions/runs/45679948773/job/139437
 ## 10. Ce qui reste à faire
 
 1. **Propriétaire :** lancer le rejeu sur le PC d'entraînement et transmettre sa sortie, que l'agent de code ajoute en section 5. M1 n'est pas livré tant que cette sortie manque (document de M1, Risks & Mitigations). Livrer sans elle demande une décision explicite du propriétaire qui s'écarte du document approuvé, consignée par un amendement.
-2. **Propriétaire :** décider, pour chacune des réserves 2 à 4, si elle empêche de déclarer M1 livré, ou s'il faut la lever d'abord : refaire l'essai E3, essayer un terminal en 256 couleurs, rendre un verdict sur les objectifs 18 et 19.
+2. **Propriétaire :** décider de la suite du verdict défavorable sur l'objectif 18. Le point 23 undecies prévoit qu'au plus une pull request de fonctionnalité de correction suive dans M1 ; au-delà, la condition de révision de l'ADR 0006 s'applique, au niveau 2 de M3. Le verdict ne bloque pas la livraison de M1. Les retours du propriétaire (section 7) remettent en cause le principe d'une étape suggérée, au profit du suivi de la tâche en cours : c'est un changement de conception, plus qu'une correction.
 3. **Propriétaire :** décider si M1 passe à `livré` (point 33). Sur sa demande, l'agent de code met alors à jour `docs/feuille-de-route.md` dans une pull request protégée : M1 `livré`, « Jalon en cours » : M2.
