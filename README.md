@@ -12,7 +12,7 @@ On dirige des vaisseaux miniers dans un univers fait de systèmes reliés entre 
 
 - **Un rythme lent et stratégique.** Le temps est une ressource : un saut entre deux systèmes ou une cargaison à miner prend du temps réel, et le monde avance même quand on ne fait rien. On grandit avec plus de vaisseaux, pas avec des actions plus rapides.
 - **Des joueurs IA à égalité.** Des réseaux de neurones, entraînés hors ligne sur une carte graphique, joueront à terme comme les humains. Ils reçoivent la même observation, envoient les mêmes ordres et subissent les mêmes refus. Dans le jeu, ils seront toujours signalés comme IA.
-- **Une économie tenue en comptabilité.** Tout l'argent passe par un registre en partie double, en nombres entiers. Aujourd'hui, il est créé quand une station rachète du minerai, et détruit par la taxe sur la vente. Plus tard viendront les contrats, les primes et les frais. La conservation de l'argent est vérifiée à chaque tick.
+- **Une économie tenue en comptabilité.** Tout l'argent passe par un registre en partie double, en nombres entiers. Aujourd'hui, il est créé quand une station rachète du minerai, et détruit par la taxe sur la vente. La conservation de l'argent est vérifiée à chaque tick.
 - **Un monde rejouable.** Toute la simulation tient dans une seule fonction déterministe, `step`. Une partie rejouée depuis son journal d'ordres redonne exactement le même état, tick après tick.
 - **À terme, un monde persistant.** Un serveur qui tourne en continu, où les joueurs IA peuvent continuer de faire vivre une corporation pendant que les humains sont absents.
 
@@ -27,11 +27,6 @@ Un petit monde hors ligne, généré à partir d'une graine :
 On choisit un minerai, on envoie son vaisseau le miner, on le ramène à une station et on vend la cargaison. La vente est taxée. Un cadre « Prochaine étape » guide la première partie.
 
 Un vaisseau voit la carte entière, les gisements et les prix. En revanche, il ne voit les autres vaisseaux et le stock des gisements que dans son système et les systèmes voisins.
-
-### Ce qui n'est pas prévu
-
-- Des noms, un lore et un univers inventés au fil du code. Seuls les noms validés par le propriétaire entrent dans le jeu (`docs/noms-valides.md`).
-- Des personnages conversationnels, des clients tiers ou un client navigateur pour l'instant.
 
 ## Installation
 
@@ -101,10 +96,10 @@ Le code vit dans le paquet `fourx`, découpé en paquets aux imports contrôlés
 | :-- | :-- |
 | `schema` | Types des ordres, des observations et des événements ; validation et encodage |
 | `core` | État du monde, `step`, `observe`, registre comptable. Strictement déterministe : ni nombre flottant, ni hasard non contrôlé, ni horloge |
-| `policies` | Tout ce qui décide des ordres à partir d'une observation : scripts et, plus tard, réseaux entraînés |
+| `policies` | Tout ce qui décide des ordres à partir d'une observation : scripts, puis réseaux entraînés |
 | `server` | Boucle des ticks, transport, persistance |
 | `clients` | Client Textual, hôte des personnages scriptés |
-| `training` | Environnement d'entraînement des joueurs IA (à venir) |
+| `training` | Environnement d'entraînement des joueurs IA |
 | `tools` | Serveur de rejeu, outil de divergence, statistiques économiques |
 
 ### Documents et règles du dépôt
