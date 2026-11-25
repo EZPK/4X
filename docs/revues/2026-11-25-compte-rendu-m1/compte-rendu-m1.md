@@ -1,7 +1,7 @@
 # Compte rendu de M1 : noyau déterministe et tranche 0
 
 *   **Document suivi :** `docs/designs/niveau-2-m1-noyau.md` (Approved, amendements 1 et 2 compris), plan détaillé, points 1 à 33.
-*   **Date du compte rendu :** 2026-11-25 ; complété le même jour pour les réserves 2 à 4, puis le 2026-11-26 pour le rejeu sur le PC d'entraînement (section 9). Les travaux de M1 vont du 2026-11-08 (approbation du document) au 2026-11-25.
+*   **Date du compte rendu :** 2026-11-25 ; complété le même jour pour les réserves 2 à 4, puis le 2026-11-26 pour le rejeu sur le PC d'entraînement (sections 5 et 9) et la décision du propriétaire sur l'objectif 18 (section 10). Les travaux de M1 vont du 2026-11-08 (approbation du document) au 2026-11-25.
 *   **Rédigé par :** l'agent de code, à partir des pull requests, des contrôles CI, des dossiers de partie et des décisions du propriétaire prises en session ; corrigé après une revue EGM sans contexte (exactitude technique).
 *   **Statut de M1 :** `approuvé` dans `docs/feuille-de-route.md`. Seul le propriétaire peut le déclarer `livré` (point 33).
 
@@ -23,9 +23,9 @@
 - La tâche de nuit, lancée à la main, réussit : 6 canaris attrapés sur 6, mutation complète du noyau au-dessus du plancher, protection de `main` en place.
 
 **Ce qui n'est pas encore démontré, ou pas entièrement.**
-- Rien, depuis le 2026-11-26. Le rejeu sur le PC d'entraînement est fait : les empreintes de chaque tick y sont identiques à celles du portable (section 5).
+- Rien, depuis le 2026-11-26. Le rejeu sur le PC d'entraînement est fait : ses fichiers d'empreintes de chaque tick sont identiques au bit près à ceux du portable (section 5).
 
-Les réserves 1 à 4 de la première version de ce compte rendu sont levées (section 9). La suite du verdict défavorable sur l'objectif 18 est reportée par le propriétaire à la conception des cadres modulaires (section 10).
+Les réserves 1 à 4 de la première version de ce compte rendu sont levées (section 9). Le propriétaire a reporté la décision sur la suite du verdict défavorable sur l'objectif 18 (section 10).
 
 ## 2. Ce qui a été livré
 
@@ -138,10 +138,10 @@ aucune divergence
 
 Chaque passe compare, tous les 1 000 ticks, les empreintes du rejeu à celles de `tests/references/rules-1/reference.json`, et écrit les empreintes de chaque tick (100 000 lignes).
 
-**PC d'entraînement : fait.** Le 2026-11-26, par l'agent de code, par SSH depuis le portable, dans un clone neuf du dépôt, sous Linux x86_64 (WSL2). Comme sur le portable, la sortie est locale et ne vaut pas preuve au sens de `CLAUDE.md`. Aucune adresse ni aucun identifiant de la machine n'entre dans le dépôt.
+**PC d'entraînement : fait.** Le 2026-11-26, par l'agent de code, à la demande du propriétaire (écart, section 9, point 8), par SSH depuis le portable, dans un clone neuf du dépôt, sous Linux x86_64 (WSL2). Comme sur le portable, la sortie est locale et ne vaut pas preuve au sens de `CLAUDE.md`. Aucune adresse ni aucun identifiant de la machine n'entre dans le dépôt.
 
 Préparation :
-- `uv` mis à jour en 0.13.10, la version de la CI (le projet exige 0.11.16 au moins) ;
+- `uv` mis à jour en 0.13.10, la version que la CI a prise le 2026-11-25 : `ci.yml` ne la fixe pas, et le projet exige 0.11.16 au moins ;
 - Python 3.15.2 installé par `uv`, comme en CI. Le premier essai avait pris un Python 3.15.0b1 déjà présent sur la machine, sur lequel la construction de `pyyaml` (dépendance de `pre-commit`) plantait (SIGSEGV).
 
 Sortie réduite à la dernière ligne de chaque commande :
@@ -149,6 +149,8 @@ Sortie réduite à la dernière ligne de chaque commande :
 ```text
 $ git rev-parse --short HEAD
 3360680
+$ uv sync --locked
+Checked 46 packages in 43ms
 $ uv run python --version
 Python 3.15.2
 $ PYTHONHASHSEED=0 uv run pytest -m rejeu
@@ -161,7 +163,7 @@ aucune divergence
 
 Le code de `3360680` est celui de `7361aac` : `git diff --name-only 7361aac 3360680` ne montre que ce compte rendu.
 
-**Comparaison des deux machines, tick par tick.** Au-delà des points de contrôle tous les 1 000 ticks, les fichiers d'empreintes de chaque tick (100 000 lignes) sont identiques au bit près sur les deux machines. `sha256sum runs/rejeu-0/fingerprints.jsonl` donne `0c59aec543c846c09e9818a39153f213de7495efb311722057555599778ea86d` sur le PC d'entraînement, et la même valeur sur le portable, le 2026-11-26, au même commit (`uv` 0.11.16, Python 3.15.2).
+**Comparaison des deux machines, tick par tick.** Au-delà des points de contrôle tous les 1 000 ticks, les fichiers d'empreintes de chaque tick (100 000 lignes) sont identiques au bit près sur les deux machines. `sha256sum runs/rejeu-0/fingerprints.jsonl runs/rejeu-1/fingerprints.jsonl` donne la même valeur pour les quatre fichiers, `0c59aec543c846c09e9818a39153f213de7495efb311722057555599778ea86d` : sur le PC d'entraînement, et sur le portable, relancé le 2026-11-26 (`uv` 0.11.16, Python 3.15.2) au commit `21478ca`, dont le code est celui de `3360680`. La sortie du portable : « 1 passed, 1055 deselected in 10.60s » pour `PYTHONHASHSEED=1`.
 
 ## 6. Économie, mesures et mutation
 
@@ -298,9 +300,10 @@ Liens : [`tests`](https://github.com/EZPK/4X/actions/runs/45679948773/job/139437
 5. **Le hook refuse `gh workflow run` et `gh pr close` à l'agent de code.** Le propriétaire a lancé la tâche de nuit et fermé les pull requests d'essai lui-même.
 6. **Incident de la pull request n° 46 (`README.md`).** Elle a été fusionnée sur son premier commit, avant que GitHub n'ait pris en compte les deux suivants ; la pull request n° 47 a rétabli la version voulue. Depuis, l'agent de code vérifie que la tête de la pull request est son dernier commit avant de la dire prête.
 7. **Point 27 corrigé au palier 4.** Ses deux calculs dataient d'avant la soute de 2 000 ; ils ont été refaits (10 800 ticks ; 900 000) dans la pull request n° 45.
+8. **Rejeu sur le PC d'entraînement lancé par l'agent de code.** Le document de M1 prévoit que le propriétaire le lance, parce que lui seul avait accès à cette machine (Verification Plan). Les 2026-11-25 et 2026-11-26, le propriétaire a fait installer un accès SSH au PC, puis a demandé à l'agent de code d'agir : « prends controle du PC, demande moi les ID si nécssaire ». L'agent de code a lancé les commandes prévues, sans autre changement que la préparation décrite en section 5. L'adresse et les identifiants de la machine restent hors du dépôt.
 
 ## 10. Ce qui reste à faire
 
 1. **Rejeu sur le PC d'entraînement : fait** le 2026-11-26 (section 5).
-2. **Propriétaire :** décider de la suite du verdict défavorable sur l'objectif 18. Le point 23 undecies prévoit qu'au plus une pull request de fonctionnalité de correction suive dans M1 ; au-delà, la condition de révision de l'ADR 0006 s'applique. Les raisons données (durées en ticks, mise en forme, principe d'une étape suggérée, messages peu mis en avant) ne sont pas propres au terminal, et le rendu forcé en 256 couleurs a été jugé « Bien lisible » : selon cette condition, c'est la conception de l'écran (document de M1, Technical Plan, point 7 ter) qui est reprise, sans réexaminer l'ADR 0006. Les retours du propriétaire remettent en cause le principe d'une étape suggérée, au profit du suivi de la tâche en cours : c'est un changement de conception, plus qu'une correction. Le verdict ne bloque pas la livraison de M1. **Décision du propriétaire, 2026-11-26 :** « on décidera plus tard quand on fera le cadre modulaire ». La suite est donc reportée à la conception des cadres modulaires, qui reprend le point 7 ter : si M1 est déclaré livré avant, aucune pull request de correction ne suit dans M1.
+2. **Suite du verdict défavorable sur l'objectif 18 : décision reportée par le propriétaire.** Le point 23 undecies prévoit qu'au plus une pull request de fonctionnalité de correction suive dans M1 ; au-delà, la condition de révision de l'ADR 0006 s'applique. Les raisons données (durées en ticks, mise en forme, principe d'une étape suggérée, messages peu mis en avant) ne sont pas propres au terminal, et le rendu forcé en 256 couleurs a été jugé « Bien lisible » : selon cette condition, c'est la conception de l'écran (document de M1, Technical Plan, point 7 ter) qui est reprise, sans réexaminer l'ADR 0006. Les retours du propriétaire remettent en cause le principe d'une étape suggérée, au profit du suivi de la tâche en cours : c'est un changement de conception, plus qu'une correction. Le verdict ne bloque pas la livraison de M1. **Le propriétaire, 2026-11-26 :** « Pour le point 2, on décidera plus tard quand on fera le cadre modulaire. » *Lecture de l'agent de code, non confirmée par le propriétaire :* « le cadre modulaire » désigne la proposition de rendre les cadres du client interchangeables, faite en session et pas encore écrite dans le dépôt ; sa conception reprendrait le point 7 ter ; si M1 est déclaré livré avant cette décision, le point 23 undecies ne permet plus de pull request de correction dans M1.
 3. **Propriétaire :** décider si M1 passe à `livré` (point 33). Sur sa demande, l'agent de code met alors à jour `docs/feuille-de-route.md` dans une pull request protégée : M1 `livré`, « Jalon en cours » : M2.
