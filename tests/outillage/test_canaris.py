@@ -108,10 +108,43 @@ def test_resultat_illisible(canaris: ModuleType) -> None:
         canaris.appliquer(SOURCE, m)
 
 
-def ecrire_canari(dossier: Path, nom: str, controle: str, modifications: list[object]) -> None:
+def ecrire_canari(
+    dossier: Path, nom: str, controle: str, modifications: list[object], attendu: str = "VU"
+) -> None:
     dossier.mkdir(parents=True, exist_ok=True)
-    contenu = {"description": "d", "controle": controle, "modifications": modifications}
+    contenu = {
+        "description": "d",
+        "controle": controle,
+        "attendu": attendu,
+        "modifications": modifications,
+    }
     (dossier / f"{nom}.json").write_text(json.dumps(contenu), encoding="utf-8")
+
+
+def test_lire_refuse_une_cle_manquante_ou_un_motif_vide(
+    canaris: ModuleType, tmp_path: Path
+) -> None:
+    dossier = tmp_path / "c"
+    dossier.mkdir()
+    (dossier / "x.json").write_text(
+        json.dumps({"controle": "tests", "attendu": "a", "modifications": []}), encoding="utf-8"
+    )
+    with pytest.raises(canaris.ErreurCanari, match="x.json : clé manquante 'description'"):
+        canaris.lire_tous(dossier)
+    ancre = {"type": "fin_du_module"}
+    ecrire_canari(
+        tmp_path / "d", "x", "tests", [{"fichier": "f", "ancre": ancre, "texte": "t"}], ""
+    )
+    with pytest.raises(canaris.ErreurCanari, match="motif attendu vide"):
+        canaris.lire_tous(tmp_path / "d")
+
+
+def test_positions_comme_ast_malgre_un_saut_de_page(canaris: ModuleType) -> None:
+    # str.splitlines couperait aussi sur \f ; ast ne compte que \n, \r et \r\n.
+    source = 'x = "\f"  # saut de page\ndef f(a):\n    return g(a)\n'
+    ancre = {"type": "expression", "fonction": "f", "appel": "g", "contient": "a"}
+    resultat = canaris.appliquer(source, modification(canaris, ancre, "h(a)"))
+    assert resultat == 'x = "\f"  # saut de page\ndef f(a):\n    return h(a)\n'
 
 
 def test_lire_refuse_un_controle_inconnu_ou_sans_modification(
@@ -163,13 +196,14 @@ def options(depot: Path) -> list[str]:
 def test_un_canari_attrape(
     canaris: ModuleType, depot: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    # La commande échoue si le flottant a bien été inséré et enregistré dans le clone.
+    # La commande échoue, avec le motif, si le flottant a été inséré et enregistré dans le clone.
     commande = {
-        "tests": "grep -q 'z = 0.5' exemple.py && git log -1 --format=%s | grep -q canari && false"
+        "tests": "grep -q 'z = 0.5' exemple.py && git log -1 --format=%s | grep -q canari"
+        " && echo 'erreur : VU ici' && false"
     }
     assert canaris.main(options(depot), commande) == 0
     sortie = capsys.readouterr().out
-    assert "flottant → tests : code 1" in sortie
+    assert "flottant → tests : code 1, « VU » trouvé\n    erreur : VU ici" in sortie
     assert "1 canaris attrapés sur 1" in sortie
     assert (depot / "exemple.py").read_text(encoding="utf-8") == SOURCE  # le dépôt est intact
 
@@ -179,9 +213,27 @@ def test_un_canari_non_attrape_fait_echouer(
 ) -> None:
     assert canaris.main(options(depot), {"tests": "echo rien vu"}) == 1
     sortie = capsys.readouterr().out
-    assert "flottant → tests : code 0 — NON ATTRAPÉ" in sortie
+    assert "flottant → tests : code 0 — NON ATTRAPÉ (« VU » absent de la sortie)" in sortie
     assert "rien vu" in sortie
     assert "0 canaris attrapés sur 1" in sortie
+
+
+@pytest.mark.parametrize(
+    ("commande", "raison"),
+    [
+        ("echo panne sans rapport; false", "code 1 — NON ATTRAPÉ (« VU » absent de la sortie)"),
+        ("echo VU; exit 2", "code 2 — NON ATTRAPÉ (motif attendu trouvé)"),
+    ],
+)
+def test_une_panne_sans_rapport_ne_compte_pas_comme_attrapee(
+    canaris: ModuleType,
+    depot: Path,
+    capsys: pytest.CaptureFixture[str],
+    commande: str,
+    raison: str,
+) -> None:
+    assert canaris.main(options(depot), {"tests": commande}) == 1
+    assert f"flottant → tests : {raison}" in capsys.readouterr().out
 
 
 def test_base_et_tete_passees_a_la_commande(
@@ -190,7 +242,9 @@ def test_base_et_tete_passees_a_la_commande(
     base = subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=depot, capture_output=True, text=True, check=True
     ).stdout.strip()
-    commande = {"tests": f'test "{{base}}" = "{base}" && test "{{tete}}" != "{base}" && false'}
+    commande = {
+        "tests": f'test "{{base}}" = "{base}" && test "{{tete}}" != "{base}" && echo VU && false'
+    }
     assert canaris.main(options(depot), commande) == 0
     assert "1 canaris attrapés sur 1" in capsys.readouterr().out
 

@@ -1,6 +1,7 @@
 {
   "description": "Le tirage \"world_size\" de world.generate fait par hash() d'une chaîne au lieu de keyed_below : hash() change avec PYTHONHASHSEED, le rejeu doit échouer.",
   "controle": "rejeu",
+  "attendu": "le rejeu diverge de la référence",
   "modifications": [
     {
       "fichier": "src/fourx/core/world.py",

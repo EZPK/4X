@@ -1,6 +1,7 @@
 {
   "description": "core importe server : le contrat d'imports doit le refuser.",
   "controle": "imports",
+  "attendu": "fourx.server",
   "modifications": [
     {
       "fichier": "src/fourx/core/step.py",

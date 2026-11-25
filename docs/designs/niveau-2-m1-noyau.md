@@ -1782,7 +1782,7 @@ Chaque volet a sa pull request de scénarios (fichiers `.feature` en français e
     - `core` qui importe `server` → `imports` ;
     - une vente sans écriture de taxe, mais avec le compteur cumulé de destruction augmenté → `tests` (invariants) ;
     - le portefeuille d'un autre acteur laissé dans une observation (`observe`) → `proprietes` ;
-    - le placement des sites *(remplacé par l'amendement 1 : le tirage `"world_size"` de `world.generate`, Technical Plan, point 2, ancré sur ce motif)* tiré par `hash()` d'une chaîne au lieu de `keyed_below` (`world.generate`) → `rejeu` (ce tirage a lieu dans chaque partie, et `hash()` d'une chaîne change avec `PYTHONHASHSEED`) ;
+    - le placement des sites *(remplacé par l'amendement 1 : le tirage `"world_size"` de `world.generate`, Technical Plan, point 2, ancré sur ce motif)* tiré par `hash()` d'une chaîne au lieu de `keyed_below` (`world.generate`) → `rejeu` (ce tirage a lieu dans chaque partie, et `hash()` d'une chaîne change avec `PYTHONHASHSEED`) ; **(précisé le 2026-11-25)** depuis les références du volet C, le rejeu diverge déjà de `reference.json` sous `PYTHONHASHSEED=0`, avant la comparaison des deux valeurs, qui reste un second filet ;
     - une fonction insérée à la fin de `core/arith.py` (ancre : fin du module), et un appel inséré au début de `step` dont aucun test ne vérifie le résultat → `mutation` (`mutation.py --base main --tete <commit de la copie>` : le score de `arith.py` baisse par rapport à `main`).
 
 #### 30. `tests/outillage/test_canaris.py` (Create)

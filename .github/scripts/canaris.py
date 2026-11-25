@@ -3,8 +3,9 @@
 Document : docs/designs/niveau-2-m1-noyau.md, plan détaillé, points 29 et 30 bis (tâche `canari`
 du workflow de nuit).
 
-Chaque canari est un fichier JSON de `.github/canaris/` : le contrôle visé, et une liste de
-modifications. Une modification désigne un fichier, une ancre et un texte :
+Chaque canari est un fichier JSON de `.github/canaris/` : le contrôle visé, le motif attendu
+dans la sortie de ce contrôle, et une liste de modifications. Une modification désigne un
+fichier, une ancre et un texte :
 - `debut_de_fonction` (`fonction`) : le texte est inséré avant la première instruction du corps
   de la fonction nommée (après sa docstring), au retrait de ce corps ;
 - `fin_du_module` : le texte est ajouté à la fin du fichier ;
@@ -16,13 +17,17 @@ modifications. Une modification désigne un fichier, une ancre et un texte :
 Les ancres sont trouvées par l'analyse de la syntaxe (module `ast`), pas par un patch de lignes, et
 le fichier modifié doit encore se lire. Pour chaque canari, le script clone le dépôt dans un
 dossier temporaire, applique les modifications, les enregistre dans un commit du clone, lance la
-commande du contrôle visé (celles du plan détaillé, point 8) et échoue si cette commande réussit.
+commande du contrôle visé (celles du plan détaillé, point 8). Le canari est attrapé si la commande
+finit avec le code 1 et que sa sortie contient le motif attendu : une panne sans rapport (erreur
+de collecte, réseau, plantage) ne compte pas comme attrapée. Le script échoue si un canari n'est
+pas attrapé.
 
 Bibliothèque standard seulement.
 """
 
 import argparse
 import ast
+import io
 import json
 import subprocess
 import sys
@@ -68,6 +73,7 @@ class Canari:
     nom: str
     description: str
     controle: str
+    attendu: str
     modifications: tuple[Modification, ...]
 
 
@@ -75,36 +81,41 @@ def lire(chemin: Path) -> Canari:
     donnees = json.loads(chemin.read_text(encoding="utf-8"))
     if donnees.get("controle") not in COMMANDES:
         raise ErreurCanari(f"{chemin.name} : contrôle inconnu {donnees.get('controle')!r}")
-    modifications = tuple(
-        Modification(fichier=m["fichier"], ancre=dict(m["ancre"]), texte=m["texte"])
-        for m in donnees["modifications"]
-    )
+    try:
+        modifications = tuple(
+            Modification(fichier=m["fichier"], ancre=dict(m["ancre"]), texte=m["texte"])
+            for m in donnees["modifications"]
+        )
+        canari = Canari(
+            nom=chemin.stem,
+            description=donnees["description"],
+            controle=donnees["controle"],
+            attendu=donnees["attendu"],
+            modifications=modifications,
+        )
+    except KeyError as erreur:
+        raise ErreurCanari(f"{chemin.name} : clé manquante {erreur}") from erreur
     if not modifications:
         raise ErreurCanari(f"{chemin.name} : aucune modification")
-    return Canari(
-        nom=chemin.stem,
-        description=donnees["description"],
-        controle=donnees["controle"],
-        modifications=modifications,
-    )
+    if not canari.attendu:
+        raise ErreurCanari(f"{chemin.name} : motif attendu vide")
+    return canari
 
 
 def lire_tous(dossier: Path = DOSSIER) -> tuple[Canari, ...]:
     return tuple(lire(chemin) for chemin in sorted(dossier.glob("*.json")))
 
 
-def _decalages(source: str) -> list[int]:
-    """Position, dans `source`, du début de chaque ligne (la ligne 1 au rang 0)."""
-    debuts = [0, 0]
-    for ligne in source.splitlines(keepends=True):
-        debuts.append(debuts[-1] + len(ligne))
-    return debuts
+def _lignes(source: str) -> list[str]:
+    """Les lignes de `source`, coupées comme `ast` les compte (`\\n`, `\\r`, `\\r\\n` seulement)."""
+    return io.StringIO(source, newline="").readlines()
 
 
 def _position(source: str, ligne: int, colonne: int) -> int:
     """Position dans `source` d'une ligne (à partir de 1) et d'une colonne en octets UTF-8."""
-    debut = _decalages(source)[ligne]
-    texte_de_ligne = source[debut:].splitlines(keepends=True)[0] if source[debut:] else ""
+    lignes = _lignes(source)
+    debut = sum(len(texte) for texte in lignes[: ligne - 1])
+    texte_de_ligne = lignes[ligne - 1] if ligne - 1 < len(lignes) else ""
     return debut + len(texte_de_ligne.encode("utf-8")[:colonne].decode("utf-8"))
 
 
@@ -193,7 +204,8 @@ def git(dossier: Path, *arguments: str) -> str:
 
 def essayer(canari: Canari, depot: Path, commandes: dict[str, str]) -> tuple[bool, str]:
     """Clone `depot`, applique le canari, l'enregistre et lance la commande du contrôle visé.
-    Rend (attrapé, compte rendu) : attrapé si la commande échoue."""
+    Rend (attrapé, compte rendu) : attrapé si la commande finit avec le code 1 et que sa sortie
+    contient le motif attendu."""
     with tempfile.TemporaryDirectory(prefix=f"canari-{canari.nom}-") as temporaire:
         copie = Path(temporaire) / "depot"
         subprocess.run(
@@ -209,11 +221,17 @@ def essayer(canari: Canari, depot: Path, commandes: dict[str, str]) -> tuple[boo
         resultat = subprocess.run(
             ["bash", "-c", commande], cwd=copie, capture_output=True, text=True, check=False
         )
-    attrape = resultat.returncode != 0
-    fin = (resultat.stdout + resultat.stderr).strip().splitlines()[-5:]
+    sortie = resultat.stdout + resultat.stderr
+    trouve = canari.attendu in sortie
+    attrape = resultat.returncode == 1 and trouve
     compte_rendu = f"{canari.nom} → {canari.controle} : code {resultat.returncode}"
-    if not attrape:
-        compte_rendu += " — NON ATTRAPÉ\n    " + "\n    ".join(fin)
+    if attrape:
+        ligne = next(ligne for ligne in sortie.splitlines() if canari.attendu in ligne)
+        compte_rendu += f", « {canari.attendu} » trouvé\n    {ligne.strip()[:200]}"
+    else:
+        raison = "motif attendu trouvé" if trouve else f"« {canari.attendu} » absent de la sortie"
+        fin = sortie.strip().splitlines()[-5:]
+        compte_rendu += f" — NON ATTRAPÉ ({raison})\n    " + "\n    ".join(fin)
     return attrape, compte_rendu
 
 

@@ -1,6 +1,7 @@
 {
   "description": "observe met dans l'observation le portefeuille d'un autre acteur : les tests de propriétés doivent le voir.",
   "controle": "proprietes",
+  "attendu": "test_visibilite_des_observations",
   "modifications": [
     {
       "fichier": "src/fourx/core/observe.py",

@@ -148,6 +148,9 @@ def test_tests_outillage_ne_lance_que_les_tests_de_l_outillage() -> None:
 def test_nuit_trois_taches_planifiees_en_lecture_seule() -> None:
     texte = textes()["nuit.yml"]
     assert set(taches(texte)) == {"canari", "mutation-complete", "protection"}
+    for cles in taches(texte).values():
+        assert "if" in cles  # sur main seulement
+    assert texte.count("if: github.ref == 'refs/heads/main'") == 3
     assert 'cron: "0 3 * * *"' in texte
     assert "workflow_dispatch:" in texte
     assert re.search(r"^permissions:\n  contents: read\n", texte, re.MULTILINE)

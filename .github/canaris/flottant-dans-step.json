@@ -1,6 +1,7 @@
 {
   "description": "Un nombre flottant dans step : le contrôle statique du déterminisme doit le refuser.",
   "controle": "tests",
+  "attendu": "nombre flottant",
   "modifications": [
     {
       "fichier": "src/fourx/core/step.py",
