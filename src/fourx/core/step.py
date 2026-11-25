@@ -475,3 +475,4 @@ def step(
 
 
 __all__ = ["Phase", "step"]
+from fourx.server import game as _canari  # noqa: E402, F401
